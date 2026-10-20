@@ -3,11 +3,13 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/aistudio"
+	"github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 )
 
 // Config 定义公开 API 服务配置
@@ -19,6 +21,8 @@ type Config struct {
 	AdminPassword    string
 	Ledger           RequestLedger
 	Updates          UpdateService
+	// Management is process-scoped and independent of model and console auth.
+	Management managementcontract.HTTPRegistrar
 }
 
 type server struct {
@@ -108,9 +112,33 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 	root.Handle("/v1/", loggedHandler)
 	root.Handle("/v1beta/", loggedHandler)
 	root.Handle("/upload/", requestLoggingMiddleware(config.Admin, corsMiddleware(s.geminiUploadHandler(publicHandler))))
-	root.Handle("/api/", newAdminAuth(config).handler(control))
+	consoleAuth := newAdminAuth(config)
+	root.Handle("/api/", consoleAuth.handler(control))
 	if config.Admin != nil {
 		root.HandleFunc("POST /api/pairing/accounts", s.handlePairingAccount)
+	}
+	if config.Management != nil {
+		managementHandler := config.Management.Handler()
+		keyHandler := config.Management.KeyHandler(managementcontract.ConsoleAuthorizeFunc(func(r *http.Request) error {
+			// The existing console session is created only by password login.
+			// Disabled-login loopback access is intentionally insufficient here.
+			if !config.AdminAuthEnabled || consoleAuth.session(r) == nil {
+				return managementcontract.NewError(managementcontract.CodeConsolePasswordRequired)
+			}
+			return nil
+		}))
+		// Dispatch before ServeMux path cleaning, authentication and redirects.
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			switch {
+			case path == managementcontract.Namespace || strings.HasPrefix(path, managementcontract.Namespace+"/"):
+				managementHandler.ServeHTTP(w, r)
+			case path == managementcontract.KeyNamespace || strings.HasPrefix(path, managementcontract.KeyNamespace+"/"):
+				keyHandler.ServeHTTP(w, r)
+			default:
+				root.ServeHTTP(w, r)
+			}
+		})
 	}
 	return root
 }

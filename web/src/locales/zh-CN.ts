@@ -31,6 +31,7 @@ export const messages = {
   'nav.models': '模型目录',
   'nav.requests': '冷却与请求',
   'nav.settings': '服务配置',
+  'nav.managementKeys': '管理 Key',
   'nav.playground': 'API 试用',
   'nav.version': '版本',
   'section.version.title': '版本与更新',

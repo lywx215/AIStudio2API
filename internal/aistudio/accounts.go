@@ -21,6 +21,7 @@ import (
 	"time"
 
 	appconfig "github.com/Mag1cFall/AIStudio2API/internal/config"
+	contract "github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 	"github.com/gofrs/flock"
 )
 
@@ -187,6 +188,8 @@ type Account struct {
 	leaseLock             *flock.Flock
 	leasePath             string
 	storageMu             sync.Mutex
+	authStateMu           sync.Mutex
+	authRefreshMu         sync.Mutex
 	runtimeMu             sync.Mutex
 	persistenceLocked     bool
 	authGeneration        uint64
@@ -263,7 +266,9 @@ type AccountCandidateState struct {
 
 // AccountStore 从一个或多个账户文件或目录加载账户
 type AccountStore struct {
-	paths []string
+	paths      []string
+	writer     contract.NativeWriteCoordinator
+	journalDir string
 }
 
 // AccountPool 在账户之间执行能力与并发槽位调度
@@ -278,6 +283,10 @@ type AccountPool struct {
 	lastPickedChannel     map[string]Channel
 	channels              []Channel
 	changed               chan struct{}
+	writer                contract.NativeWriteCoordinator
+	authPaths             []string
+	journalDir            string
+	managementEpoch       atomic.Uint64
 }
 
 // AccountLease 表示一个账户请求槽位
@@ -294,6 +303,11 @@ type AccountLease struct {
 	released              bool
 	once                  sync.Once
 	err                   error
+	nativeSnapshot        contract.AccountRecord
+	nativeSnapshotValid   bool
+	nativeBaseState       StorageState
+	nativeEpoch           uint64
+	nativeReleased        atomic.Bool
 }
 
 // AccountRuntimeLease 保证同一邮箱只有一个 WAA runtime
@@ -410,6 +424,9 @@ func (s *AccountStore) Load() ([]*Account, error) {
 
 // Create 创建并锁定以认证邮箱命名的账户目录
 func (s *AccountStore) Create(accountConfig AccountConfig, state StorageState) (*Account, *AccountPublishLease, error) {
+	if s.writer != nil {
+		return s.createCoordinated(accountConfig, state)
+	}
 	if s == nil || len(s.paths) != 1 {
 		return nil, nil, fmt.Errorf("创建账户需要一个账户根目录")
 	}
@@ -467,6 +484,9 @@ func (s *AccountStore) Create(accountConfig AccountConfig, state StorageState) (
 
 // Delete 删除属于当前存储的稳定账户目录
 func (s *AccountStore) Delete(account *Account) error {
+	if s.writer != nil {
+		return s.deleteCoordinated(account)
+	}
 	if account == nil || strings.TrimSpace(account.ID) == "" || strings.TrimSpace(account.Directory) == "" {
 		return fmt.Errorf("账户未初始化")
 	}
@@ -967,6 +987,16 @@ func (p *AccountPool) Acquire(ctx context.Context, model string) (*AccountLease,
 
 // AcquireAccount 为管理操作获取不受调度状态限制的指定账户租约
 func (p *AccountPool) AcquireAccount(ctx context.Context, accountID string) (*AccountLease, error) {
+	return p.acquireAccount(ctx, accountID, true)
+}
+
+// AcquireManagementAccount avoids recursive coordinator acquisition while its
+// bind gate is already held by a management mutation.
+func (p *AccountPool) AcquireManagementAccount(ctx context.Context, accountID string) (*AccountLease, error) {
+	return p.acquireAccount(ctx, accountID, false)
+}
+
+func (p *AccountPool) acquireAccount(ctx context.Context, accountID string, capture bool) (*AccountLease, error) {
 	if p == nil {
 		return nil, ErrAccountNotFound
 	}
@@ -1018,6 +1048,11 @@ func (p *AccountPool) AcquireAccount(ctx context.Context, accountID string) (*Ac
 				p.mu.Lock()
 				lease.modelAccessGeneration = account.modelAccessGeneration
 				p.mu.Unlock()
+				if capture {
+					if err := lease.captureNative(ctx); err != nil {
+						return nil, errors.Join(err, lease.Release())
+					}
+				}
 				return lease, nil
 			}
 			if !errors.Is(err, errAccountLeaseBusy) {
@@ -1202,6 +1237,9 @@ func (p *AccountPool) refreshAndValidateLease(
 			return false, err
 		}
 		lease.refreshRuntime = false
+	}
+	if err := lease.captureNative(ctx); err != nil {
+		return false, err
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -1412,6 +1450,9 @@ func (l *AccountLease) markAuthenticationStateAt(required bool, reason string, c
 	if l == nil || l.account == nil || l.pool == nil {
 		return fmt.Errorf("账户租约未初始化")
 	}
+	if l.pool.writer != nil {
+		return l.markNativeAuthentication(required, checkedAt)
+	}
 	l.operation.Lock()
 	authGeneration := l.authGeneration
 	l.operation.Unlock()
@@ -1456,6 +1497,9 @@ func (p *AccountPool) ModelAccessGeneration(accountID string) uint64 {
 func (l *AccountLease) SaveStorageState(state StorageState) error {
 	if l == nil || l.account == nil || l.pool == nil {
 		return fmt.Errorf("账户租约未初始化")
+	}
+	if l.pool.writer != nil {
+		return l.saveNativeState(state, contract.MutationReplace, false)
 	}
 	l.operation.Lock()
 	defer l.operation.Unlock()
@@ -1507,6 +1551,9 @@ func (l *AccountLease) RefreshStorageState(
 ) error {
 	if l == nil || l.account == nil || l.pool == nil || update == nil || prepareCommit == nil {
 		return fmt.Errorf("账户租约未初始化")
+	}
+	if l.pool.writer != nil {
+		return l.refreshNativeState(update, prepareCommit)
 	}
 	l.operation.Lock()
 	defer l.operation.Unlock()
@@ -1588,6 +1635,9 @@ func (l *AccountLease) SaveConfig(value AccountConfig) error {
 	if l == nil || l.account == nil || l.pool == nil {
 		return fmt.Errorf("账户租约未初始化")
 	}
+	if l.pool.writer != nil {
+		return l.saveNativeConfig(value)
+	}
 	l.operation.Lock()
 	defer l.operation.Unlock()
 	if l.released {
@@ -1642,6 +1692,9 @@ func (l *AccountLease) ReplaceCookies(cookies []StateCookie) error {
 	}
 	if len(cookies) == 0 {
 		return nil
+	}
+	if l.pool.writer != nil {
+		return l.mergeNativeCookies(cookies, nil, "", time.Time{})
 	}
 	l.operation.Lock()
 	defer l.operation.Unlock()
@@ -1738,6 +1791,9 @@ func (l *AccountLease) MergeSetCookieHeaders(headers []string, requestURL string
 	if l == nil || l.account == nil || l.pool == nil {
 		return fmt.Errorf("账户租约未初始化")
 	}
+	if l.pool.writer != nil {
+		return l.mergeNativeCookies(nil, headers, requestURL, now)
+	}
 	l.operation.Lock()
 	defer l.operation.Unlock()
 	if l.released {
@@ -1767,6 +1823,7 @@ func (l *AccountLease) Release() error {
 		return nil
 	}
 	l.once.Do(func() {
+		l.nativeReleased.Store(true)
 		l.operation.Lock()
 		defer l.operation.Unlock()
 		l.released = true

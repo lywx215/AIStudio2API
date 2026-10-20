@@ -20,6 +20,7 @@ import (
 
 	"github.com/Mag1cFall/AIStudio2API/internal/api"
 	"github.com/Mag1cFall/AIStudio2API/internal/config"
+	"github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 	"github.com/Mag1cFall/AIStudio2API/internal/requestdb"
 	"github.com/Mag1cFall/AIStudio2API/internal/setup"
 	"github.com/Mag1cFall/AIStudio2API/internal/webui"
@@ -148,6 +149,7 @@ func runServer(ctx context.Context, cfg config.Config, options commandOptions, m
 	apiHandler := api.NewHandler(manager, api.Config{
 		APIKey: cfg.ProxyAPIKey, Admin: manager, Ledger: manager.ledger, Updates: updater,
 		AdminAuthEnabled: cfg.AdminAuthEnabled, AdminUsername: cfg.AdminUsername, AdminPassword: cfg.AdminPassword,
+		Management: manager.management.HTTP,
 	})
 	server := &http.Server{
 		Handler:           rootHandler(apiHandler),
@@ -210,7 +212,13 @@ func rootHandler(apiHandler http.Handler) http.Handler {
 	root.Handle("/v1beta/", apiHandler)
 	root.Handle("/upload/", apiHandler)
 	root.Handle("/", webui.Handler())
-	return securityHeaders(root)
+	return securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if managementcontract.IsManagementPath(r.URL.Path) {
+			apiHandler.ServeHTTP(w, r)
+			return
+		}
+		root.ServeHTTP(w, r)
+	}))
 }
 
 // securityHeaders 禁止页面被其他站点嵌入并关闭 MIME 嗅探与 Referer

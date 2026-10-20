@@ -33,6 +33,7 @@ export const messages: Record<TranslationKey, string> = {
   'nav.models': '모델 목록',
   'nav.requests': '쿨다운 및 요청',
   'nav.settings': '설정',
+  'nav.managementKeys': '관리 키',
   'nav.playground': 'API 체험',
   'nav.version': '버전',
   'section.version.title': '버전 및 업데이트',

@@ -1,7 +1,15 @@
 export type Locale = 'zh-CN' | 'zh-TW' | 'en' | 'ja' | 'ko' | 'fr' | 'de'
 
 export type TabID =
-  'logs' | 'accounts' | 'models' | 'requests' | 'usage' | 'settings' | 'playground' | 'version'
+  | 'logs'
+  | 'accounts'
+  | 'models'
+  | 'requests'
+  | 'usage'
+  | 'settings'
+  | 'management-keys'
+  | 'playground'
+  | 'version'
 
 export type AccountState =
   'ready' | 'busy' | 'cooldown' | 'auth_required' | 'unavailable' | 'disabled'

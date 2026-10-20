@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ adminUsername?: string }>()
+defineProps<{ adminUsername?: string; consolePasswordSession: boolean }>()
 const emit = defineEmits<{ logout: [] }>()
 import {
   computed,
@@ -63,6 +63,7 @@ function lazyPanel(loader: AsyncComponentLoader) {
 const UsagePanel = lazyPanel(() => import('@/components/UsagePanel.vue'))
 const PlaygroundPanel = lazyPanel(() => import('@/components/PlaygroundPanel.vue'))
 const VersionPanel = lazyPanel(() => import('@/components/VersionPanel.vue'))
+const ManagementKeysPanel = lazyPanel(() => import('@/components/ManagementKeysPanel.vue'))
 const validTabs: TabID[] = [
   'logs',
   'accounts',
@@ -70,6 +71,7 @@ const validTabs: TabID[] = [
   'requests',
   'usage',
   'settings',
+  'management-keys',
   'playground',
   'version',
 ]
@@ -126,6 +128,7 @@ const navigation: { id: TabID; label: TranslationKey; icon: IconName }[] = [
   { id: 'requests', label: 'nav.requests', icon: 'requests' },
   { id: 'usage', label: 'nav.usage', icon: 'usage' },
   { id: 'settings', label: 'nav.settings', icon: 'settings' },
+  { id: 'management-keys', label: 'nav.managementKeys', icon: 'security' },
   { id: 'playground', label: 'nav.playground', icon: 'playground' },
   { id: 'version', label: 'nav.version', icon: 'version' },
 ]
@@ -624,6 +627,10 @@ onUnmounted(() => {
             @notice="showNotice"
           />
           <UsagePanel v-else-if="currentTab === 'usage'" :models="models" />
+          <ManagementKeysPanel
+            v-else-if="currentTab === 'management-keys'"
+            :console-password-session="consolePasswordSession"
+          />
           <SettingsPanel
             v-else-if="currentTab === 'settings'"
             :config="config"

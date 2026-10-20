@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -418,5 +419,22 @@ func atomicWriteFile(filePath string, data []byte, mode os.FileMode) error {
 	if err := os.Rename(temporaryPath, target); err != nil {
 		return fmt.Errorf("替换文件: %w", err)
 	}
-	return nil
+	return syncAccountParent(target)
+}
+
+func syncAccountParent(path string) error {
+	// Windows does not support directory File.Sync through os.File.
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	directory, err := os.Open(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	err = directory.Sync()
+	closeErr := directory.Close()
+	if err != nil {
+		return err
+	}
+	return closeErr
 }

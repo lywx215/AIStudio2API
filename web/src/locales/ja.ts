@@ -33,6 +33,7 @@ export const messages: Record<TranslationKey, string> = {
   'nav.models': 'モデル一覧',
   'nav.requests': 'クールダウンとリクエスト',
   'nav.settings': '設定',
+  'nav.managementKeys': '管理キー',
   'nav.playground': 'API を試す',
   'nav.version': 'バージョン',
   'section.version.title': 'バージョンと更新',

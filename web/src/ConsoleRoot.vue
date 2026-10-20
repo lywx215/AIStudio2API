@@ -62,6 +62,7 @@ onUnmounted(() => window.removeEventListener('admin-session-expired', expireSess
   <App
     v-if="session?.authenticated"
     :admin-username="session.enabled ? session.username : ''"
+    :console-password-session="session.enabled && session.authenticated"
     @logout="logout"
   />
   <LoginPage v-else-if="session" @authenticated="setSession" />

@@ -355,6 +355,24 @@ func (admin *runtimeAdmin) addAccount(
 	state aistudio.StorageState,
 	fingerprintDirectory string,
 ) (created api.AdminAccount, resultErr error) {
+	if admin.store.NativeWritesCoordinated() {
+		fingerprint, err := prepareManagementFingerprint(fingerprintDirectory)
+		if err != nil {
+			return api.AdminAccount{}, err
+		}
+		account, _, err := admin.store.CreateWithFingerprint(accountConfig, state, fingerprint)
+		if err != nil {
+			return api.AdminAccount{}, err
+		}
+		// The coordinator has durably committed and published this account. A
+		// later catalog failure must never delete that committed identity.
+		published, err := admin.pool.Account(account.ID)
+		if err != nil {
+			return api.AdminAccount{}, err
+		}
+		admin.syncAccountModelCatalog(ctx, published)
+		return admin.account(account.ID)
+	}
 	account, publishLease, err := admin.store.Create(accountConfig, state)
 	if err != nil {
 		return api.AdminAccount{}, err
@@ -450,6 +468,18 @@ func (admin *runtimeAdmin) UpdateAccount(ctx context.Context, accountID string, 
 }
 
 func (admin *runtimeAdmin) DeleteAccount(_ context.Context, accountID string) error {
+	if admin.store.NativeWritesCoordinated() {
+		account, err := admin.pool.Account(accountID)
+		if err != nil {
+			return accountOperationError(err)
+		}
+		if err := admin.store.Delete(account); err != nil {
+			return accountOperationError(err)
+		}
+		admin.service.removeAccountModelRetry(accountID)
+		admin.syncModelCache()
+		return nil
+	}
 	account, err := admin.account(accountID)
 	if err != nil {
 		return err
@@ -517,14 +547,24 @@ func (admin *runtimeAdmin) LoginAccount(ctx context.Context, accountID string) (
 	if _, err := aistudio.NewSigner().Sign(result.StorageState); err != nil {
 		return api.AdminAccount{}, errors.Join(fmt.Errorf("认证状态无法用于 AI Studio: %w", err), lease.Release())
 	}
-	if err := camoufoxnative.PersistAccountFingerprint(directory, account.Directory); err != nil {
-		return api.AdminAccount{}, errors.Join(err, lease.Release())
-	}
 	state := result.StorageState
 	if err := keepAuthExtension(&state, account.StorageState); err != nil {
 		return api.AdminAccount{}, errors.Join(err, lease.Release())
 	}
-	if err := lease.SaveStorageState(state); err != nil {
+	var saveErr error
+	if admin.store.NativeWritesCoordinated() {
+		fingerprint, err := prepareManagementFingerprint(directory)
+		if err != nil {
+			return api.AdminAccount{}, errors.Join(err, lease.Release())
+		}
+		saveErr = lease.SaveStorageStateWithFingerprint(state, fingerprint)
+	} else {
+		if err := camoufoxnative.PersistAccountFingerprint(directory, account.Directory); err != nil {
+			return api.AdminAccount{}, errors.Join(err, lease.Release())
+		}
+		saveErr = lease.SaveStorageState(state)
+	}
+	if err := saveErr; err != nil {
 		return api.AdminAccount{}, errors.Join(err, lease.Release())
 	}
 	if err := admin.service.changeModels(func() error {

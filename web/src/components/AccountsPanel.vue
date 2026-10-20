@@ -27,8 +27,8 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale, errorText } = useI18n()
-const defaultAccountLocale = navigator.language || 'en-US'
-const defaultAccountTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+const defaultAccountLocale = 'en-US'
+const defaultAccountTimezone = 'America/Los_Angeles'
 const showEditor = ref(false)
 const showBrowserLogin = ref(false)
 const showChromeImport = ref(false)

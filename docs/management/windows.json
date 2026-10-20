@@ -1,0 +1,31 @@
+{
+  "project": "AIStudio2API",
+  "projectId": "32c5c90e-97b4-4081-912a-e188b2e17676",
+  "directory": "G:\\code\\gemini30\\AIStudio2API",
+  "model": "gpt-6.1-sol",
+  "thinking": "xhigh",
+  "coordinatorThreadId": "01a15689-9b90-7c12-8483-985e80f24a84",
+  "developmentMode": "parallel_go_and_manager",
+  "acceptanceScope": "offline_and_synthetic",
+  "remediationStatus": "accepted_offline_synthetic_six_review_findings",
+  "remediationRecord": "docs/management/remediation-20261020.md",
+  "mysqlAcceptance": "deferred_by_user",
+  "productionActivation": "not_performed",
+  "managerProjectId": "local-ee88665e4510ab35f2ac4bd1d384eb65",
+  "managerDirectory": "G:\\code\\gemini30\\gemini-manager",
+  "managerWindows": {
+    "M1": { "threadId": "01a15744-a6e4-7d33-80d0-93555f6f7396", "phase": "remediation_accepted_offline_joint" },
+    "M2": { "threadId": "01a15744-08b5-70d1-b99e-4ecd15a89bbf", "phase": "remediation_accepted_offline_joint" },
+    "M3": { "threadId": "01a15744-bd19-7743-93a1-589dde457c4c", "phase": "remediation_accepted_offline_joint" },
+    "M4": { "threadId": "01a15745-4579-7432-b5db-9c0b2c85b6fa", "phase": "remediation_accepted_offline_joint" }
+  },
+  "windows": {
+    "G0": { "threadId": "01a1573b-93de-7eb0-9722-b88509e5be9e", "phase": "remediation_accepted_offline_joint" },
+    "G1": { "threadId": "01a15748-3dc4-74f1-bc6f-9c410b330c62", "phase": "remediation_accepted_offline_joint" },
+    "G2": { "threadId": "01a15748-5d5e-7ca1-8785-9ec4ba2a1152", "phase": "accepted_offline_joint" },
+    "G3": { "threadId": "01a15748-c7d8-72c2-9876-1be926d83f00", "phase": "remediation_accepted_offline_joint" },
+    "G4": { "threadId": "01a15749-f760-7670-ac90-60176966df23", "phase": "accepted_offline_joint" },
+    "G5": { "threadId": "01a1574a-08be-7180-b2ec-13b9e6fb02dc", "phase": "accepted_offline_joint" },
+    "G6": { "threadId": "01a1574a-281b-7601-a553-aeb846252eb2", "phase": "remediation_accepted_offline_joint" }
+  }
+}

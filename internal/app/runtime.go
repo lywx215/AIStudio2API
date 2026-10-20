@@ -34,9 +34,28 @@ func newRuntime(
 	startedAt := time.Now()
 	requests.log("service", "INFO", "运行时装配 | 1/3 | 载入账户")
 	store := aistudio.NewAccountStore(strings.Split(cfg.AuthStates, ",")...)
+	management, managed := launchCtx.Value(managementConstructionKey{}).(managementConstruction)
+	if managed {
+		store.SetNativeWriteCoordinator(management.services.Accounts, management.journal)
+	}
 	accounts, err := store.Load()
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if managed {
+		visible := accounts[:0]
+		for _, account := range accounts {
+			record, err := management.services.Store.FindAccountByNativeID(launchCtx, account.ID)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if record.Archived || record.Deleted {
+				continue
+			}
+			account.Config.Enabled = record.Enabled
+			visible = append(visible, account)
+		}
+		accounts = visible
 	}
 	if err := launchCtx.Err(); err != nil {
 		return nil, nil, nil, err
@@ -66,6 +85,19 @@ func newRuntime(
 	}
 	requests.log("service", "INFO", "运行时装配 | 3/3 | 创建协议客户端 | 出口="+egress)
 	pool := aistudio.NewAccountPool(accounts, cfg.PerAccountConcurrency)
+	if managed {
+		pool.SetNativeWriteCoordinator(management.services.Accounts, store.AuthPaths(), management.journal)
+		pool.SetManagementEpoch(management.epoch)
+		for _, account := range accounts {
+			record, err := management.services.Store.FindAccountByNativeID(launchCtx, account.ID)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if _, err := pool.PublishManagementAccount(record, true); err != nil {
+				return nil, nil, nil, err
+			}
+		}
+	}
 	pool.SetRoutingStrategy(cfg.RoutingStrategy)
 	pool.SetUpstreamChannels(upstreamChannels(cfg.UpstreamChannels))
 	proxies := aistudio.NewProxyPool(pool, proxyList)

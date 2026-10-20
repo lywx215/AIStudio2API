@@ -2,15 +2,19 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/aistudio"
 	"github.com/Mag1cFall/AIStudio2API/internal/api"
 	"github.com/Mag1cFall/AIStudio2API/internal/config"
+	"github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
+	"github.com/Mag1cFall/AIStudio2API/internal/managementmaintenance"
 	"github.com/Mag1cFall/AIStudio2API/internal/requestdb"
 )
 
@@ -23,11 +27,12 @@ type managedService interface {
 
 // runtimeGeneration 保存同一份配置装配的完整运行时
 type runtimeGeneration struct {
-	service         managedService
-	admin           api.AdminService
-	config          config.Config
-	lifecycleCancel context.CancelFunc
-	closeRuntime    func() error
+	service           managedService
+	admin             api.AdminService
+	config            config.Config
+	lifecycleCancel   context.CancelFunc
+	closeRuntime      func() error
+	managementRuntime *managementAccountRuntime
 }
 
 // runtimeFactory 创建一个完整生成服务实例
@@ -74,6 +79,14 @@ type runtimeManager struct {
 	startCancel      context.CancelFunc
 	ledger           *requestdb.Store
 	logs             *logOutput
+	// management survives StartService replacing current; final composition
+	// creates/recovers it once before publishing any production accounts.
+	management            *managementcontract.ProcessServices
+	managementJournal     string
+	managementMaintenance *managementmaintenance.Service
+	closeOnce             sync.Once
+	closeErr              error
+	closed                atomic.Bool
 }
 
 // newRuntimeManager 创建进程级管理器与初始生成服务
@@ -88,11 +101,23 @@ func newRuntimeManager(
 		lifecycle: ctx, configPath: configPath, activeManagement: cfg,
 		overrides: overrides, requests: requests, factory: buildRuntimeGeneration,
 	}
-	generation, err := manager.factory(ctx, ctx, cfg, requests)
+	if err := manager.prepareManagement(ctx, cfg); err != nil {
+		return nil, errors.Join(err, manager.Close())
+	}
+	generation, err := manager.buildGeneration(ctx, cfg)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, manager.Close())
 	}
 	manager.current = generation
+	if err := manager.bindManagement(ctx, generation); err != nil {
+		return nil, errors.Join(err, manager.Close())
+	}
+	if err := manager.management.Tasks.Start(ctx); err != nil {
+		return nil, errors.Join(err, manager.Close())
+	}
+	if err := manager.startManagementMaintenance(ctx); err != nil {
+		return nil, errors.Join(err, manager.Close())
+	}
 	return manager, nil
 }
 
@@ -119,19 +144,19 @@ func buildRuntimeGeneration(
 func (manager *runtimeManager) StartService(ctx context.Context) (api.AdminStatus, error) {
 	manager.startMu.Lock()
 	defer manager.startMu.Unlock()
+	if manager.closed.Load() {
+		return api.AdminStatus{}, managementcontract.NewError(managementcontract.CodeInvalidState)
+	}
 
-	manager.mu.Lock()
-	current := manager.current
+	current := manager.generationSnapshot()
 	if current.service.State() != "STOPPED" {
-		status, err := current.admin.StartService(ctx)
-		manager.mu.Unlock()
-		return status, err
+		return current.admin.StartService(ctx)
 	}
 	if _, err := current.admin.StopService(ctx); err != nil {
-		manager.mu.Unlock()
 		return api.AdminStatus{}, err
 	}
 	launchCtx, launchCancel := context.WithCancel(manager.lifecycle)
+	manager.mu.Lock()
 	manager.startCancel = launchCancel
 	manager.mu.Unlock()
 
@@ -146,7 +171,7 @@ func (manager *runtimeManager) StartService(ctx context.Context) (api.AdminStatu
 		return api.AdminStatus{}, err
 	}
 
-	next, err := manager.factory(launchCtx, manager.lifecycle, cfg, manager.requests)
+	next, err := manager.buildGeneration(launchCtx, cfg)
 	if err != nil {
 		manager.finishStart(launchCancel)
 		return api.AdminStatus{}, err
@@ -155,6 +180,10 @@ func (manager *runtimeManager) StartService(ctx context.Context) (api.AdminStatu
 		manager.finishStart(launchCancel)
 		_ = next.Close()
 		return manager.Status(ctx)
+	}
+	if err := manager.bindManagement(launchCtx, next); err != nil {
+		manager.finishStart(launchCancel)
+		return api.AdminStatus{}, errors.Join(err, next.Close())
 	}
 
 	manager.mu.Lock()
@@ -193,44 +222,68 @@ func (manager *runtimeManager) StopService(ctx context.Context) (api.AdminStatus
 
 // Close 释放当前生成服务
 func (manager *runtimeManager) Close() error {
-	manager.mu.Lock()
-	defer manager.mu.Unlock()
-	return manager.current.Close()
+	manager.closed.Store(true)
+	manager.mu.RLock()
+	cancelStart := manager.startCancel
+	manager.mu.RUnlock()
+	if cancelStart != nil {
+		cancelStart()
+	}
+	manager.closeOnce.Do(func() {
+		manager.startMu.Lock()
+		defer manager.startMu.Unlock()
+		// Join maintenance before any Store.Close, even if its current Prune is
+		// still unwinding a cancelled SQLite batch. Generations never own it.
+		manager.managementMaintenance.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		var closeErrors []error
+		services := manager.management
+		if services != nil && services.Tasks != nil {
+			closeErrors = append(closeErrors, services.Tasks.Close(ctx))
+		}
+		if services != nil && services.Verifier != nil {
+			closeErrors = append(closeErrors, services.Verifier.Close(ctx))
+		}
+		if generation := manager.generationSnapshot(); generation != nil {
+			closeErrors = append(closeErrors, generation.Close())
+		}
+		if services != nil && services.Store != nil {
+			closeErrors = append(closeErrors, services.Store.Close())
+		}
+		manager.closeErr = errors.Join(closeErrors...)
+	})
+	return manager.closeErr
 }
 
 // Models 返回当前生成服务模型
 func (manager *runtimeManager) Models(ctx context.Context) ([]aistudio.Model, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.service.Models(ctx)
+	generation := manager.generationSnapshot()
+	return generation.service.Models(ctx)
 }
 
 // CatalogModels 返回当前生成服务的管理目录
 func (manager *runtimeManager) CatalogModels(ctx context.Context) ([]aistudio.Model, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.CatalogModels(ctx)
+	generation := manager.generationSnapshot()
+	return generation.admin.CatalogModels(ctx)
 }
 
 // CountTokens 由当前生成服务计数
 func (manager *runtimeManager) CountTokens(ctx context.Context, request aistudio.TokenCountRequest) (aistudio.TokenCount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.service.CountTokens(ctx, request)
+	generation := manager.generationSnapshot()
+	return generation.service.CountTokens(ctx, request)
 }
 
 // Generate 由当前生成服务生成事件流
 func (manager *runtimeManager) Generate(ctx context.Context, request aistudio.GenerateRequest) (<-chan aistudio.Event, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.service.Generate(ctx, request)
+	generation := manager.generationSnapshot()
+	return generation.service.Generate(ctx, request)
 }
 
 // GenerateVideo 由当前生成服务创建视频任务
 func (manager *runtimeManager) GenerateVideo(ctx context.Context, request aistudio.VideoRequest) (aistudio.VideoOperation, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.VideoService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.VideoService)
 	if !ok {
 		return aistudio.VideoOperation{}, fmt.Errorf("video service 不可用")
 	}
@@ -239,9 +292,8 @@ func (manager *runtimeManager) GenerateVideo(ctx context.Context, request aistud
 
 // GetGenerateVideoOperation 由当前生成服务读取视频任务
 func (manager *runtimeManager) GetGenerateVideoOperation(ctx context.Context, id string) (aistudio.VideoOperation, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.VideoService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.VideoService)
 	if !ok {
 		return aistudio.VideoOperation{}, fmt.Errorf("video service 不可用")
 	}
@@ -250,9 +302,8 @@ func (manager *runtimeManager) GetGenerateVideoOperation(ctx context.Context, id
 
 // ListVideos 由当前生成服务列出视频任务
 func (manager *runtimeManager) ListVideos(ctx context.Context) ([]aistudio.VideoOperation, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.VideoService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.VideoService)
 	if !ok {
 		return nil, fmt.Errorf("video service 不可用")
 	}
@@ -261,9 +312,8 @@ func (manager *runtimeManager) ListVideos(ctx context.Context) ([]aistudio.Video
 
 // DeleteVideo 由当前生成服务删除视频任务
 func (manager *runtimeManager) DeleteVideo(ctx context.Context, id string) error {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.VideoService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.VideoService)
 	if !ok {
 		return fmt.Errorf("video service 不可用")
 	}
@@ -272,9 +322,8 @@ func (manager *runtimeManager) DeleteVideo(ctx context.Context, id string) error
 
 // DownloadFile 由当前生成服务下载文件
 func (manager *runtimeManager) DownloadFile(ctx context.Context, id string) (aistudio.MediaStream, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.VideoService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.VideoService)
 	if !ok {
 		return aistudio.MediaStream{}, fmt.Errorf("video service 不可用")
 	}
@@ -283,9 +332,8 @@ func (manager *runtimeManager) DownloadFile(ctx context.Context, id string) (ais
 
 // UploadFile 由当前生成服务上传文件
 func (manager *runtimeManager) UploadFile(ctx context.Context, request aistudio.UploadRequest) (aistudio.FileRef, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.FileService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.FileService)
 	if !ok {
 		return aistudio.FileRef{}, fmt.Errorf("file service 不可用")
 	}
@@ -294,9 +342,8 @@ func (manager *runtimeManager) UploadFile(ctx context.Context, request aistudio.
 
 // FileMetadata 由当前生成服务读取文件元数据
 func (manager *runtimeManager) FileMetadata(ctx context.Context, id string) (aistudio.FileMetadata, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.FileService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.FileService)
 	if !ok {
 		return aistudio.FileMetadata{}, fmt.Errorf("file service 不可用")
 	}
@@ -305,9 +352,8 @@ func (manager *runtimeManager) FileMetadata(ctx context.Context, id string) (ais
 
 // ListFiles 由当前生成服务列出上传文件
 func (manager *runtimeManager) ListFiles(ctx context.Context) ([]aistudio.FileMetadata, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.FileService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.FileService)
 	if !ok {
 		return nil, fmt.Errorf("file service 不可用")
 	}
@@ -316,9 +362,8 @@ func (manager *runtimeManager) ListFiles(ctx context.Context) ([]aistudio.FileMe
 
 // DeleteFile 由当前生成服务删除文件
 func (manager *runtimeManager) DeleteFile(ctx context.Context, id string) error {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.FileService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.FileService)
 	if !ok {
 		return fmt.Errorf("file service 不可用")
 	}
@@ -327,9 +372,8 @@ func (manager *runtimeManager) DeleteFile(ctx context.Context, id string) error 
 
 // OpenBidi 由当前生成服务创建实时会话
 func (manager *runtimeManager) OpenBidi(ctx context.Context, request aistudio.BidiRequest) (*aistudio.BidiSession, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.BidiService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.BidiService)
 	if !ok {
 		return nil, fmt.Errorf("bidi service 不可用")
 	}
@@ -338,9 +382,8 @@ func (manager *runtimeManager) OpenBidi(ctx context.Context, request aistudio.Bi
 
 // Transcribe 由当前生成服务执行音频转录
 func (manager *runtimeManager) Transcribe(ctx context.Context, request aistudio.TranscriptionRequest) (aistudio.TranscriptionResult, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	service, ok := manager.current.service.(aistudio.TranscriptionService)
+	generation := manager.generationSnapshot()
+	service, ok := generation.service.(aistudio.TranscriptionService)
 	if !ok {
 		return aistudio.TranscriptionResult{}, fmt.Errorf("transcription service 不可用")
 	}
@@ -360,72 +403,62 @@ func (manager *runtimeManager) egressProxy() string {
 
 // Status 返回当前生成服务状态
 func (manager *runtimeManager) Status(ctx context.Context) (api.AdminStatus, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.Status(ctx)
+	generation := manager.generationSnapshot()
+	return generation.admin.Status(ctx)
 }
 
 // Accounts 返回当前生成服务账户
 func (manager *runtimeManager) Accounts(ctx context.Context) ([]api.AdminAccount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.Accounts(ctx)
+	generation := manager.generationSnapshot()
+	return generation.admin.Accounts(ctx)
 }
 
 // CreateAccount 在当前生成服务创建账户
 func (manager *runtimeManager) CreateAccount(ctx context.Context, input api.AccountCreateInput) (api.AdminAccount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.CreateAccount(ctx, input)
+	generation := manager.generationSnapshot()
+	return generation.admin.CreateAccount(ctx, input)
 }
 
 // ChromeImportProfiles 返回当前生成服务可导入的 Chrome 账号
 func (manager *runtimeManager) ChromeImportProfiles(ctx context.Context) ([]api.ChromeImportProfile, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.ChromeImportProfiles(ctx)
+	generation := manager.generationSnapshot()
+	return generation.admin.ChromeImportProfiles(ctx)
 }
 
 // ImportChromeAccounts 在当前生成服务批量导入 Chrome 账号
 func (manager *runtimeManager) ImportChromeAccounts(ctx context.Context, input api.ChromeImportInput) ([]api.AdminAccount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.ImportChromeAccounts(ctx, input)
+	generation := manager.generationSnapshot()
+	return generation.admin.ImportChromeAccounts(ctx, input)
 }
 
 // ImportAccountState 在当前生成服务导入远程配对账户
 func (manager *runtimeManager) ImportAccountState(ctx context.Context, input api.AccountStateInput) (api.AdminAccount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.ImportAccountState(ctx, input)
+	generation := manager.generationSnapshot()
+	return generation.admin.ImportAccountState(ctx, input)
 }
 
 // UpdateAccount 在当前生成服务更新账户
 func (manager *runtimeManager) UpdateAccount(ctx context.Context, id string, input api.AccountInput) (api.AdminAccount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.UpdateAccount(ctx, id, input)
+	generation := manager.generationSnapshot()
+	return generation.admin.UpdateAccount(ctx, id, input)
 }
 
 // DeleteAccount 在当前生成服务删除账户
 func (manager *runtimeManager) DeleteAccount(ctx context.Context, id string) error {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.DeleteAccount(ctx, id)
+	generation := manager.generationSnapshot()
+	return generation.admin.DeleteAccount(ctx, id)
 }
 
 // LoginAccount 在当前生成服务登录账户
 func (manager *runtimeManager) LoginAccount(ctx context.Context, id string) (api.AdminAccount, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.LoginAccount(ctx, id)
+	generation := manager.generationSnapshot()
+	return generation.admin.LoginAccount(ctx, id)
 }
 
 // RefreshAccount 在当前生成服务立即刷新账户状态
 func (manager *runtimeManager) RefreshAccount(ctx context.Context, id string) (api.AdminAccountRefresh, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.RefreshAccount(ctx, id)
+	generation := manager.generationSnapshot()
+	return generation.admin.RefreshAccount(ctx, id)
 }
 
 // ClearLogs 清空进程级管理日志
@@ -447,46 +480,54 @@ func (manager *runtimeManager) RuntimeConfig(ctx context.Context) (api.RuntimeCo
 
 // UpdateRuntimeConfig 保存生成服务配置，账户选择策略与容量设置立即作用于当前生成服务
 func (manager *runtimeManager) UpdateRuntimeConfig(ctx context.Context, value api.RuntimeConfig) (api.RuntimeConfig, error) {
-	manager.mu.Lock()
-	updated, err := manager.current.admin.UpdateRuntimeConfig(ctx, value)
+	manager.startMu.Lock()
+	defer manager.startMu.Unlock()
+	generation := manager.generationSnapshot()
+	updated, err := generation.admin.UpdateRuntimeConfig(ctx, value)
 	if err == nil {
-		manager.current.service.ApplyCapacity(
+		generation.service.ApplyCapacity(
 			updated.WarmWorkerLimit, updated.MaxActiveWorkers, updated.WarmStartupConcurrency, updated.PerAccountConcurrency,
 		)
-		updated = manager.decorateRuntimeConfig(updated, manager.current.config)
-		manager.ledger.SetBodyCapture(updated.RequestBodyLog)
-		err = manager.logs.set(updated.LogFile, updated.LogMaxTotalMB)
+		manager.mu.Lock()
+		generation.config.WarmWorkerLimit = updated.WarmWorkerLimit
+		generation.config.MaxActiveWorkers = updated.MaxActiveWorkers
+		generation.config.WarmStartupConcurrency = updated.WarmStartupConcurrency
+		generation.config.PerAccountConcurrency = updated.PerAccountConcurrency
+		generation.config.RoutingStrategy = updated.RoutingStrategy
+		updated = manager.decorateRuntimeConfig(updated, generation.config)
+		manager.mu.Unlock()
+		if manager.ledger != nil {
+			manager.ledger.SetBodyCapture(updated.RequestBodyLog)
+		}
+		if manager.logs != nil {
+			err = manager.logs.set(updated.LogFile, updated.LogMaxTotalMB)
+		}
 	}
-	manager.mu.Unlock()
 	return updated, err
 }
 
 // Cooldowns 返回当前生成服务冷却状态
 func (manager *runtimeManager) Cooldowns(ctx context.Context) ([]api.AdminCooldown, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.Cooldowns(ctx)
+	generation := manager.generationSnapshot()
+	return generation.admin.Cooldowns(ctx)
 }
 
 // ClearCooldown 手动清除账户在一个作用域上的冷却
 func (manager *runtimeManager) ClearCooldown(ctx context.Context, accountID string, scope string) error {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.ClearCooldown(ctx, accountID, scope)
+	generation := manager.generationSnapshot()
+	return generation.admin.ClearCooldown(ctx, accountID, scope)
 }
 
 // Requests 返回进程级活动请求
 func (manager *runtimeManager) Requests(ctx context.Context) ([]api.AdminRequest, error) {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.Requests(ctx)
+	generation := manager.generationSnapshot()
+	return generation.admin.Requests(ctx)
 }
 
 // CancelRequest 取消进程级活动请求
 func (manager *runtimeManager) CancelRequest(ctx context.Context, id string) error {
-	manager.mu.RLock()
-	defer manager.mu.RUnlock()
-	return manager.current.admin.CancelRequest(ctx, id)
+	generation := manager.generationSnapshot()
+	return generation.admin.CancelRequest(ctx, id)
 }
 
 // Events 创建生成服务实例切换期间持续可用的管理事件流
@@ -520,6 +561,11 @@ func (manager *runtimeManager) decorateRuntimeConfig(value api.RuntimeConfig, ac
 		value.AdminAuthEnabled != manager.activeManagement.AdminAuthEnabled ||
 		value.AdminUsername != manager.activeManagement.AdminUsername ||
 		value.SavedAdminPassword != manager.activeManagement.AdminPassword
+	if manager.management != nil {
+		effective := config.Config{AuthStates: value.AuthStates}
+		manager.overrides.Apply(&effective)
+		value.ManagementRestartRequired = value.ManagementRestartRequired || effective.AuthStates != manager.activeManagement.AuthStates
+	}
 	value.ServiceRestartRequired = !sameDataConfig(value, active, manager.overrides)
 	return value
 }
