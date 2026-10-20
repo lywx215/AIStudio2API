@@ -14,6 +14,8 @@ The user explicitly authorized reading this service's model `PROXY_API_KEY` into
 
 Requests use `/v1beta/models/gemini-3.8-flash:generateContent`. Model discovery returned `models/gemini-3.8-flash`. Safe request/response artifacts are under ignored `runtime/deployment-acceptance/20261020/`; credential-bearing headers are excluded and responses are checked against the in-memory Key before storage.
 
+The service's existing runtime logs were matched to each of the four response IDs below. All four explicitly record **Build** as the actual channel. No channel configuration was changed. This is ordinary model-API acceptance; management's separately pinned Playground validator retains its own acceptance scope.
+
 | Case | HTTP / finish | Execution evidence | Duration |
 |---|---|---|---|
 | Google Search | 200 / STOP | 1 actual `webSearchQueries` entry, 2 grounding chunks, nonempty answer | 6.172s |
@@ -43,7 +45,7 @@ Sources for the public shape and status semantics: [Google GenerateContent refer
 
 ## Evidence boundary
 
-The original live Playground responses contained grounding and usage but no public `urlContextMetadata`. These observations do not identify the private numeric upstream field or prove it is present upstream. This change does not guess a field number or fabricate statuses from citations. The Build JSON path has direct fixture evidence; private Playground retrieval-status mapping remains outside the proven metadata scope, while actual Search and URL-context execution is demonstrated above.
+The original live Build responses contained grounding and usage but no public `urlContextMetadata`. The Build JSON decoder's omission was reproduced and fixed as described above. Native Playground uses a separate private numeric protocol: this change does not guess its field number or fabricate statuses from citations, and does not claim native Playground retrieval-status mapping or live pinned-validator acceptance. Search and URL-context execution through the configured production Build route is demonstrated above.
 
 A proposed fixed, redacted production protocol probe was rejected by automatic approval as an additional debug rollout. It was not pushed; all temporary probe code was removed. Stronger normal tool-execution evidence made that rollout unnecessary. No later authorization response is needed or used for that abandoned probe.
 
