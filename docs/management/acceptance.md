@@ -1,5 +1,15 @@
 # G6 management acceptance
 
+## 当前 selectable channels v3 验收 — PASS
+
+2026-10-20：canonical v3 SHA256 **6752A62C86B42474CC609BB90F9928817054CFB620F377A8D61E29F088B5D7F6**，路径 `C:\Users\lywx2\AppData\Local\Temp\aistudio2api-management-go-tmp\g6-app.test.exe`。G6按顺序实际完成V08/V11定向2项（9.064s）、完整V01–V12 12项（2.639s）、旧HTTP22项（8.143s），三组exit0、均0失败/错误/跳过。定向是12项子集，不叠加独立数。
+
+默认Build、显式Playground、canonical双选、部分失败不能算双成功、禁止换号换通道、取消/重启保留已完成Build、verify:false零模型、未知模型ack只GET且不授成功均通过。G0补齐Checkpoint可信索引与result原子保存，**DEF-G6-CHANNEL-001关闭**；实际Python严格索引校验和driver均未改。V10模型ack无clientRef/taskId时仍无法唯一定位，只证明安全unknown/不重放；旧import ack实际唯一定位独立。
+
+Go构建来自总控显式测试源快照 `C:\Users\lywx2\AppData\Local\Temp\aistudio2api-channel-v3-source-eac5d9da27`，331个本批冻结输入前后0变化；tests/vet/fixture/Windows/Linux build均0，G6只读复核原始result/manifest，不重编译。G6在该快照工作目录调用正式项目绝对路径Python runner，两个driver、14相关Manager源及exe共17输入前后hash一致，SourceDriverExeStable=true。新旧hash结果分开保留，最初失败未删除。
+
+精确命令/完整hash/日志见 `channel-acceptance.md` 与 `deliveries/G6.md` 顶部v3节。忽略目录 `runtime/management-development/g6/` 的 `channel-v3-summary.json`、`channel-result-v3-final.json` 与 `python-http-selectable-v3-final.log` 是当前结果。G6本轮未改Go/fixture/Manager/driver源码，未访问真实Key/配置/Google/模型/生产；MySQL明确延期未准备。实际macOS/Camoufox/Linux运行及完整Manager service/repo/UI/M4收尾各层独立，不扩称通过。
+
 ## 本轮 queued snapshot / Claim 修复验收
 
 2026-10-20；总控稳态构建交接后，**22项真实HTTP×Python全部通过，7项native/schema/GoWAA-cold全部通过**，0失败/错误/跳过。G6未重编译或修改fixture/runner/业务源；本轮二进制SHA256 `7AA640F7DFE006C134B20033895D026464158B84D3B9D08C2A1CD600AAB022E0`（执行前后相同）。原有10/7历史不叠加计数。MySQL用户明确延期，本轮不准备服务。

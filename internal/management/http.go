@@ -225,6 +225,9 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 			if v.VerificationChannels == nil {
 				v.VerificationChannels = []c.Channel{}
 			}
+			if v.DefaultVerificationChannels == nil {
+				v.DefaultVerificationChannels = []c.Channel{}
+			}
 			return v, 200, e
 		case "settings":
 			v, e := o.Projection.Settings(ctx)
@@ -363,6 +366,7 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 			return nil, 0, c.NewError(c.CodePayloadTooLarge)
 		}
 		in.Verify = body.Verify == nil || *body.Verify
+		in.Channels = body.Channels
 		if body.Model != "" {
 			in.Model = body.Model
 		}
@@ -403,6 +407,7 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 			in.Legacy = false
 			in.Expected = body.ExpectedVersions
 			in.Verify = body.Verify == nil || *body.Verify
+			in.Channels = body.Channels
 			credentialRaw = body.Credentials
 		}
 		credential, e := credentials(credentialRaw)
@@ -441,6 +446,7 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 			return nil, 0, invalid()
 		}
 		in.Action = string(body.Mode)
+		in.Channels = body.Channels
 	case "batch":
 		var body c.BatchRequest
 		if decode(raw, &body) != nil {
@@ -476,6 +482,17 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 	}
 	if rt.operation == "replace" {
 		kind = c.TaskReplace
+	}
+	if kind == c.TaskImport || kind == c.TaskReplace || kind == c.TaskTest {
+		obj, _ := object(raw)
+		if value, supplied := obj["channels"]; supplied && bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return nil, 0, invalid()
+		}
+		channels, err := c.NormalizeVerificationChannels(in.Channels)
+		if err != nil {
+			return nil, 0, err
+		}
+		in.Channels = channels
 	}
 	accepted, e := h.submit(ctx, r, p, kind, items, in)
 	return accepted, http.StatusAccepted, e

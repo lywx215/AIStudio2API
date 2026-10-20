@@ -13,9 +13,10 @@ import {
 import VChart, { type Exposed } from 'vue-echarts'
 import { useI18n } from '@/i18n'
 import { useTheme } from '@/theme'
-import type { UsageDimension, UsageReport } from '@/types'
+import type { UsageDimension, UsageTrendsReport } from '@/types'
 import UiSelect from '../UiSelect.vue'
 import ChartLegend from './ChartLegend.vue'
+import LazyChart from './LazyChart.vue'
 import { useUsageFormat } from './format'
 import {
   assignColors,
@@ -37,7 +38,7 @@ use([
   TooltipComponent,
 ])
 
-const props = defineProps<{ report: UsageReport; stack: UsageDimension }>()
+const props = defineProps<{ report: UsageTrendsReport; stack: UsageDimension }>()
 const emit = defineEmits<{ 'update:stack': [value: UsageDimension] }>()
 
 const { t } = useI18n()
@@ -453,7 +454,9 @@ const tokensOption = computed(() => {
         @toggle="toggle('traffic', $event)"
         @focus="focus('traffic', $event)"
       />
-      <div class="h-72"><VChart ref="traffic" :option="trafficOption" autoresize /></div>
+      <LazyChart class="h-72"
+        ><VChart ref="traffic" :option="trafficOption" autoresize
+      /></LazyChart>
     </figure>
     <figure class="flex min-w-0 flex-col rounded-lg border border-line bg-panel p-4">
       <figcaption class="mb-2 text-sm font-medium text-gray-200">
@@ -465,9 +468,9 @@ const tokensOption = computed(() => {
         @toggle="toggle('outcomes', $event)"
         @focus="focus('outcomes', $event)"
       />
-      <div class="min-h-60 flex-1">
+      <LazyChart class="min-h-60 flex-1">
         <VChart ref="outcomes" :option="outcomesOption" autoresize />
-      </div>
+      </LazyChart>
     </figure>
     <figure class="flex min-w-0 flex-col rounded-lg border border-line bg-panel p-4">
       <figcaption class="mb-2 text-sm font-medium text-gray-200">
@@ -514,9 +517,9 @@ const tokensOption = computed(() => {
         @toggle="toggle('latency', $event)"
         @focus="focus('latency', $event)"
       />
-      <div class="min-h-60 flex-1">
+      <LazyChart class="min-h-60 flex-1">
         <VChart ref="latency" :option="latencyOption" autoresize />
-      </div>
+      </LazyChart>
     </figure>
     <figure class="min-w-0 rounded-lg border border-line bg-panel p-4 xl:col-span-2">
       <figcaption class="mb-2 text-sm font-medium text-gray-200">
@@ -528,7 +531,7 @@ const tokensOption = computed(() => {
         @toggle="toggle('tokens', $event)"
         @focus="focus('tokens', $event)"
       />
-      <div class="h-56"><VChart ref="tokens" :option="tokensOption" autoresize /></div>
+      <LazyChart class="h-56"><VChart ref="tokens" :option="tokensOption" autoresize /></LazyChart>
     </figure>
   </div>
 </template>

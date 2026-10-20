@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -385,5 +386,40 @@ func TestWorkerReceiptVersionsSurviveConcurrentStateReadback(t *testing.T) {
 	live, _ := store.GetAccount(context.Background(), item.AccountID)
 	if live.Enabled || live.StateVersion != 8 || live.CredentialVersion != 9 {
 		t.Fatal("task restored newer state", live)
+	}
+}
+
+func TestWorkerHistoricalQueuedInputRetainsPlayground(t *testing.T) {
+	store := newMemoryStore()
+	seedAccount(store, true)
+	accounts := &fakeAccounts{store: store}
+	seen := make(chan []c.Channel, 1)
+	verifier := &fakeVerifier{verify: func(_ context.Context, in c.VerificationInput) (c.VerificationOutput, error) {
+		seen <- in.Channels
+		status := 200
+		return c.VerificationOutput{Result: c.VerificationResult{Success: true, AuthIndex: in.Account.Index, Model: in.Model, RequestID: fixtureRequestID, UpstreamStatus: &status, Stage: "model_verified", Versions: in.Account.Versions, ActualChannel: c.ChannelPlayground}}, nil
+	}}
+	// Admit the old JSON before startup recovery, with no channels field.
+	old := admission(t, c.TaskTest, "historical-queued", taskInput{Model: c.DefaultModel, Action: "model"})
+	old.QueueLimit = 100
+	if strings.Contains(string(old.PrivateInput), `"channels"`) {
+		t.Fatal("not a historical fixture")
+	}
+	accepted, err := store.AdmitTask(context.Background(), old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = worker(t, store, accounts, verifier, 100)
+	result := awaitTerminal(t, store, accepted.Accepted.TaskID)
+	if result.Status != c.TaskSucceeded {
+		t.Fatalf("legacy queue failed: %+v", result)
+	}
+	select {
+	case channels := <-seen:
+		if len(channels) != 1 || channels[0] != c.ChannelPlayground {
+			t.Fatalf("legacy reinterpreted: %v", channels)
+		}
+	default:
+		t.Fatal("not verified")
 	}
 }

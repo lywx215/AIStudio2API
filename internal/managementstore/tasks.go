@@ -196,6 +196,9 @@ func interrupt(r *c.TaskRecord, status c.TaskState, now c.Timestamp) {
 			item.Stage = string(status)
 			item.Progress = 100
 			item.Error = c.NewError(code)
+			if item.Result != nil && item.Result.Verification != nil {
+				item.Result.Verification.FailFinalization(code)
+			}
 		}
 	}
 	r.Counts = taskCounts(r.Items)
@@ -334,7 +337,12 @@ func (s *store) SaveTask(ctx context.Context, r c.TaskRecord, expected uint64) (
 			}
 			if item.Result != nil && item.Result.Verification != nil {
 				v := item.Result.Verification
-				if !c.ValidModel(v.Model) || !c.ValidRequestID(v.RequestID) || v.ActualChannel != c.ChannelPlayground || (v.Stage != "connection_verified" && v.Stage != "model_verified") || v.CredentialVersion < 1 || v.StateVersion < 1 || v.CredentialVersion > c.MaxSafeInteger || v.StateVersion > c.MaxSafeInteger || v.AuthIndex < 0 || v.AuthIndex > c.MaxSafeInteger {
+				for j := range v.ChannelResults {
+					if v.ChannelResults[j].Error != nil {
+						v.ChannelResults[j].Error = c.PublicError(v.ChannelResults[j].Error)
+					}
+				}
+				if !c.ValidVerificationResult(*v) {
 					return c.NewError(c.CodeInvalidRequest)
 				}
 			}

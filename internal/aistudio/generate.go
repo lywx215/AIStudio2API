@@ -666,9 +666,18 @@ func validateGenerateEntry(request GenerateRequest, entry modelEntry) error {
 func (c *Client) Generate(ctx context.Context, request GenerateRequest) (<-chan Event, error) {
 	lease, leased := AccountLeaseFromContext(ctx)
 	build := leased && lease.Channel() == ChannelBuild
+	if c.pinnedChannel != "" && (!leased || lease.Channel() != c.pinnedChannel || request.AccountID != lease.Account().ID) {
+		return nil, ErrInvalidArgument
+	}
 	var entry modelEntry
 	var err error
-	if build {
+	if build && c.pinnedChannel == ChannelBuild {
+		model, ok := lease.buildModel(request.Model)
+		if !ok {
+			return nil, ErrModelNotFound
+		}
+		entry = modelEntry{model: model, defaults: buildModelDefaults(model)}
+	} else if build {
 		entry, err = c.buildModelEntry(ctx, request, lease)
 	} else {
 		entry, err = c.modelEntry(ctx, request.AccountID, request.Model)

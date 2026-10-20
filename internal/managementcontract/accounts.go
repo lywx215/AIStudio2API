@@ -104,14 +104,16 @@ type ImportItem struct {
 	Credentials json.RawMessage `json:"credentials"`
 }
 type ImportRequest struct {
-	Items  []ImportItem `json:"items"`
-	Model  string       `json:"model,omitempty"`
-	Verify *bool        `json:"verify,omitempty"`
+	Items    []ImportItem `json:"items"`
+	Model    string       `json:"model,omitempty"`
+	Verify   *bool        `json:"verify,omitempty"`
+	Channels []Channel    `json:"channels,omitempty"`
 }
 type ReplaceRequest struct {
 	Credentials json.RawMessage `json:"credentials"`
 	ExpectedVersions
-	Verify *bool `json:"verify,omitempty"`
+	Verify   *bool     `json:"verify,omitempty"`
+	Channels []Channel `json:"channels,omitempty"`
 }
 type AccountPatch struct {
 	Enabled *bool `json:"enabled"`

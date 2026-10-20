@@ -1,33 +1,90 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, onUnmounted, ref, useId, watch } from 'vue'
 import { useI18n } from '@/i18n'
-import type { UsageDimension, UsageReport, UsageStats } from '@/types'
+import type {
+  UsageDimension,
+  UsageDimensionsReport,
+  UsageBreakdownReport,
+  UsagePair,
+  UsageStats,
+} from '@/types'
 import UiIcon from '../UiIcon.vue'
 import { useUsageFormat } from './format'
-import { rateTone, readPreference, successRate, writePreference } from './model'
+import { rateTone, successRate } from './model'
+import { api } from '@/api'
+import { UsageCache, UsageRequest } from './loading'
 
 type Tab = UsageDimension | 'status'
 type SortKey = 'key' | 'requests' | 'rate' | 'tokens' | 'p50' | 'p95' | 'first' | 'last'
 
-const props = defineProps<{ report: UsageReport; now: number }>()
+const props = defineProps<{
+  report: UsageDimensionsReport
+  dimension: Tab
+  now: number
+  baseQuery: () => URLSearchParams | null
+  cache: UsageCache
+  ttl: number
+}>()
 const emit = defineEmits<{
   filter: [dimension: UsageDimension, key: string]
   status: [code: string]
+  'update:dimension': [value: Tab]
 }>()
 
-const { t } = useI18n()
+const { t, errorText } = useI18n()
 const { compact, integer, duration, percent, ago, dimensionLabel } = useUsageFormat()
 const id = useId()
 const tabs: Tab[] = ['account', 'model', 'channel', 'protocol', 'state', 'status']
-const tab = ref<Tab>(
-  readPreference('usage.rankingTab', 'account', (value) => tabs.includes(value as Tab)),
-)
+const tab = computed({
+  get: () => props.dimension,
+  set: (value: Tab) => emit('update:dimension', value),
+})
 const sort = ref<{ key: SortKey; descending: boolean }>({ key: 'requests', descending: true })
 const expanded = ref(new Set<string>())
-watch(tab, (value) => {
-  writePreference('usage.rankingTab', value)
+const childRows = ref<Record<string, UsagePair[]>>({})
+const childErrors = ref<Record<string, string>>({})
+const childLoading = ref(new Set<string>())
+const requests = new Map<string, UsageRequest<UsageBreakdownReport>>()
+function resetChildren(): void {
+  for (const request of requests.values()) request.cancel()
+  requests.clear()
   expanded.value = new Set()
-})
+  childRows.value = {}
+  childErrors.value = {}
+  childLoading.value = new Set()
+}
+watch(() => props.report, resetChildren)
+onUnmounted(resetChildren)
+async function loadChildren(key: string): Promise<void> {
+  const query = props.baseQuery()
+  if (!query || (tab.value !== 'account' && tab.value !== 'model')) return
+  const currentReport = props.report
+  query.set('dimension', tab.value)
+  query.set('key', key)
+  const request = new UsageRequest<UsageBreakdownReport>(props.cache)
+  requests.get(key)?.cancel()
+  requests.set(key, request)
+  childLoading.value = new Set([...childLoading.value, key])
+  delete childErrors.value[key]
+  try {
+    const result = await request.load(
+      `breakdown:${query.toString()}`,
+      (signal) => api.usageView('breakdown', query, signal),
+      props.ttl,
+    )
+    if (result && props.report === currentReport && expanded.value.has(key))
+      childRows.value[key] = result.value.pairs
+  } catch (reason) {
+    if (props.report === currentReport && expanded.value.has(key))
+      childErrors.value[key] = errorText(reason)
+  } finally {
+    if (requests.get(key) === request) {
+      const next = new Set(childLoading.value)
+      next.delete(key)
+      childLoading.value = next
+    }
+  }
+}
 
 const columns: { key: SortKey; label: () => string; numeric: boolean }[] = [
   { key: 'key', label: () => t(`usage.dimension.${tab.value}`), numeric: false },
@@ -64,7 +121,7 @@ function sortValue(key: string, stats: UsageStats, column: SortKey): number | st
 
 const rows = computed(() => {
   const { key, descending } = sort.value
-  return [...props.report.groups[tab.value]].sort((a, b) => {
+  return [...props.report.groups].sort((a, b) => {
     const left = sortValue(a.key, a, key)
     const right = sortValue(b.key, b, key)
     const order = left < right ? -1 : left > right ? 1 : 0
@@ -75,11 +132,11 @@ const rows = computed(() => {
 // children 返回账户或模型行展开后的组合明细
 function children(key: string): { key: string; label: string; stats: UsageStats }[] {
   if (tab.value === 'account')
-    return props.report.pairs
+    return (childRows.value[key] ?? [])
       .filter((pair) => pair.account === key)
       .map((pair) => ({ key: pair.model, label: dimensionLabel('model', pair.model), stats: pair }))
   if (tab.value === 'model')
-    return props.report.pairs
+    return (childRows.value[key] ?? [])
       .filter((pair) => pair.model === key)
       .map((pair) => ({
         key: pair.account,
@@ -100,8 +157,13 @@ function toggleSort(key: SortKey): void {
 // toggleRow 展开或收起一行的组合明细
 function toggleRow(key: string): void {
   const next = new Set(expanded.value)
-  if (next.has(key)) next.delete(key)
-  else next.add(key)
+  if (next.has(key)) {
+    next.delete(key)
+    requests.get(key)?.cancel()
+  } else {
+    next.add(key)
+    void loadChildren(key)
+  }
   expanded.value = next
 }
 
@@ -111,7 +173,7 @@ function applyFilter(key: string): void {
   else emit('filter', tab.value, key)
 }
 
-const total = computed(() => props.report.totals.requests)
+const total = computed(() => props.report.requests)
 </script>
 
 <template>
@@ -139,7 +201,9 @@ const total = computed(() => props.report.totals.requests)
           @keydown.left.prevent="tab = tabs[(tabs.indexOf(item) + tabs.length - 1) % tabs.length]!"
         >
           {{ t(`usage.dimension.${item}`) }}
-          <span class="ml-1 text-gray-500 tabular-nums">{{ report.groups[item].length }}</span>
+          <span class="ml-1 text-gray-500 tabular-nums">{{
+            item === tab ? report.groups.length : ''
+          }}</span>
         </button>
       </div>
     </header>
@@ -188,7 +252,7 @@ const total = computed(() => props.report.totals.requests)
               <th scope="row" class="max-w-72 px-4 py-2 font-normal">
                 <div class="flex items-center gap-1.5">
                   <button
-                    v-if="children(row.key).length > 0"
+                    v-if="tab === 'account' || tab === 'model'"
                     type="button"
                     class="rounded p-0.5 text-gray-500 hover:bg-raised hover:text-white"
                     :aria-expanded="expanded.has(row.key)"
@@ -247,6 +311,33 @@ const total = computed(() => props.report.totals.requests)
               </td>
             </tr>
             <template v-if="expanded.has(row.key)">
+              <tr
+                v-if="
+                  childLoading.has(row.key) ||
+                  childErrors[row.key] ||
+                  children(row.key).length === 0
+                "
+                class="border-t border-line/60"
+              >
+                <td
+                  colspan="9"
+                  class="px-11 py-3 text-gray-400"
+                  :role="childErrors[row.key] ? 'alert' : 'status'"
+                >
+                  {{
+                    childErrors[row.key] ||
+                    (childLoading.has(row.key) ? t('common.loading') : t('usage.recordsEmpty'))
+                  }}
+                  <button
+                    v-if="childErrors[row.key]"
+                    type="button"
+                    class="ml-3 text-blue-300"
+                    @click="loadChildren(row.key)"
+                  >
+                    {{ t('usage.retry') }}
+                  </button>
+                </td>
+              </tr>
               <tr
                 v-for="child in children(row.key)"
                 :key="`${row.key}/${child.key}`"

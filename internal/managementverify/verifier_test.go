@@ -16,7 +16,7 @@ const accountID = "22de91c7-c700-453c-af76-16693460fa63"
 const requestID = "req_dfcfb928-d90b-4a81-a23e-bc5ed7eecab7"
 
 func inputFixture() c.VerificationInput {
-	return c.VerificationInput{Account: c.AccountRecord{Account: c.Account{AccountID: accountID, Index: 7, Versions: c.Versions{CredentialVersion: 3, StateVersion: 5}}, NativeID: "synthetic@example.test"}, Model: "synthetic-model", Mode: c.VerificationModel}
+	return c.VerificationInput{Account: c.AccountRecord{Account: c.Account{AccountID: accountID, Index: 7, Versions: c.Versions{CredentialVersion: 3, StateVersion: 5}}, NativeID: "synthetic@example.test"}, Model: "synthetic-model", Mode: c.VerificationModel, Channels: []c.Channel{c.ChannelPlayground}}
 }
 
 func observationFixture() c.VerificationObservation {
@@ -222,5 +222,38 @@ func TestVerifierConcurrencyAndQueuedCancel(t *testing.T) {
 	wg.Wait()
 	if err := v.Close(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestVerifierBothAndFinalCheckpointFailureRetainsEvidence(t *testing.T) {
+	for _, code := range []c.ErrorCode{c.CodePersistenceError, c.CodeVersionConflict} {
+		t.Run(string(code), func(t *testing.T) {
+			input := inputFixture()
+			input.Channels = []c.Channel{c.ChannelPlayground, c.ChannelBuild}
+			var opened []c.Channel
+			input.Checkpoint = func(result c.VerificationResult) error {
+				if len(result.ChannelResults) == 2 {
+					return c.NewError(code)
+				}
+				return nil
+			}
+			v, _ := New(c.VerifierOptions{Target: targetFunc(func(_ context.Context, in c.VerificationInput) (c.VerificationSession, error) {
+				channel := in.Channels[0]
+				opened = append(opened, channel)
+				return &fakeSession{run: func(_ context.Context, probe c.VerificationProbe) (c.VerificationObservation, error) {
+					obs := observationFixture()
+					obs.ActualChannel = channel
+					if probe.Channel != channel {
+						t.Fatal("probe channel changed")
+					}
+					return obs, nil
+				}}, nil
+			})})
+			out, err := v.Verify(context.Background(), input, nil)
+			errorCode(t, err, code)
+			if out.Result.Success || !c.ValidVerificationResult(out.Result) || len(opened) != 2 || opened[0] != c.ChannelBuild || opened[1] != c.ChannelPlayground || len(out.Result.ChannelResults) != 2 || !out.Result.ChannelResults[0].Success || !out.Result.ChannelResults[1].Success {
+				t.Fatalf("completed evidence lost: %+v", out.Result)
+			}
+		})
 	}
 }

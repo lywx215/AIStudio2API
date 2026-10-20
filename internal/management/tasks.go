@@ -13,6 +13,7 @@ import (
 // taskInput is persisted separately from the public task. It is never returned,
 // logged, formatted into errors, or copied into audit entries.
 type taskInput struct {
+	Channels    []c.Channel        `json:"channels,omitempty"`
 	RequestID   string             `json:"requestId"`
 	Model       string             `json:"model"`
 	Verify      bool               `json:"verify"`
@@ -162,6 +163,11 @@ func cleanupContext() (context.Context, context.CancelFunc) {
 // change always starts from the latest revision. In particular an HTTP cancel
 // racing an item completion cannot be erased by a worker's stale snapshot.
 func (s *taskService) change(id string, fn func(*c.TaskRecord)) (c.TaskRecord, error) {
+	return s.changeChecked(id, func(r *c.TaskRecord) error { fn(r); return nil })
+}
+
+// changeChecked rejects an inconsistent projection before any revision is saved.
+func (s *taskService) changeChecked(id string, fn func(*c.TaskRecord) error) (c.TaskRecord, error) {
 	ctx, cancel := cleanupContext()
 	defer cancel()
 	for i := 0; i < 5; i++ {
@@ -173,7 +179,9 @@ func (s *taskService) change(id string, fn func(*c.TaskRecord)) (c.TaskRecord, e
 			return r, nil
 		}
 		rev := r.Revision
-		fn(&r)
+		if err := fn(&r); err != nil {
+			return r, err
+		}
 		r.UpdatedAt = c.NewTimestamp(s.clock())
 		r.Counts = countItems(r.Items)
 		saved, err := s.store.SaveTask(ctx, r, rev)
@@ -235,7 +243,11 @@ func (s *taskService) executeWork(ctx context.Context, work c.TaskWork) {
 		}
 	}()
 	var input taskInput
-	if json.Unmarshal(work.PrivateInput, &input) != nil || !validTaskInput(work.Record.Kind, len(work.Record.Items), input) {
+	decodeErr := json.Unmarshal(work.PrivateInput, &input)
+	if input.Channels == nil {
+		input.Channels = []c.Channel{c.ChannelPlayground}
+	} // Historical admitted tasks were fixed to Playground.
+	if decodeErr != nil || !validTaskInput(work.Record.Kind, len(work.Record.Items), input) {
 		s.finish(id, c.CodeInterrupted)
 		return
 	}
@@ -314,6 +326,11 @@ func (s *taskService) executeWork(ctx context.Context, work c.TaskWork) {
 				code = c.CodeVerificationTimeout
 			} else {
 				code = c.PublicError(runErr).Code
+				if code == c.CodeCancelled && ctx.Err() != nil {
+					if stopped := s.stopCode(ctx, id); stopped != "" {
+						code = stopped
+					}
+				}
 			}
 		}
 		auditAccountID := item.AccountID
@@ -334,6 +351,9 @@ func (s *taskService) executeWork(ctx context.Context, work c.TaskWork) {
 					value := result.Verification.AuthIndex
 					i.Index = &value
 				}
+			}
+			if code != "" && i.Result != nil && i.Result.Verification != nil {
+				i.Result.Verification.FailFinalization(code)
 			}
 			i.Progress = 100
 			if code == "" {
@@ -365,6 +385,9 @@ func (s *taskService) executeWork(ctx context.Context, work c.TaskWork) {
 }
 
 func validTaskInput(kind c.TaskKind, items int, input taskInput) bool {
+	if _, err := c.NormalizeVerificationChannels(input.Channels); err != nil {
+		return false
+	}
 	if !c.ValidRequestID(input.RequestID) {
 		return false
 	}

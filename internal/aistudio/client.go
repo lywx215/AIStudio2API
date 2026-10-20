@@ -73,6 +73,9 @@ type RequestContextProvider interface {
 
 // ClientOptions 定义协议客户端的窄依赖
 type ClientOptions struct {
+	// PinnedChannel restricts isolated clients to this exact lease channel. Zero
+	// preserves ordinary routing and model catalogue behavior.
+	PinnedChannel   Channel
 	Transport       RPCTransport
 	Protected       ProtectedTransport
 	ContextProvider RequestContextProvider
@@ -80,6 +83,7 @@ type ClientOptions struct {
 
 // Client 实现 AI Studio 私有协议核心
 type Client struct {
+	pinnedChannel   Channel
 	transport       RPCTransport
 	protected       ProtectedTransport
 	contextProvider RequestContextProvider
@@ -93,6 +97,9 @@ var _ Service = (*Client)(nil)
 
 // NewClient 创建协议客户端
 func NewClient(options ClientOptions) (*Client, error) {
+	if options.PinnedChannel != "" && options.PinnedChannel != ChannelBuild && options.PinnedChannel != ChannelPlayground {
+		return nil, ErrInvalidArgument
+	}
 	if options.Transport == nil {
 		return nil, fmt.Errorf("AI Studio transport 不能为空")
 	}
@@ -100,6 +107,7 @@ func NewClient(options ClientOptions) (*Client, error) {
 		return nil, fmt.Errorf("AI Studio protected transport 不能为空")
 	}
 	return &Client{
+		pinnedChannel:   options.PinnedChannel,
 		transport:       options.Transport,
 		protected:       options.Protected,
 		contextProvider: options.ContextProvider,

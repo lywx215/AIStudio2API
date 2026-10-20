@@ -22,6 +22,7 @@ import type {
   UpdateStatus,
   UsageRecordPage,
   UsageReport,
+  UsageViewReports,
 } from '@/types'
 
 interface AccountsResponse {
@@ -166,6 +167,17 @@ export const api = {
   config: () => requestJSON<ServiceConfig>('/api/config'),
   usage: (query: URLSearchParams, signal?: AbortSignal) =>
     requestJSON<UsageReport>(`/api/usage?${query.toString()}`, { signal: signal ?? null }),
+  usageView: <V extends keyof UsageViewReports>(
+    view: V,
+    query: URLSearchParams,
+    signal?: AbortSignal,
+  ) => {
+    const parameters = new URLSearchParams(query)
+    parameters.set('view', view)
+    return requestJSON<UsageViewReports[V]>(`/api/usage?${parameters.toString()}`, {
+      signal: signal ?? null,
+    })
+  },
   usageRecords: (query: URLSearchParams, signal?: AbortSignal) =>
     requestJSON<UsageRecordPage>(`/api/usage/records?${query.toString()}`, {
       signal: signal ?? null,

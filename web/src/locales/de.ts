@@ -400,6 +400,11 @@ export const messages: Record<TranslationKey, string> = {
   'settings.logMaxTotal': 'Höchstgröße der Protokolle (MB)',
   'settings.logMaxTotalHelp':
     'Löscht die ältesten Dateien, sobald das Protokollverzeichnis diese Größe überschreitet. Mindestens 20.',
+  'usage.view.overview': 'Übersicht',
+  'usage.view.trends': 'Trends',
+  'usage.view.dimensions': 'Dimensionen',
+  'usage.view.records': 'Anfrageprotokoll',
+  'usage.refreshPaused': 'Automatische Aktualisierung auf älteren Seiten pausiert',
   'usage.title': 'Nutzung',
   'usage.description':
     'Anzahl, Ergebnisse, Tokens und Dauer der Anfragen an die öffentliche API, 90 Tage aufbewahrt',

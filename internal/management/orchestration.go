@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"slices"
 
 	c "github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 )
@@ -64,11 +65,8 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 		if account.Versions != receipt.Versions {
 			return nil, c.NewError(c.CodeVersionConflict)
 		}
-		out, err := s.verify(ctx, c.VerificationInput{Account: account, Candidate: &material, Mode: c.VerificationModel, Model: in.Model}, op.Progress)
-		if err != nil {
-			return nil, err
-		}
-		return &c.ItemResult{Verification: &out.Result}, nil
+		out, err := s.verify(ctx, c.VerificationInput{Account: account, Candidate: &material, Mode: c.VerificationModel, Model: in.Model, Channels: in.Channels}, op.Progress, taskID, index)
+		return verificationItem(out), err
 	case c.TaskReplace:
 		if len(in.Credentials) != 1 {
 			return nil, invalid()
@@ -103,9 +101,9 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 			if material.NativeID != account.NativeID {
 				return nil, c.NewError(c.CodeInvalidCredentials)
 			}
-			out, err := s.verify(ctx, c.VerificationInput{Account: account, Candidate: &material, Mode: c.VerificationModel, Model: in.Model}, op.Progress)
+			out, err := s.verify(ctx, c.VerificationInput{Account: account, Candidate: &material, Mode: c.VerificationModel, Model: in.Model, Channels: in.Channels}, op.Progress, taskID, index)
 			if err != nil {
-				return nil, err
+				return verificationItem(out), err
 			}
 			candidate = &material
 			if out.RefreshedCandidate != nil {
@@ -115,6 +113,10 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 		}
 		commit, err := s.accounts.Replace(ctx, c.ReplaceCommand{Operation: op, AccountID: item.AccountID, Credentials: in.Credentials[0], Expected: expected, Enable: !in.Legacy, Candidate: candidate})
 		if err != nil {
+			if verified != nil {
+				verified.FailFinalization(c.PublicError(err).Code)
+				return &c.ItemResult{Verification: verified}, err
+			}
 			return nil, err
 		}
 		receipt, err := s.committed(op)
@@ -125,8 +127,19 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 			return nil, c.NewError(c.CodePersistenceError)
 		}
 		if verified != nil {
+			// Replace committed this exact private candidate under the captured
+			// dual CAS. Only its original durable receipt may project the evidence
+			// onto the committed lineage; a live account read cannot do so.
+			if candidate == nil || commit.Account.AccountID != account.AccountID || commit.Account.NativeID != account.NativeID || commit.Account.Index != receipt.Index || commit.Account.Versions != receipt.Versions {
+				verified.FailFinalization(c.CodePersistenceError)
+				return &c.ItemResult{Verification: verified}, c.NewError(c.CodePersistenceError)
+			}
 			verified.Versions = receipt.Versions
 			verified.AuthIndex = receipt.Index
+			for i := range verified.ChannelResults {
+				verified.ChannelResults[i].Versions = receipt.Versions
+				verified.ChannelResults[i].AuthIndex = receipt.Index
+			}
 			return &c.ItemResult{Verification: verified}, nil
 		}
 		return uploadResult(receipt), nil
@@ -142,11 +155,8 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 			return nil, err
 		}
 		mode := c.VerificationMode(in.Action)
-		out, err := s.verify(ctx, c.VerificationInput{Account: account, Candidate: &material, Mode: mode, Model: in.Model}, op.Progress)
-		if err != nil {
-			return nil, err
-		}
-		return &c.ItemResult{Verification: &out.Result}, nil
+		out, err := s.verify(ctx, c.VerificationInput{Account: account, Candidate: &material, Mode: mode, Model: in.Model, Channels: in.Channels}, op.Progress, taskID, index)
+		return verificationItem(out), err
 	case c.TaskArchive, c.TaskRestore, c.TaskReload, c.TaskBatch:
 		command := c.StateCommand{Operation: op, AccountID: item.AccountID, Force: in.Force, Expected: precondition.Expected()}
 		var result c.AccountCommitResult
@@ -178,23 +188,97 @@ func uploadResult(receipt *c.UploadReceipt) *c.ItemResult {
 
 // The verifier owns upstream observation checks; this boundary additionally
 // refuses a collaborator returning a successful result for another target.
-func (s *taskService) verify(ctx context.Context, input c.VerificationInput, progress c.ProgressFunc) (c.VerificationOutput, error) {
+func verificationItem(out c.VerificationOutput) *c.ItemResult {
+	if out.Result.Model == "" {
+		return nil
+	}
+	return &c.ItemResult{Verification: &out.Result}
+}
+
+func (s *taskService) verify(ctx context.Context, input c.VerificationInput, progress c.ProgressFunc, taskID string, index int) (c.VerificationOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.VerificationTimeout)
 	defer cancel()
+	channels, err := c.NormalizeVerificationChannels(input.Channels)
+	if err != nil {
+		return c.VerificationOutput{}, err
+	}
+	input.Channels = channels
+	input.Checkpoint = func(result c.VerificationResult) error {
+		if !validVerificationForInput(input, result, false) {
+			return c.NewError(c.CodeVerificationFailed)
+		}
+		_, err := s.changeChecked(taskID, func(r *c.TaskRecord) error {
+			if index < 0 || index >= len(r.Items) {
+				return c.NewError(c.CodeInvalidState)
+			}
+			item := &r.Items[index]
+			// Attribution comes from the captured account, never a child result.
+			trustedIndex := input.Account.Index
+			if item.AccountID != input.Account.AccountID || item.Index != nil && *item.Index != trustedIndex {
+				return c.NewError(c.CodeInvalidState)
+			}
+			item.Index = &trustedIndex
+			item.Result = &c.ItemResult{Verification: &result}
+			return nil
+		})
+		if err != nil {
+			return c.NewError(c.CodePersistenceError)
+		}
+		clean, stop := cleanupContext()
+		defer stop()
+		latest, err := s.store.GetAccount(clean, input.Account.AccountID)
+		if err != nil {
+			return err
+		}
+		if latest.Versions != input.Account.Versions || latest.Deleted || latest.Archived {
+			return c.NewError(c.CodeVersionConflict)
+		}
+		return nil
+	}
 	out, err := s.verifier.Verify(ctx, input, progress)
+	if out.Result.Model != "" && !validVerificationForInput(input, out.Result, err == nil) {
+		return c.VerificationOutput{}, c.NewError(c.CodeVerificationFailed)
+	}
 	if err != nil {
 		return out, err
-	}
-	r := out.Result
-	stage := "model_verified"
-	if input.Mode == c.VerificationConnection {
-		stage = "connection_verified"
 	}
 	if ctx.Err() != nil {
 		return out, ctx.Err()
 	}
-	if !r.Success || r.AuthIndex != input.Account.Index || r.Model != input.Model || r.ActualChannel != c.ChannelPlayground || r.Stage != stage || !c.ValidRequestID(r.RequestID) || r.Versions != input.Account.Versions || r.UpstreamStatus == nil || *r.UpstreamStatus < 200 || *r.UpstreamStatus >= 300 {
-		return out, c.NewError(c.CodeVerificationFailed)
+	if !validVerificationForInput(input, out.Result, true) {
+		return c.VerificationOutput{}, c.NewError(c.CodeVerificationFailed)
+	}
+	if checkpointErr := input.Checkpoint(out.Result); checkpointErr != nil {
+		if len(out.Result.Channels) > 0 {
+			out.Result.Success = false
+			out.Result.Stage = "failed"
+		}
+		return out, checkpointErr
 	}
 	return out, nil
+}
+
+func validVerificationForInput(input c.VerificationInput, r c.VerificationResult, requireSuccess bool) bool {
+	if !c.ValidVerificationResult(r) || r.AuthIndex != input.Account.Index || r.Model != input.Model || r.Versions != input.Account.Versions || (requireSuccess && !r.Success) {
+		return false
+	}
+	stage := "model_verified"
+	if input.Mode == c.VerificationConnection {
+		stage = "connection_verified"
+	}
+	if r.Success && r.Stage != stage {
+		return false
+	}
+	if len(r.Channels) == 0 {
+		return len(input.Channels) == 1 && r.ActualChannel == input.Channels[0]
+	}
+	if !slices.Equal(input.Channels, r.Channels) {
+		return false
+	}
+	for _, child := range r.ChannelResults {
+		if child.Success && child.Stage != stage {
+			return false
+		}
+	}
+	return true
 }

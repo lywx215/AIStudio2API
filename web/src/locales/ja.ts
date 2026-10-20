@@ -394,6 +394,11 @@ export const messages: Record<TranslationKey, string> = {
   'settings.logMaxTotal': 'ログの合計サイズ上限（MB）',
   'settings.logMaxTotalHelp':
     'ログ ディレクトリがこのサイズを超えると、古いファイルから削除します。最小値は 20 です。',
+  'usage.view.overview': '概要',
+  'usage.view.trends': 'トレンド分析',
+  'usage.view.dimensions': 'ディメンション統計',
+  'usage.view.records': 'リクエスト履歴',
+  'usage.refreshPaused': '過去のページを表示中は自動更新を停止しています',
   'usage.title': '使用量',
   'usage.description':
     '公開 API リクエストの件数、結果、トークン、所要時間。記録は 90 日間保存されます',

@@ -153,7 +153,7 @@ func TestOpenAPISchemasAndWireDTOs(t *testing.T) {
 		"SettingsSnapshot": SettingsSnapshot{Values: settings, PersistentKeys: []string{}},
 		"SettingsUpdated":  SettingsUpdated{Values: settings},
 		"Diagnostics":      Diagnostics{ServiceState: "STOPPED", WAABackend: "go", Accounts: Page[AccountRuntimeState]{Items: []AccountRuntimeState{}, Limit: 50}},
-		"Capabilities":     Capabilities{Backend: "aistudio2api", ProtocolVersion: ProtocolVersion, VerificationChannels: []Channel{ChannelPlayground}},
+		"Capabilities":     Capabilities{Backend: "aistudio2api", ProtocolVersion: ProtocolVersion, VerificationChannels: []Channel{ChannelBuild, ChannelPlayground}, DefaultVerificationChannels: []Channel{ChannelBuild}, MultiChannelVerification: true},
 		"SystemStatus":     SystemStatus{ServiceState: "STOPPED", WAABackend: "go"},
 		"Readiness":        Readiness{Checks: []Check{}},
 		"UsageRecord":      UsageRecord{RequestID: "native_fixture", Outcome: "success", StartedAt: now, FinishedAt: now},

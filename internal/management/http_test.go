@@ -386,3 +386,30 @@ func TestHTTPCaptureKeepsExplicitCASOutsideCanonicalDigest(t *testing.T) {
 		t.Fatal("private task work serialized", string(raw), err)
 	}
 }
+
+func TestHTTPVerificationChannelsCanonicalAdmission(t *testing.T) {
+	h, _, _, tasks := testHTTP(t)
+	handler := h.Handler()
+	headers := map[string]string{"Idempotency-Key": "channels"}
+	for _, body := range []string{`{}`, `{"channels":["build"]}`, `{"channels":["playground","build"]}`, `{"channels":["build","playground"]}`} {
+		w := request(t, handler, "POST", c.Namespace+"/accounts/"+fixtureAccountID+"/test", body, headers)
+		if w.Code != http.StatusAccepted {
+			t.Fatalf("body=%s %d %s", body, w.Code, w.Body.String())
+		}
+	}
+	if len(tasks.calls) != 4 || tasks.calls[0].CanonicalDigest != tasks.calls[1].CanonicalDigest || tasks.calls[2].CanonicalDigest != tasks.calls[3].CanonicalDigest || tasks.calls[0].CanonicalDigest == tasks.calls[2].CanonicalDigest {
+		t.Fatal("channel selections did not normalize before digest")
+	}
+	var input taskInput
+	if json.Unmarshal(tasks.calls[0].PrivateInput, &input) != nil || len(input.Channels) != 1 || input.Channels[0] != c.ChannelBuild {
+		t.Fatal("default selection was not persisted")
+	}
+	for _, body := range []string{`{"channels":null}`, `{"channels":[]}`, `{"channels":["build","build"]}`, `{"channels":["unknown"]}`, `{"channels":"build"}`} {
+		before := len(tasks.calls)
+		w := request(t, handler, "POST", c.Namespace+"/accounts/"+fixtureAccountID+"/test", body, headers)
+		assertCode(t, w, c.CodeInvalidRequest)
+		if len(tasks.calls) != before {
+			t.Fatal("invalid selection was admitted")
+		}
+	}
+}

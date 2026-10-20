@@ -78,6 +78,12 @@ func newManagementVerificationTarget(options managementVerificationTargetOptions
 }
 
 func (t *managementVerificationTarget) Open(ctx context.Context, input c.VerificationInput) (_ c.VerificationSession, err error) {
+	channels, channelErr := c.NormalizeVerificationChannels(input.Channels)
+	if channelErr != nil || len(channels) != 1 {
+		return nil, c.NewError(c.CodeInvalidRequest)
+	}
+	input.Channels = channels
+	channel := aistudio.Channel(channels[0])
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -158,8 +164,8 @@ func (t *managementVerificationTarget) Open(ctx context.Context, input c.Verific
 	}
 	account := &aistudio.Account{ID: record.NativeID, Directory: directory, ConfigPath: configPath, StoragePath: storagePath, RuntimePath: filepath.Join(directory, "runtime.json"), Config: accountConfig, StorageState: state, State: aistudio.AccountReady}
 	s.pool = aistudio.NewAccountPool([]*aistudio.Account{account}, 1)
-	s.pool.SetUpstreamChannels([]aistudio.Channel{aistudio.ChannelPlayground})
-	s.lease, err = s.pool.AcquireAccount(ctx, record.NativeID)
+	s.pool.SetUpstreamChannels([]aistudio.Channel{channel})
+	s.lease, err = s.pool.AcquireAccountChannel(ctx, record.NativeID, channel)
 	if err != nil {
 		return nil, err
 	}
@@ -181,9 +187,9 @@ func (t *managementVerificationTarget) Open(ctx context.Context, input c.Verific
 		return nil, err
 	}
 	s.closeProtocol = closeProtocol
-	s.guard = &managementVerificationTransport{accountID: record.NativeID, model: input.Model, next: protected}
-	s.catalog = &managementVerificationRPC{accountID: record.NativeID, next: rpc}
-	s.client, err = aistudio.NewClient(aistudio.ClientOptions{Transport: s.catalog, Protected: s.guard})
+	s.guard = &managementVerificationTransport{accountID: record.NativeID, model: input.Model, channel: channels[0], next: protected}
+	s.catalog = &managementVerificationRPC{accountID: record.NativeID, channel: channels[0], next: rpc}
+	s.client, err = aistudio.NewClient(aistudio.ClientOptions{Transport: s.catalog, Protected: s.guard, PinnedChannel: channel})
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +214,7 @@ func newManagementVerificationProtocol(pool *aistudio.AccountPool, worker manage
 		Transport: rpc, SetupTimeout: env.InitTimeout,
 		Workers: aistudio.ProtectedPreparerProviderFunc(func(ctx context.Context, id, model string) (aistudio.ProtectedPreparer, error) {
 			lease, ok := aistudio.AccountLeaseFromContext(ctx)
-			if !ok || lease.Account().ID != id || lease.Channel() != aistudio.ChannelPlayground {
+			if !ok || lease.Account().ID != id || (lease.Channel() == aistudio.ChannelBuild && !pool.BuildEnabled()) || (lease.Channel() == aistudio.ChannelPlayground && !pool.PlaygroundEnabled()) {
 				return nil, c.NewError(c.CodeVerificationFailed)
 			}
 			return worker, nil
@@ -255,7 +261,10 @@ func (s *managementVerificationSession) Run(ctx context.Context, probe c.Verific
 		return obs, c.NewError(c.CodeInvalidState)
 	}
 	s.ran = true
-	if probe.Model != s.input.Model || probe.Mode != s.input.Mode || probe.Prompt != managementverify.ProbePrompt || probe.MaxOutputTokens != managementverify.ProbeMaxOutputTokens {
+	if probe.Channel == "" {
+		probe.Channel = s.input.Channels[0]
+	}
+	if probe.Channel != s.input.Channels[0] || probe.Model != s.input.Model || probe.Mode != s.input.Mode || probe.Prompt != managementverify.ProbePrompt || probe.MaxOutputTokens != managementverify.ProbeMaxOutputTokens {
 		return obs, c.NewError(c.CodeInvalidRequest)
 	}
 	ctx, cancel := context.WithCancel(ctx)
@@ -275,14 +284,31 @@ func (s *managementVerificationSession) Run(ctx context.Context, probe c.Verific
 		return obs, c.NewError(c.CodeVerificationFailed)
 	}
 	obs = c.VerificationObservation{AccountID: s.input.Account.AccountID, NativeID: identity, Model: s.input.Model, RequestID: s.requestID, IdentityConfirmed: true}
-	models, err := s.client.ModelsForAccount(ctx, identity)
+	defer func() {
+		if probe.Mode == c.VerificationConnection {
+			obs.ActualChannel, obs.UpstreamStatus = s.catalog.evidence()
+		} else {
+			obs.ActualChannel, obs.UpstreamStatus = s.guard.evidence()
+		}
+	}()
+	var models []aistudio.Model
+	if probe.Channel == c.ChannelBuild {
+		models, err = s.client.BuildModelsForAccount(ctx, identity)
+	} else {
+		models, err = s.client.ModelsForAccount(ctx, identity)
+	}
 	if err != nil {
 		return obs, err
 	}
 	// WorkerProtectedTransport validates the selected model against the lease's
 	// pool. Install the catalogue only in this temporary account, never in the
 	// production pool. Using the protocol client's cache alone is insufficient.
-	if err := s.pool.SetCatalog(identity, s.lease.Account().BenefitTier, models); err != nil {
+	if probe.Channel == c.ChannelBuild {
+		err = s.pool.SetBuildCatalog(identity, models)
+	} else {
+		err = s.pool.SetCatalog(identity, s.lease.Account().BenefitTier, models)
+	}
+	if err != nil {
 		return obs, err
 	}
 	var selected *aistudio.Model
@@ -444,21 +470,13 @@ type managementVerificationTransport struct {
 	mu        sync.Mutex
 	sent      bool
 	channel   c.Channel
+	observed  c.Channel
 	status    int
 }
 
 func (t *managementVerificationTransport) DoProtected(ctx context.Context, request aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 	t.mu.Lock()
-	if t.sent || t.next == nil || request.AccountID != t.accountID || request.Model != t.model || rpc.AccountID != t.accountID || rpc.RequestID != request.ID || !c.ValidRequestID(request.ID) || rpc.Method != "GenerateContent" || rpc.URL != aistudio.MakerSuiteRPCBase+"GenerateContent" || !rpc.Streaming {
-		t.mu.Unlock()
-		return nil, c.NewError(c.CodeVerificationFailed)
-	}
-	var body []json.RawMessage
-	var model string
-	var generationConfig []json.RawMessage
-	var maxOutput int64
-	if json.Unmarshal(rpc.Body, &body) != nil || len(body) < 5 || json.Unmarshal(body[0], &model) != nil || model != "models/"+t.model ||
-		json.Unmarshal(body[3], &generationConfig) != nil || len(generationConfig) < 4 || json.Unmarshal(generationConfig[3], &maxOutput) != nil || maxOutput < 1 || maxOutput > managementverify.ProbeMaxOutputTokens {
+	if t.sent || t.next == nil || request.AccountID != t.accountID || request.Model != t.model || rpc.AccountID != t.accountID || rpc.RequestID != request.ID || !c.ValidRequestID(request.ID) || !t.validRPC(request, rpc) {
 		t.mu.Unlock()
 		return nil, c.NewError(c.CodeVerificationFailed)
 	}
@@ -467,19 +485,66 @@ func (t *managementVerificationTransport) DoProtected(ctx context.Context, reque
 	response, err := t.next.DoProtected(ctx, request, rpc)
 	if response != nil {
 		t.mu.Lock()
-		t.channel, t.status = c.ChannelPlayground, response.StatusCode
+		t.observed, t.status = t.selectedChannel(), response.StatusCode
 		t.mu.Unlock()
 	}
 	return response, err
 }
 
+func (t *managementVerificationTransport) selectedChannel() c.Channel {
+	if t.channel == "" {
+		return c.ChannelPlayground
+	}
+	return t.channel
+}
+func (t *managementVerificationTransport) validRPC(request aistudio.GenerateRequest, rpc aistudio.RPCRequest) bool {
+	if t.selectedChannel() == c.ChannelBuild {
+		if rpc.Method != "ProxyStreamedCall" && rpc.Method != "ProxyUnaryCall" {
+			return false
+		}
+		if rpc.URL != aistudio.MakerSuiteRPCBase+rpc.Method || rpc.Streaming != (rpc.Method == "ProxyStreamedCall") {
+			return false
+		}
+		var envelope []json.RawMessage
+		var path, raw string
+		if json.Unmarshal(rpc.Body, &envelope) != nil || len(envelope) < 3 || len(envelope) > 4 || json.Unmarshal(envelope[0], &path) != nil || json.Unmarshal(envelope[1], &raw) != nil {
+			return false
+		}
+		suffix := ":streamGenerateContent"
+		if rpc.Method == "ProxyUnaryCall" {
+			suffix = ":generateContent"
+			var method string
+			if len(envelope) != 4 || json.Unmarshal(envelope[3], &method) != nil || method != "POST" {
+				return false
+			}
+		} else if len(envelope) != 3 {
+			return false
+		}
+		var body struct {
+			GenerationConfig struct {
+				MaxOutputTokens int `json:"maxOutputTokens"`
+			} `json:"generationConfig"`
+		}
+		return path == "/v1beta/models/"+t.model+suffix && json.Unmarshal([]byte(raw), &body) == nil && body.GenerationConfig.MaxOutputTokens > 0 && body.GenerationConfig.MaxOutputTokens <= managementverify.ProbeMaxOutputTokens
+	}
+	if rpc.Method != "GenerateContent" || rpc.URL != aistudio.MakerSuiteRPCBase+"GenerateContent" || !rpc.Streaming {
+		return false
+	}
+	var body []json.RawMessage
+	var model string
+	var config []json.RawMessage
+	var maxOutput int64
+	return json.Unmarshal(rpc.Body, &body) == nil && len(body) >= 5 && json.Unmarshal(body[0], &model) == nil && model == "models/"+t.model && json.Unmarshal(body[3], &config) == nil && len(config) >= 4 && json.Unmarshal(config[3], &maxOutput) == nil && maxOutput > 0 && maxOutput <= managementverify.ProbeMaxOutputTokens
+}
+
 func (t *managementVerificationTransport) evidence() (c.Channel, int) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	return t.channel, t.status
+	return t.observed, t.status
 }
 
 type managementVerificationRPC struct {
+	channel   c.Channel
 	accountID string
 	next      aistudio.RPCTransport
 	mu        sync.Mutex
@@ -487,7 +552,7 @@ type managementVerificationRPC struct {
 }
 
 func (t *managementVerificationRPC) Do(ctx context.Context, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
-	if t.next == nil || rpc.AccountID != t.accountID || rpc.Method != "ListModels" || rpc.URL != aistudio.MakerSuiteRPCBase+"ListModels" {
+	if t.next == nil || rpc.AccountID != t.accountID || !t.validRPC(rpc) {
 		return nil, c.NewError(c.CodeVerificationFailed)
 	}
 	response, err := t.next.Do(ctx, rpc)
@@ -505,5 +570,20 @@ func (t *managementVerificationRPC) evidence() (c.Channel, int) {
 	if t.status == 0 {
 		return "", 0
 	}
+	if t.channel == c.ChannelBuild {
+		return c.ChannelBuild, t.status
+	}
 	return c.ChannelPlayground, t.status
+}
+
+func (t *managementVerificationRPC) validRPC(rpc aistudio.RPCRequest) bool {
+	if t.channel != c.ChannelBuild {
+		return rpc.Method == "ListModels" && rpc.URL == aistudio.MakerSuiteRPCBase+"ListModels"
+	}
+	if rpc.Method != "ProxyUnaryCall" || rpc.URL != aistudio.MakerSuiteRPCBase+"ProxyUnaryCall" || rpc.Streaming {
+		return false
+	}
+	var body []json.RawMessage
+	var path, method string
+	return json.Unmarshal(rpc.Body, &body) == nil && len(body) == 4 && json.Unmarshal(body[0], &path) == nil && path == "/v1beta/models" && json.Unmarshal(body[3], &method) == nil && method == "GET"
 }

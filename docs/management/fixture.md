@@ -1,5 +1,11 @@
 # G6 synthetic HTTP fixture protocol
 
+**当前canonical为selectable channels v3**：`C:\Users\lywx2\AppData\Local\Temp\aistudio2api-management-go-tmp\g6-app.test.exe`，SHA256 **6752A62C86B42474CC609BB90F9928817054CFB620F377A8D61E29F088B5D7F6**。G0拥有本轮Go/fixture；G6未改Go或重编译。顺序严格实际复验V08/V11 2项→完整通道12项→旧HTTP22项全部exit0，0失败/错误/跳过；DEF-G6-CHANNEL-001已关闭，索引校验未放宽。17个相关Manager/driver/exe指纹前后相同。
+
+该v3产物基于总控测试源快照 `C:\Users\lywx2\AppData\Local\Temp\aistudio2api-channel-v3-source-eac5d9da27`（非branch/worktree），331本批冻结输入一致、前后0变化；G6在该目录调用正式项目绝对路径Python driver，不重编译或读取真实配置。精确命令与分层证据见 `channel-acceptance.md` / `deliveries/G6.md` 的v3节；本次日志 `channel-http-v3-targeted.log`、`channel-http-v3-final.log`、`python-http-selectable-v3-final.log`，安全总表 `channel-v3-summary.json`。
+
+v3保持g6-fixture-v1启停/合成Key/显式临时目录协议，新增通道按请求计数/events与g6-playground-fail/g6-wrongchannel/g6-cancel-after-build等仅测试fake-upstream场景；默认Build、显式PG或双选均由真实handler/task/store/coordinator/verifier执行。V10完全丢失模型ack仍不唯一定位，只读保留unknown，不重发/重放；fixture计数不是归属证据。真实Google/模型/生产/MySQL均未执行。**下面S2与早期hash记录仅属历史，当前hash以上方v3为准**。
+
 本轮queued snapshot/Claim修复已完成真实验收：总控稳态构建的新canonical fixture运行**22项HTTP/Python+7项native/schema/冷WAA全部通过**，均0失败/错误/跳过。G6没有重编译或修改fixture/runner/业务源码。**当前exe SHA256 `7AA640F7DFE006C134B20033895D026464158B84D3B9D08C2A1CD600AAB022E0`**，路径仍为 `C:\Users\lywx2\AppData\Local\Temp\aistudio2api-management-go-tmp\g6-app.test.exe`（总控构建，UTCmtime2026-10-20 06:17:35，61849088字节；执行前后哈希一致）。下方CA9680...旧exe不含新控制，只是历史，不能代替本轮证据。
 
 实际完整命令、日志和组件分层见 `deliveries/G6.md` / `acceptance.md`：Python22项7.321s；Go7项；`runtime/management-development/g6/python-http-s2.log`、`go-integration-s2.log`。MySQL按用户要求延期，未准备服务。所有Key仍为本次合成、临时数据、loopback fake上游，无真实Google/模型调用。

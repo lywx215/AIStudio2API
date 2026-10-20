@@ -399,6 +399,11 @@ export const messages: Record<TranslationKey, string> = {
   'settings.logMaxTotal': 'Taille maximale des journaux (Mo)',
   'settings.logMaxTotalHelp':
     'Supprime les fichiers les plus anciens lorsque le dossier des journaux dépasse cette taille. Minimum 20.',
+  'usage.view.overview': 'Vue d’ensemble',
+  'usage.view.trends': 'Tendances',
+  'usage.view.dimensions': 'Dimensions',
+  'usage.view.records': 'Requêtes',
+  'usage.refreshPaused': 'Actualisation suspendue sur les pages précédentes',
   'usage.title': 'Utilisation',
   'usage.description':
     'Nombre, résultats, jetons et durée des requêtes de l’API publique, conservés 90 jours',

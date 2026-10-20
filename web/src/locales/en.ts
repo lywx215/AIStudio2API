@@ -387,6 +387,11 @@ export const messages: Record<TranslationKey, string> = {
   'settings.logMaxTotal': 'Log size limit (MB)',
   'settings.logMaxTotalHelp':
     'Deletes the oldest files when the log directory exceeds this size. Minimum 20.',
+  'usage.view.overview': 'Overview',
+  'usage.view.trends': 'Trends',
+  'usage.view.dimensions': 'Dimensions',
+  'usage.view.records': 'Request records',
+  'usage.refreshPaused': 'Auto-refresh paused while viewing older pages',
   'usage.title': 'Usage',
   'usage.description': 'Public API request counts, outcomes, tokens and latency, kept for 90 days',
   'usage.range': 'Time range',

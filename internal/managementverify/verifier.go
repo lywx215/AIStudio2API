@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"unicode"
@@ -51,6 +52,12 @@ func (v *verifier) Verify(ctx context.Context, input c.VerificationInput, progre
 	if input.Mode == "" {
 		input.Mode = c.VerificationModel
 	}
+	var channels []c.Channel
+	channels, err = c.NormalizeVerificationChannels(input.Channels)
+	if err != nil {
+		return out, err
+	}
+	input.Channels = channels
 	if err = validateInput(input); err != nil {
 		return out, err
 	}
@@ -95,79 +102,149 @@ func (v *verifier) Verify(ctx context.Context, input c.VerificationInput, progre
 	if progress != nil {
 		progress("verifying", 10)
 	}
+	out.Result = c.VerificationResult{AuthIndex: input.Account.Index, Model: input.Model, Versions: input.Account.Versions, Channels: channels, Stage: "verifying"}
+	var firstErr error
+	for _, channel := range channels {
+		single := input
+		single.Channels = []c.Channel{channel}
+		single.Checkpoint = nil
+		child, candidate, childErr := v.verifyChannel(ctx, single, channel, progress)
+		out.Result.ChannelResults = append(out.Result.ChannelResults, child)
+		if childErr != nil && firstErr == nil {
+			firstErr = childErr
+		}
+		out.Result.Success = firstErr == nil && len(out.Result.ChannelResults) == len(channels)
+		if out.Result.Success {
+			out.Result.Stage = child.Stage
+		} else if firstErr != nil {
+			out.Result.Stage = "failed"
+		}
+		if len(channels) == 1 {
+			out.Result.RequestID, out.Result.UpstreamStatus, out.Result.ActualChannel = child.RequestID, child.UpstreamStatus, child.ActualChannel
+		}
+		if candidate != nil && childErr == nil {
+			input.Candidate = candidate
+			out.RefreshedCandidate = candidate
+		}
+		if input.Checkpoint != nil {
+			snapshot := out.Result
+			snapshot.Channels = slices.Clone(snapshot.Channels)
+			snapshot.ChannelResults = slices.Clone(snapshot.ChannelResults)
+			if checkpointErr := input.Checkpoint(snapshot); checkpointErr != nil {
+				out.Result.Success = false
+				out.Result.Stage = "failed"
+				return out, c.PublicError(checkpointErr)
+			}
+		}
+		if childErr != nil {
+			code := c.PublicError(childErr).Code
+			if code == c.CodeCancelled || code == c.CodeVerificationTimeout || code == c.CodeInterrupted || code == c.CodeVersionConflict {
+				if code == c.CodeCancelled {
+					out.Result.Stage = "cancelled"
+				}
+				if code == c.CodeInterrupted {
+					out.Result.Stage = "interrupted"
+				}
+				break
+			}
+		}
+	}
+	if firstErr != nil {
+		out.RefreshedCandidate = nil
+		return out, firstErr
+	}
+	if progress != nil {
+		progress(out.Result.Stage, 100)
+	}
+	return out, nil
+}
+
+func (v *verifier) verifyChannel(ctx context.Context, input c.VerificationInput, channel c.Channel, progress c.ProgressFunc) (child c.VerificationChannelResult, candidate *c.CredentialMaterial, err error) {
+	child = c.VerificationChannelResult{RequestedChannel: channel, AuthIndex: input.Account.Index, Model: input.Model, Versions: input.Account.Versions, Stage: "failed"}
+	defer func() {
+		if err != nil {
+			child.Success = false
+			child.Error = c.PublicError(err)
+			child.Stage = "failed"
+			if child.Error.Code == c.CodeCancelled {
+				child.Stage = "cancelled"
+			}
+			if child.Error.Code == c.CodeInterrupted {
+				child.Stage = "interrupted"
+			}
+		}
+	}()
+	if ctx.Err() != nil {
+		return child, nil, contextError(ctx.Err())
+	}
 	session, openErr := v.target.Open(ctx, input)
 	if openErr != nil {
-		// A target may have allocated a partial session before failing.
 		if session != nil {
 			_ = session.Close()
 		}
-		return out, verificationError(ctx, openErr)
+		return child, nil, verificationError(ctx, openErr)
 	}
 	if session == nil {
-		return out, c.NewError(c.CodeVerificationFailed)
+		return child, nil, c.NewError(c.CodeVerificationFailed)
 	}
 	var closeOnce sync.Once
 	var closeErr error
 	closed := make(chan struct{})
-	closeSession := func() {
-		closeOnce.Do(func() { closeErr = session.Close(); close(closed) })
-	}
+	closeSession := func() { closeOnce.Do(func() { closeErr = session.Close(); close(closed) }) }
 	stop := context.AfterFunc(ctx, closeSession)
 	defer func() {
 		stop()
 		closeSession()
 		<-closed
 		if err == nil && closeErr != nil {
-			out = c.VerificationOutput{}
 			err = c.NewError(c.CodeVerificationFailed)
 		}
 		if ctx.Err() != nil {
-			out = c.VerificationOutput{}
 			err = contextError(ctx.Err())
 		}
 	}()
-	observation, runErr := session.Run(ctx, c.VerificationProbe{
-		Mode: input.Mode, Model: input.Model, Prompt: ProbePrompt, MaxOutputTokens: ProbeMaxOutputTokens,
-	}, progress)
+	obs, runErr := session.Run(ctx, c.VerificationProbe{Mode: input.Mode, Model: input.Model, Channel: channel, Prompt: ProbePrompt, MaxOutputTokens: ProbeMaxOutputTokens}, progress)
+	// Only attributable observations become public evidence, even on failure.
+	if obs.AccountID == input.Account.AccountID && obs.NativeID == input.Account.NativeID && obs.Model == input.Model && obs.IdentityConfirmed && obs.ActualChannel == channel {
+		child.ActualChannel = obs.ActualChannel
+		if c.ValidRequestID(obs.RequestID) {
+			child.RequestID = obs.RequestID
+		}
+		if obs.UpstreamStatus >= 100 && obs.UpstreamStatus <= 599 {
+			status := obs.UpstreamStatus
+			child.UpstreamStatus = &status
+		}
+	}
 	if runErr != nil {
-		return out, verificationError(ctx, runErr)
+		return child, nil, verificationError(ctx, runErr)
 	}
-	if err = ctx.Err(); err != nil {
-		return out, contextError(err)
+	if ctx.Err() != nil {
+		return child, nil, contextError(ctx.Err())
 	}
-	if !validObservation(input, observation) {
-		return out, c.NewError(c.CodeVerificationFailed)
+	if !validObservation(input, obs) {
+		return child, nil, c.NewError(c.CodeVerificationFailed)
 	}
-	stage := "model_verified"
+	child.Success, child.Stage = true, "model_verified"
 	if input.Mode == c.VerificationConnection {
-		stage = "connection_verified"
-	}
-	status := observation.UpstreamStatus
-	out.Result = c.VerificationResult{
-		Success: true, AuthIndex: input.Account.Index, Model: input.Model,
-		RequestID: observation.RequestID, UpstreamStatus: &status, Stage: stage,
-		Versions: input.Account.Versions, ActualChannel: observation.ActualChannel,
+		child.Stage = "connection_verified"
 	}
 	if input.Candidate != nil {
 		if source, ok := session.(CandidateSource); ok {
-			candidate, candidateErr := source.RefreshedCandidate(ctx)
+			refreshed, candidateErr := source.RefreshedCandidate(ctx)
 			if candidateErr != nil {
-				return c.VerificationOutput{}, verificationError(ctx, candidateErr)
+				return child, nil, verificationError(ctx, candidateErr)
 			}
-			if candidate != nil {
-				if candidate.NativeID != input.Account.NativeID || len(candidate.StorageState) == 0 || len(candidate.StorageState) > c.MaxCredentialBytes {
-					return c.VerificationOutput{}, c.NewError(c.CodeVerificationFailed)
+			if refreshed != nil {
+				if refreshed.NativeID != input.Account.NativeID || len(refreshed.StorageState) == 0 || len(refreshed.StorageState) > c.MaxCredentialBytes {
+					return child, nil, c.NewError(c.CodeVerificationFailed)
 				}
-				material := *candidate
-				material.StorageState = append([]byte(nil), material.StorageState...)
-				out.RefreshedCandidate = &material
+				material := *refreshed
+				material.StorageState = slices.Clone(refreshed.StorageState)
+				candidate = &material
 			}
 		}
 	}
-	if progress != nil {
-		progress(stage, 100)
-	}
-	return out, nil
+	return child, candidate, nil
 }
 
 func validateInput(input c.VerificationInput) error {
@@ -188,7 +265,7 @@ func validateInput(input c.VerificationInput) error {
 
 func validObservation(input c.VerificationInput, obs c.VerificationObservation) bool {
 	if obs.AccountID != input.Account.AccountID || obs.NativeID != input.Account.NativeID || obs.Model != input.Model ||
-		obs.ActualChannel != c.ChannelPlayground || !obs.IdentityConfirmed || !c.ValidRequestID(obs.RequestID) ||
+		len(input.Channels) != 1 || obs.ActualChannel != input.Channels[0] || !obs.IdentityConfirmed || !c.ValidRequestID(obs.RequestID) ||
 		obs.UpstreamStatus < 200 || obs.UpstreamStatus >= 300 {
 		return false
 	}

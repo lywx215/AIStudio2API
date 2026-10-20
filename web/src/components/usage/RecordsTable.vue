@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
+import { computed, defineAsyncComponent, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { api } from '@/api'
 import { useI18n } from '@/i18n'
-import type { UsageRecord } from '@/types'
+import type { UsageRecord, UsageRecordPage } from '@/types'
 import UiIcon from '../UiIcon.vue'
 import UiSelect from '../UiSelect.vue'
-import RecordDrawer from './RecordDrawer.vue'
+import { UsageCache, UsageRequest } from './loading'
 import { useUsageFormat } from './format'
 import { latencyTone, readPreference, writePreference } from './model'
 
@@ -21,8 +21,16 @@ const props = defineProps<{
   total: number
   statusOptions: string[]
   refreshKey: number
+  cache: UsageCache
+  ttl: number
 }>()
-const emit = defineEmits<{ 'update:status': [value: string]; 'update:search': [value: string] }>()
+const emit = defineEmits<{
+  'update:status': [value: string]
+  'update:search': [value: string]
+  page: [value: number]
+  busy: [value: boolean]
+}>()
+const RecordDrawer = defineAsyncComponent(() => import('./RecordDrawer.vue'))
 
 const { t, errorText } = useI18n()
 const { compact, integer, duration, dateTime, dimensionLabel } = useUsageFormat()
@@ -66,10 +74,12 @@ const cursors = ref<(string | undefined)[]>([undefined])
 const page = ref(0)
 const nextCursor = ref<string | undefined>()
 const state = ref<'loading' | 'ready' | 'error'>('loading')
+const loading = ref(false)
 const error = ref('')
 const selected = ref<UsageRecord | null>(null)
 const searchText = ref(props.search)
-let controller: AbortController | undefined
+const request = new UsageRequest<UsageRecordPage>(props.cache)
+let generation = 0
 let searchTimer: number | undefined
 
 const filtered = computed(() => props.status !== '' || props.search !== '')
@@ -86,23 +96,34 @@ function parameters(cursor?: string): URLSearchParams | null {
 
 // load 读取当前页，较早发出的请求被取消
 async function load(): Promise<void> {
-  controller?.abort()
-  const current = new AbortController()
-  controller = current
+  const current = ++generation
+  request.cancel()
   state.value = items.value.length === 0 ? 'loading' : state.value
   error.value = ''
   const query = parameters(cursors.value[page.value])
   if (query === null) return
   query.set('limit', String(pageSize.value))
+  loading.value = true
+  emit('busy', true)
   try {
-    const result = await api.usageRecords(query, current.signal)
-    items.value = result.items
-    nextCursor.value = result.next_cursor
+    const result = await request.load(
+      `records:${query.toString()}`,
+      (signal) => api.usageRecords(query, signal),
+      props.ttl,
+    )
+    if (!result || current !== generation) return
+    items.value = result.value.items
+    nextCursor.value = result.value.next_cursor
     state.value = 'ready'
   } catch (reason) {
-    if (current.signal.aborted) return
+    if (current !== generation) return
     error.value = errorText(reason)
-    state.value = 'error'
+    state.value = items.value.length > 0 ? 'ready' : 'error'
+  } finally {
+    if (current === generation) {
+      loading.value = false
+      emit('busy', false)
+    }
   }
 }
 
@@ -110,6 +131,7 @@ async function load(): Promise<void> {
 function restart(): void {
   cursors.value = [undefined]
   page.value = 0
+  emit('page', 0)
   void load()
 }
 
@@ -120,13 +142,19 @@ function move(step: 1 | -1): void {
     cursors.value = [...cursors.value.slice(0, page.value + 1), nextCursor.value]
   }
   page.value = Math.max(0, page.value + step)
+  items.value = []
+  emit('page', page.value)
   void load()
 }
 
-watch(() => [props.scope, props.status, props.search, pageSize.value], restart, { immediate: true })
 watch(
-  () => props.refreshKey,
-  () => void load(),
+  () => [props.scope, props.status, props.search, pageSize.value, props.refreshKey],
+  (_value, previous) => {
+    if (previous && previous.slice(0, 4).some((value, index) => value !== _value[index]))
+      items.value = []
+    restart()
+  },
+  { immediate: true },
 )
 watch(
   () => props.search,
@@ -139,7 +167,9 @@ watch(searchText, (value) => {
   searchTimer = window.setTimeout(() => emit('update:search', value.trim()), 300)
 })
 onUnmounted(() => {
-  controller?.abort()
+  generation++
+  request.cancel()
+  emit('busy', false)
   window.clearTimeout(searchTimer)
 })
 
@@ -176,7 +206,7 @@ function latencyWidth(milliseconds: number): number {
 </script>
 
 <template>
-  <section class="min-w-0 rounded-lg border border-line bg-panel">
+  <section class="min-w-0 rounded-lg border border-line bg-panel" :aria-busy="loading">
     <header class="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
       <div class="mr-auto min-w-0">
         <h3 :id="`${id}-title`" class="text-sm font-medium text-gray-200">
@@ -257,11 +287,7 @@ function latencyWidth(milliseconds: number): number {
       </button>
     </header>
 
-    <div
-      v-if="state === 'error'"
-      class="flex items-center gap-3 px-4 py-6 text-sm text-red-300"
-      role="alert"
-    >
+    <div v-if="error" class="flex items-center gap-3 px-4 py-6 text-sm text-red-300" role="alert">
       <UiIcon name="warning" :size="16" />
       <span class="flex-1">{{ error }}</span>
       <button
@@ -272,17 +298,17 @@ function latencyWidth(milliseconds: number): number {
         {{ t('usage.retry') }}
       </button>
     </div>
-    <div v-else-if="state === 'loading'" class="space-y-2 p-4" aria-hidden="true">
+    <div v-if="state === 'loading'" class="space-y-2 p-4" aria-hidden="true">
       <div v-for="index in 6" :key="index" class="h-8 animate-pulse rounded bg-raised/60"></div>
     </div>
     <div
-      v-else-if="items.length === 0"
+      v-else-if="state === 'ready' && items.length === 0"
       class="flex flex-col items-center gap-2 px-4 py-12 text-center text-sm text-gray-500"
     >
       <UiIcon name="empty" :size="28" class="text-gray-600" />
       {{ t('usage.recordsEmpty') }}
     </div>
-    <template v-else>
+    <template v-else-if="items.length > 0">
       <div class="hidden overflow-x-auto md:block">
         <table class="w-full text-left text-xs" :aria-labelledby="`${id}-title`">
           <thead class="text-gray-500">
@@ -418,6 +444,9 @@ function latencyWidth(milliseconds: number): number {
     <footer
       class="flex flex-wrap items-center gap-2 border-t border-line px-4 py-2 text-xs text-gray-400"
     >
+      <span v-if="page > 0 && ttl !== Infinity" class="w-full text-yellow-400" role="status">{{
+        t('usage.refreshPaused')
+      }}</span>
       <UiSelect
         :model-value="pageSize"
         :aria-label="t('usage.pageSize').replace('{count}', String(pageSize))"
@@ -434,7 +463,7 @@ function latencyWidth(milliseconds: number): number {
       <button
         type="button"
         class="flex items-center gap-1 rounded-md border border-line px-2 py-1 hover:bg-raised disabled:opacity-40"
-        :disabled="page === 0"
+        :disabled="page === 0 || loading"
         @click="move(-1)"
       >
         <UiIcon name="chevronLeft" :size="12" />{{ t('usage.previousPage') }}
@@ -442,12 +471,12 @@ function latencyWidth(milliseconds: number): number {
       <button
         type="button"
         class="flex items-center gap-1 rounded-md border border-line px-2 py-1 hover:bg-raised disabled:opacity-40"
-        :disabled="nextCursor === undefined"
+        :disabled="nextCursor === undefined || loading"
         @click="move(1)"
       >
         {{ t('usage.nextPage') }}<UiIcon name="chevronRight" :size="12" />
       </button>
     </footer>
-    <RecordDrawer :record="selected" @close="selected = null" />
+    <RecordDrawer v-if="selected" :record="selected" @close="selected = null" />
   </section>
 </template>

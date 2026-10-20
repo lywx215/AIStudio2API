@@ -38,6 +38,19 @@ def synthetic_credentials(label="one", revision=1):
     }
 
 
+def submit_playground_test(client, account_id, model, idempotency_key):
+    """Keep legacy G6 probes explicit while the server default becomes Build.
+
+    This uses the actual old Aitoapi redirect-safe transport. Its production
+    submit_test signature/defaults remain untouched in the Manager repository.
+    """
+    return client._request(
+        "POST", f"/api/manage/v1/accounts/{client._id(account_id)}/test",
+        body={"mode":"model", "model":model, "channels":["playground"]},
+        idempotency_key=idempotency_key,
+    )
+
+
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -399,11 +412,11 @@ class RealHandlerAcceptance(unittest.TestCase):
         for model in ("g6-wrongacct","g6-buildonly","g6-empty","g6-thoughtonly","g6-finishonly",
                       "g6-missingterminal","g6-wrongmodel","g6-unconfirmed","g6-timeout"):
             with self.subTest(model=model):
-                ack = self.client.submit_test(account["accountId"], model, "g6-test-"+model)
+                ack = submit_playground_test(self.client,account["accountId"], model, "g6-test-"+model)
                 task = self.fixture.poll(ack["taskId"])
                 self.assertNotEqual(task["status"], "succeeded")
                 self.assertFalse(any(item.get("result",{}).get("stage")=="model_verified" for item in task["items"]))
-        ack = self.client.submit_test(account["accountId"], "g6-ok", "g6-test-ok")
+        ack = submit_playground_test(self.client,account["accountId"], "g6-ok", "g6-test-ok")
         task = self.fixture.poll(ack["taskId"])
         self.assertEqual(task["status"], "succeeded")
         result = task["items"][0]["result"]
@@ -415,14 +428,21 @@ class RealHandlerAcceptance(unittest.TestCase):
         self.addCleanup(new_client.close)
         self.assertEqual(new_client.account(account["accountId"])["accountId"],account["accountId"])
         new_readback=importlib.import_module("enterprise.aistudio2api_readback").AIStudio2APITaskReadback()
-        self.assertTrue(new_readback.verified_result(task,task["items"][0],account,"g6-ok"))
+        # Use the stable readback API with explicit historical request channels;
+        # a new Manager default of Build must not reinterpret this PG request.
+        checkpoint={"server_origin":self.fixture.origin,"operation":"test","target_model":"g6-ok",
+                    "validation_channels":["playground"],"remote_task_id":task["taskId"],
+                    "remote_management_key_id":task["createdByKeyId"],"remote_account_id":account["accountId"]}
+        finding=new_readback.inspect({"checkpoint":checkpoint,"remote_account_id":account["accountId"]},
+            server={"origin":self.fixture.origin},email=account["accountName"],client=new_client)
+        self.assertEqual(finding["finding"],"model_verified")
         self.assertEqual(new_client.capabilities()["backend"],"aistudio2api")
         self.assertIs(new_client.preflight()["readiness"]["ready"],False)
 
     def test_cancel_restart_never_repeats_generation_or_upload(self):
         _, ack, original, account = self.imported("restart")
         receipt = original["items"][0]["upload"]
-        pending = self.client.submit_test(account["accountId"], "g6-cancel", "g6-cancel")
+        pending = submit_playground_test(self.client,account["accountId"], "g6-cancel", "g6-cancel")
         deadline = time.monotonic()+5
         while self.fixture.metrics()["generated"] < 1 and time.monotonic()<deadline:
             time.sleep(.03)
@@ -430,7 +450,7 @@ class RealHandlerAcceptance(unittest.TestCase):
         self.client._request("POST",f"/api/manage/v1/tasks/{pending['taskId']}/cancel",body={})
         self.assertIn(self.fixture.poll(pending["taskId"])["status"], {"cancelled","failed"})
         self.assertEqual(self.fixture.metrics()["generated"],1)
-        pending = self.client.submit_test(account["accountId"], "g6-cancel", "g6-crash")
+        pending = submit_playground_test(self.client,account["accountId"], "g6-cancel", "g6-crash")
         deadline = time.monotonic()+5
         while self.fixture.metrics()["generated"] < 2 and time.monotonic()<deadline:
             time.sleep(.03)
@@ -510,7 +530,7 @@ class RealHandlerAcceptance(unittest.TestCase):
 
     def test_key_revocation_cancels_queued_uncommitted_work(self):
         _,_,_,account=self.imported("revoke")
-        running=self.client.submit_test(account["accountId"],"g6-cancel","g6-revoke-running")
+        running=submit_playground_test(self.client,account["accountId"],"g6-cancel","g6-revoke-running")
         deadline=time.monotonic()+5
         while self.fixture.metrics()["generated"]<1 and time.monotonic()<deadline:
             time.sleep(.03)
@@ -588,7 +608,7 @@ class RealHandlerAcceptance(unittest.TestCase):
 
     def block_worker(self, account_id, idem="g6-snapshot-blocker"):
         before=self.fixture.metrics()["generated"]
-        accepted=self.client.submit_test(account_id,"g6-cancel",idem)
+        accepted=submit_playground_test(self.client,account_id,"g6-cancel",idem)
         deadline=time.monotonic()+10
         while self.fixture.metrics()["generated"]<before+1 and time.monotonic()<deadline:
             time.sleep(.02)
@@ -601,6 +621,8 @@ class RealHandlerAcceptance(unittest.TestCase):
         self.assertIn(self.fixture.poll(accepted["taskId"])["status"],{"cancelled","failed"})
 
     def queued_request(self, method, path, body, idem):
+        if path.endswith("/test"):
+            body={**body,"channels":["playground"]}
         accepted=self.client._request(method,path,body=body,idempotency_key=idem)
         self.assertEqual(accepted["status"],"queued")
         self.assertEqual(self.client.task(accepted["taskId"])["status"],"queued")
@@ -726,7 +748,7 @@ class RealHandlerAcceptance(unittest.TestCase):
         _,_,_,account=self.imported("claim-transient")
         before=self.fixture.metrics()["claimAttempts"]
         self.fixture.claim_fault("before",2)
-        accepted=self.client.submit_test(account["accountId"],"g6-ok","g6-claim-transient")
+        accepted=submit_playground_test(self.client,account["accountId"],"g6-ok","g6-claim-transient")
         # No second Submit or startup RecoverTasks is used to wake this task.
         task=self.fixture.poll(accepted["taskId"])
         self.assertEqual(task["status"],"succeeded")
@@ -739,7 +761,7 @@ class RealHandlerAcceptance(unittest.TestCase):
     def test_claim_result_lost_after_sql_commit_does_not_repeat_model(self):
         _,_,_,account=self.imported("claim-ambiguous")
         self.fixture.claim_fault("after")
-        accepted=self.client.submit_test(account["accountId"],"g6-ok","g6-claim-ambiguous")
+        accepted=submit_playground_test(self.client,account["accountId"],"g6-ok","g6-claim-ambiguous")
         task=self.fixture.poll(accepted["taskId"])
         self.assertEqual(task["status"],"interrupted")
         self.assertEqual(self.fixture.metrics()["claimFaults"],1)

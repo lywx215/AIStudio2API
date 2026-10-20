@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -192,8 +193,10 @@ func TestManagementAcceptanceFixtureProcess(t *testing.T) {
 				}
 				_ = json.NewEncoder(w).Encode(map[string]bool{"armed": true})
 			case r.Method == "POST" && r.URL.Path == "/__g6__/release":
-				f.observer.release()
-				_ = json.NewEncoder(w).Encode(map[string]bool{"released": true})
+				outcome := g6ReleaseControl(w, r, f.observer)
+				// Only fixed stages and byte counts: never request headers,
+				// bodies, tokens, or free-form transport errors.
+				t.Logf("G6_CONTROL release stage=%s status=%d requestBytes=%d responseBytes=%d", outcome.stage, outcome.status, outcome.requestBytes, outcome.responseBytes)
 			case r.Method == "POST" && r.URL.Path == "/__g6__/auth-expired":
 				var input struct {
 					AccountID string `json:"accountId"`
@@ -325,6 +328,163 @@ func TestManagementAcceptanceFixtureProcess(t *testing.T) {
 	}
 }
 
+type g6ControlOutcome struct {
+	stage         string
+	status        int
+	requestBytes  int64
+	responseBytes int
+}
+
+// The Python fixture client sends Connection: close. Consume its small request
+// before releasing work or writing the response: the server's closing-connection
+// path does not perform the usual pre-response request-body drain. A fixed-size,
+// flushed acknowledgement also makes response completion explicit on Windows.
+func g6ReleaseControl(w http.ResponseWriter, r *http.Request, observer *g6Observer) (out g6ControlOutcome) {
+	out.status, out.stage = http.StatusOK, "flushed"
+	ack := []byte(`{"released":true}`)
+	var readErr, closeErr error
+	if r.Body != nil {
+		out.requestBytes, readErr = io.Copy(io.Discard, io.LimitReader(r.Body, 1025))
+		closeErr = r.Body.Close()
+	}
+	if readErr != nil || closeErr != nil || out.requestBytes > 1024 {
+		out.status, out.stage = http.StatusBadRequest, "body_rejected"
+		ack = []byte(`{"error":"invalid release body"}`)
+	} else {
+		observer.release()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Length", strconv.Itoa(len(ack)))
+	w.Header().Set("Connection", "close")
+	w.WriteHeader(out.status)
+	var writeErr error
+	out.responseBytes, writeErr = w.Write(ack)
+	if writeErr != nil || out.responseBytes != len(ack) {
+		out.stage = "write_failed"
+		return out
+	}
+	if err := http.NewResponseController(w).Flush(); err != nil {
+		out.stage = "flush_failed"
+	}
+	return out
+}
+
+type g6ReleaseTrackedBody struct {
+	reader      *strings.Reader
+	eof, closed bool
+	beforeEOF   func()
+}
+
+func (b *g6ReleaseTrackedBody) Read(p []byte) (int, error) {
+	n, err := b.reader.Read(p)
+	if err == io.EOF {
+		b.eof = true
+		if b.beforeEOF != nil {
+			b.beforeEOF()
+		}
+	}
+	return n, err
+}
+func (b *g6ReleaseTrackedBody) Close() error { b.closed = true; return nil }
+
+type g6ReleaseResponseWriter struct {
+	*httptest.ResponseRecorder
+	body *g6ReleaseTrackedBody
+	t    *testing.T
+}
+
+func (w *g6ReleaseResponseWriter) Write(p []byte) (int, error) {
+	if !w.body.eof || !w.body.closed {
+		w.t.Error("release response preceded request-body EOF/close")
+	}
+	return w.ResponseRecorder.Write(p)
+}
+
+func TestManagementAcceptanceFixtureReleaseDrainsBeforeAcknowledgement(t *testing.T) {
+	observer := &g6Observer{}
+	if !observer.arm("before-prepare") {
+		t.Fatal("barrier not armed")
+	}
+	resume := observer.resume
+	body := &g6ReleaseTrackedBody{reader: strings.NewReader(`{}`), beforeEOF: func() {
+		select {
+		case <-resume:
+			t.Error("barrier released before request-body EOF")
+		default:
+		}
+	}}
+	request := httptest.NewRequest("POST", "http://fixture.test/__g6__/release", nil)
+	request.Body, request.ContentLength, request.Close = body, 2, true
+	recorder := httptest.NewRecorder()
+	writer := &g6ReleaseResponseWriter{ResponseRecorder: recorder, body: body, t: t}
+	outcome := g6ReleaseControl(writer, request, observer)
+	if outcome.stage != "flushed" || outcome.status != 200 || outcome.requestBytes != 2 || outcome.responseBytes != len(`{"released":true}`) || !recorder.Flushed {
+		t.Fatalf("incomplete acknowledgement: %+v", outcome)
+	}
+	if recorder.Header().Get("Content-Length") != strconv.Itoa(recorder.Body.Len()) || recorder.Header().Get("Connection") != "close" || recorder.Body.String() != `{"released":true}` {
+		t.Fatalf("invalid release framing: %v %s", recorder.Header(), recorder.Body.String())
+	}
+	select {
+	case <-resume:
+	default:
+		t.Fatal("barrier not released")
+	}
+}
+
+func TestManagementAcceptanceFixtureReleaseCancelledBarrierHTTP(t *testing.T) {
+	observer := &g6Observer{}
+	outcomes := make(chan g6ControlOutcome, 16)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" || r.URL.Path != "/__g6__/release" {
+			http.NotFound(w, r)
+			return
+		}
+		outcomes <- g6ReleaseControl(w, r, observer)
+	}))
+	defer server.Close()
+	transport := &http.Transport{Proxy: nil, DisableKeepAlives: true}
+	defer transport.CloseIdleConnections()
+	client := &http.Client{Transport: transport, Timeout: 3 * time.Second}
+	for i := 0; i < 16; i++ {
+		if !observer.arm("before-prepare") {
+			t.Fatal("barrier not armed")
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		if err := observer.wait(ctx, "before-prepare"); !errors.Is(err, context.Canceled) {
+			t.Fatalf("barrier did not observe cancellation: %v", err)
+		}
+		request, err := http.NewRequest("POST", server.URL+"/__g6__/release", strings.NewReader(`{}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Close = true
+		request.Header.Set("Content-Type", "application/json")
+		response, err := client.Do(request)
+		if err != nil {
+			t.Fatalf("release %d transport error: %v", i, err)
+		}
+		raw, readErr := io.ReadAll(response.Body)
+		closeErr := response.Body.Close()
+		if readErr != nil || closeErr != nil || response.StatusCode != 200 || response.ContentLength != int64(len(raw)) || string(raw) != `{"released":true}` {
+			t.Fatalf("release %d incomplete response: status=%d body=%q read=%v close=%v", i, response.StatusCode, raw, readErr, closeErr)
+		}
+		select {
+		case outcome := <-outcomes:
+			if outcome.stage != "flushed" || outcome.requestBytes != 2 {
+				t.Fatalf("release %d outcome=%+v", i, outcome)
+			}
+		case <-time.After(time.Second):
+			t.Fatal("missing release outcome")
+		}
+		state := observer.snapshot()
+		if state["barrierArmed"] != "" || state["barrierReached"] != "" {
+			t.Fatalf("release %d left barrier armed", i)
+		}
+	}
+}
+
 // authExpired is a test-only definitive authentication observation, committed
 // through the real coordinator/store/file participant, never a GET projection.
 // Only identities already admitted as synthetic into this private fixture may
@@ -404,13 +564,21 @@ type g6Target struct {
 	mu                        sync.Mutex
 	opened, generated, closed int
 	playground, build         int
+	events                    []g6VerificationEvent
 }
 
-func (f *g6Target) snapshot() map[string]int {
+type g6VerificationEvent struct {
+	AccountID string             `json:"accountId"`
+	Channel   c.Channel          `json:"channel"`
+	Model     string             `json:"model"`
+	Mode      c.VerificationMode `json:"mode"`
+}
+
+func (f *g6Target) snapshot() map[string]any {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return map[string]int{"opened": f.opened, "generated": f.generated, "closed": f.closed,
-		"generationCalls": f.generated, "playgroundCalls": f.playground, "buildCalls": f.build}
+	return map[string]any{"opened": f.opened, "generated": f.generated, "closed": f.closed,
+		"generationCalls": f.generated, "playgroundCalls": f.playground, "buildCalls": f.build, "events": append([]g6VerificationEvent{}, f.events...)}
 }
 func (f *g6Target) Open(_ context.Context, input c.VerificationInput) (c.VerificationSession, error) {
 	f.mu.Lock()
@@ -430,10 +598,13 @@ func (s *g6Session) Close() error {
 	return nil
 }
 func (s *g6Session) Run(ctx context.Context, probe c.VerificationProbe, _ c.ProgressFunc) (c.VerificationObservation, error) {
+	s.target.mu.Lock()
+	s.target.events = append(s.target.events, g6VerificationEvent{AccountID: s.input.Account.AccountID, Channel: probe.Channel, Model: probe.Model, Mode: probe.Mode})
+	s.target.mu.Unlock()
 	if probe.Mode == c.VerificationModel {
 		s.target.mu.Lock()
 		s.target.generated++
-		if probe.Model == "g6-buildonly" {
+		if probe.Channel == c.ChannelBuild {
 			s.target.build++
 		} else {
 			s.target.playground++
@@ -444,13 +615,41 @@ func (s *g6Session) Run(ctx context.Context, probe c.VerificationProbe, _ c.Prog
 	if err != nil {
 		return c.VerificationObservation{}, err
 	}
-	o := c.VerificationObservation{AccountID: s.input.Account.AccountID, NativeID: s.input.Account.NativeID, ActualChannel: c.ChannelPlayground, Model: probe.Model, RequestID: requestID, UpstreamStatus: 200, VisibleText: "OK", Finished: true, IdentityConfirmed: true}
+	o := c.VerificationObservation{AccountID: s.input.Account.AccountID, NativeID: s.input.Account.NativeID, ActualChannel: probe.Channel, Model: probe.Model, RequestID: requestID, UpstreamStatus: 200, VisibleText: "OK", Finished: true, IdentityConfirmed: true}
 	switch probe.Model {
 	case "g6-wrongacct":
 		o.AccountID = "00000000-0000-4000-8000-000000000001"
 		o.NativeID = "other@example.invalid"
 	case "g6-buildonly":
-		o.ActualChannel = c.Channel("build")
+		if probe.Channel != c.ChannelBuild {
+			o.UpstreamStatus = 403
+			o.VisibleText = ""
+		}
+	case "g6-playgroundonly":
+		if probe.Channel != c.ChannelPlayground {
+			o.UpstreamStatus = 403
+			o.VisibleText = ""
+		}
+	case "g6-wrongchannel":
+		if probe.Channel == c.ChannelBuild {
+			o.ActualChannel = c.ChannelPlayground
+		} else {
+			o.ActualChannel = c.ChannelBuild
+		}
+	case "g6-playground-fail":
+		if probe.Channel == c.ChannelPlayground {
+			o.UpstreamStatus = 403
+			o.VisibleText = ""
+		}
+	case "g6-playground-cancel", "g6-cancel-after-build":
+		if probe.Channel == c.ChannelPlayground {
+			<-ctx.Done()
+			return o, ctx.Err()
+		}
+	case "g6-playground-timeout":
+		if probe.Channel == c.ChannelPlayground {
+			return o, context.DeadlineExceeded
+		}
 	case "g6-empty", "g6-thoughtonly", "g6-finishonly":
 		o.VisibleText = ""
 	case "g6-missingterminal":
@@ -679,7 +878,7 @@ func (g6Projection) Readiness(context.Context) (c.Readiness, error) {
 	return c.Readiness{Ready: false, Checks: []c.Check{{Name: "synthetic_fixture", Ready: false}}}, nil
 }
 func (g6Projection) Capabilities(context.Context) (c.Capabilities, error) {
-	return c.Capabilities{Backend: "aistudio2api", ProtocolVersion: c.ProtocolVersion, StableAccountIDs: true, DualCAS: true, UploadReceipts: true, TargetedVerification: true, VerificationChannels: []c.Channel{c.ChannelPlayground}}, nil
+	return c.Capabilities{Backend: "aistudio2api", ProtocolVersion: c.ProtocolVersion, StableAccountIDs: true, DualCAS: true, UploadReceipts: true, TargetedVerification: true, VerificationChannels: []c.Channel{c.ChannelBuild, c.ChannelPlayground}, DefaultVerificationChannels: []c.Channel{c.ChannelBuild}, MultiChannelVerification: true}, nil
 }
 func (g6Projection) Settings(context.Context) (c.SettingsSnapshot, error) {
 	return c.SettingsSnapshot{Values: c.SettingsValues{WAABackend: "go", WarmStartupConcurrency: 1, PerAccountConcurrency: 1, RoutingStrategy: "round_robin", UpstreamChannels: []string{"playground"}}, PersistentKeys: []string{}}, nil

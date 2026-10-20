@@ -286,6 +286,44 @@ export interface UsageReport {
   options: Record<UsageDimension, string[]>
 }
 
+export type UsagePage = 'overview' | 'trends' | 'dimensions' | 'records'
+export type UsageRankingDimension = UsageDimension | 'status'
+export type UsageMeta = Pick<UsageReport, 'from' | 'to' | 'generated_at' | 'latest_at' | 'options'>
+export type UsageOverviewReport = UsageMeta &
+  Pick<
+    UsageReport,
+    | 'bucket_seconds'
+    | 'totals'
+    | 'previous'
+    | 'cost'
+    | 'previous_cost'
+    | 'unpriced_models'
+    | 'recent'
+    | 'buckets'
+  >
+export type UsageTrendsReport = UsageMeta &
+  Pick<UsageReport, 'bucket_seconds' | 'totals' | 'stack_by' | 'series'> & {
+    buckets: Omit<UsageBucket, 'cost'>[]
+  }
+export type UsageDimensionsReport = UsageMeta & {
+  dimension: UsageRankingDimension
+  requests: number
+  groups: UsageGroup[]
+}
+export type UsageBreakdownReport = Pick<UsageMeta, 'from' | 'to' | 'generated_at'> & {
+  dimension: 'account' | 'model'
+  key: string
+  pairs: UsagePair[]
+}
+export type UsageRecordsMeta = UsageMeta & { requests: number; statuses: string[] }
+export interface UsageViewReports {
+  overview: UsageOverviewReport
+  trends: UsageTrendsReport
+  dimensions: UsageDimensionsReport
+  breakdown: UsageBreakdownReport
+  'records-meta': UsageRecordsMeta
+}
+
 export interface RequestAttempt {
   account: string
   channel: string

@@ -61,14 +61,16 @@ type Readiness struct {
 	Checks []Check `json:"checks"`
 }
 type Capabilities struct {
-	Backend              string    `json:"backend"`
-	ProtocolVersion      string    `json:"protocolVersion"`
-	StableAccountIDs     bool      `json:"stableAccountIds"`
-	DualCAS              bool      `json:"dualCAS"`
-	UploadReceipts       bool      `json:"uploadReceipts"`
-	TargetedVerification bool      `json:"targetedVerification"`
-	VerificationChannels []Channel `json:"verificationChannels"`
-	SettingsWrite        bool      `json:"settingsWrite"`
+	Backend                     string    `json:"backend"`
+	ProtocolVersion             string    `json:"protocolVersion"`
+	StableAccountIDs            bool      `json:"stableAccountIds"`
+	DualCAS                     bool      `json:"dualCAS"`
+	UploadReceipts              bool      `json:"uploadReceipts"`
+	TargetedVerification        bool      `json:"targetedVerification"`
+	VerificationChannels        []Channel `json:"verificationChannels"`
+	DefaultVerificationChannels []Channel `json:"defaultVerificationChannels"`
+	MultiChannelVerification    bool      `json:"multiChannelVerification"`
+	SettingsWrite               bool      `json:"settingsWrite"`
 }
 type SystemStatus struct {
 	Ready               bool   `json:"ready"`

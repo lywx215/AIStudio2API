@@ -7792,6 +7792,9 @@
               "verify": {
                 "default": true,
                 "type": "boolean"
+              },
+              "channels": {
+                "$ref": "#/components/schemas/VerificationChannels"
               }
             },
             "required": [
@@ -8168,6 +8171,9 @@
           "verify": {
             "default": true,
             "type": "boolean"
+          },
+          "channels": {
+            "$ref": "#/components/schemas/VerificationChannels"
           }
         },
         "required": [
@@ -8572,7 +8578,14 @@
           "result": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/PlaygroundVerificationResult"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PlaygroundVerificationResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChannelVerificationResult"
+                  }
+                ]
               },
               {
                 "$ref": "#/components/schemas/UploadOnlyResult"
@@ -8626,6 +8639,9 @@
             "minLength": 1,
             "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$",
             "type": "string"
+          },
+          "channels": {
+            "$ref": "#/components/schemas/VerificationChannels"
           }
         },
         "required": [],
@@ -8889,10 +8905,26 @@
             "type": "array",
             "items": {
               "type": "string",
-              "const": "playground"
+              "enum": [
+                "build",
+                "playground"
+              ]
             }
           },
           "settingsWrite": {
+            "type": "boolean"
+          },
+          "defaultVerificationChannels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "build",
+                "playground"
+              ]
+            }
+          },
+          "multiChannelVerification": {
             "type": "boolean"
           }
         },
@@ -8904,7 +8936,9 @@
           "uploadReceipts",
           "targetedVerification",
           "verificationChannels",
-          "settingsWrite"
+          "settingsWrite",
+          "defaultVerificationChannels",
+          "multiChannelVerification"
         ]
       },
       "SystemStatus": {
@@ -9695,6 +9729,173 @@
           "total",
           "offset",
           "limit"
+        ]
+      },
+      "VerificationChannels": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "build",
+            "playground"
+          ]
+        },
+        "minItems": 1,
+        "maxItems": 2,
+        "uniqueItems": true,
+        "default": [
+          "build"
+        ],
+        "description": "Omitted means Build. Both channels normalize to build,playground. No fallback. Explicit null and empty arrays are invalid."
+      },
+      "VerificationChannelResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "authIndex": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "credentialVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "model_verified",
+              "connection_verified",
+              "verifying",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ]
+          },
+          "stateVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "upstreamStatus": {
+            "maximum": 599,
+            "minimum": 100,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "actualChannel": {
+            "type": "string",
+            "enum": [
+              "build",
+              "playground"
+            ]
+          },
+          "requestedChannel": {
+            "type": "string",
+            "enum": [
+              "build",
+              "playground"
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "success",
+          "authIndex",
+          "model",
+          "upstreamStatus",
+          "stage",
+          "credentialVersion",
+          "stateVersion",
+          "requestedChannel"
+        ]
+      },
+      "ChannelVerificationResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Pinned Build/Playground evidence. Single-channel top-level transport fields mirror the child; aggregate actualChannel/requestId are absent. Completed child evidence persists on failure/cancellation/restart. See verification-channels.md.",
+        "properties": {
+          "authIndex": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "credentialVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "model_verified",
+              "connection_verified",
+              "verifying",
+              "failed",
+              "cancelled",
+              "interrupted"
+            ]
+          },
+          "stateVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "upstreamStatus": {
+            "maximum": 599,
+            "minimum": 100,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "actualChannel": {
+            "type": "string",
+            "enum": [
+              "build",
+              "playground"
+            ]
+          },
+          "channels": {
+            "$ref": "#/components/schemas/VerificationChannels"
+          },
+          "channelResults": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "$ref": "#/components/schemas/VerificationChannelResult"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "authIndex",
+          "model",
+          "upstreamStatus",
+          "stage",
+          "credentialVersion",
+          "stateVersion",
+          "channels",
+          "channelResults"
         ]
       }
     },

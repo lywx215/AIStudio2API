@@ -400,12 +400,12 @@ func (store *Store) scanCost(ctx context.Context, from, to int64, starts []int64
 var usageDimensions = append(slices.Clone(api.UsageDimensions), "status")
 
 // Usage 返回时间范围内的汇总、上一周期、估算费用、逐桶趋势、堆叠序列、分项与筛选候选
-func (store *Store) Usage(ctx context.Context, query api.UsageQuery) (api.UsageReport, error) {
+func (store *Store) usageAll(ctx context.Context, query api.UsageQuery) (api.UsageReport, error) {
 	location := query.Location
 	if location == nil {
 		location = time.UTC
 	}
-	now := time.Now()
+	now := store.usageNow()
 	from, to := query.From.UnixMilli(), query.To.UnixMilli()
 	starts := bucketStarts(query.From, query.To, query.Bucket, location)
 	totals := &aggregate{}

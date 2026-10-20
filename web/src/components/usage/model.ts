@@ -1,5 +1,5 @@
 import { onUnmounted, reactive, watch } from 'vue'
-import type { UsageDimension, UsageFilters, UsageStats } from '@/types'
+import type { UsageDimension, UsageFilters, UsageStats, UsagePage } from '@/types'
 
 // relativePresets 与 calendarPresets 是相对时间与日历两类快捷范围
 export const relativePresets = ['1h', '6h', '24h', '7d', '30d', '90d'] as const
@@ -24,6 +24,7 @@ const relativeSpans: Record<(typeof relativePresets)[number], number> = {
 
 // UsageViewState 是用量页写入地址栏的视图状态
 export interface UsageViewState {
+  view: UsagePage
   range: RangePreset
   from: string
   to: string
@@ -34,6 +35,7 @@ export interface UsageViewState {
 }
 
 const defaults: UsageViewState = {
+  view: 'overview',
   range: '24h',
   from: '',
   to: '',
@@ -49,12 +51,17 @@ function readState(): UsageViewState {
   const range = query.get('range') as RangePreset | null
   const presets: readonly string[] = [...relativePresets, ...calendarPresets, 'custom']
   const stack = query.get('stack') as UsageDimension | null
+  const view = query.get('usage_view') as UsagePage | null
   const filters: UsageFilters = {}
   for (const dimension of dimensions) {
     const values = (query.get(dimension) ?? '').split(',').filter((value) => value !== '')
     if (values.length > 0) filters[dimension] = values
   }
   return {
+    view:
+      view !== null && ['overview', 'trends', 'dimensions', 'records'].includes(view)
+        ? view
+        : defaults.view,
     range: range !== null && presets.includes(range) ? range : defaults.range,
     from: query.get('from') ?? '',
     to: query.get('to') ?? '',
@@ -73,6 +80,7 @@ function writeState(state: UsageViewState): void {
     else url.searchParams.set(name, value)
   }
   set('range', state.range, defaults.range)
+  set('usage_view', state.view, defaults.view)
   set('from', state.range === 'custom' ? state.from : '')
   set('to', state.range === 'custom' ? state.to : '')
   set('stack', state.stack, defaults.stack)

@@ -100,9 +100,9 @@ func (p *managementProjection) Capabilities(ctx context.Context) (contract.Capab
 	verification := active && services.Verifier != nil
 	channels := []contract.Channel{}
 	if verification {
-		channels = append(channels, contract.ChannelPlayground)
+		channels = append(channels, contract.ChannelBuild, contract.ChannelPlayground)
 	}
-	return contract.Capabilities{Backend: "aistudio2api", ProtocolVersion: contract.ProtocolVersion, StableAccountIDs: active, DualCAS: active, UploadReceipts: active, TargetedVerification: verification, VerificationChannels: channels, SettingsWrite: false}, nil
+	return contract.Capabilities{Backend: "aistudio2api", ProtocolVersion: contract.ProtocolVersion, StableAccountIDs: active, DualCAS: active, UploadReceipts: active, TargetedVerification: verification, VerificationChannels: channels, DefaultVerificationChannels: []contract.Channel{contract.ChannelBuild}, MultiChannelVerification: verification, SettingsWrite: false}, nil
 }
 
 func (p *managementProjection) Settings(ctx context.Context) (contract.SettingsSnapshot, error) {

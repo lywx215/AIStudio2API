@@ -95,6 +95,7 @@ type Logger func(level string, message string)
 
 // Store 串行批量写入请求账本与汇总，并提供聚合与明细查询
 type Store struct {
+	now     func() time.Time // Optional clock for deterministic report validation.
 	db      *sql.DB
 	writes  chan write
 	done    chan struct{}

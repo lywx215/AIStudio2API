@@ -44,12 +44,15 @@ type UsageFilters map[string][]string
 
 // UsageQuery 选择用量统计的时间范围、分桶、时区、筛选与堆叠维度
 type UsageQuery struct {
-	From     time.Time
-	To       time.Time
-	Bucket   time.Duration
-	Location *time.Location
-	Filters  UsageFilters
-	Stack    string
+	View      string
+	Dimension string
+	Key       string
+	From      time.Time
+	To        time.Time
+	Bucket    time.Duration
+	Location  *time.Location
+	Filters   UsageFilters
+	Stack     string
 }
 
 // UsageLatency 汇总一组请求的平均值与分位耗时
@@ -291,6 +294,11 @@ func (s *server) handleUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	query := UsageQuery{From: from, To: to, Location: time.UTC, Filters: parseUsageFilters(values), Stack: "model"}
+	query.View, query.Dimension, query.Key = values.Get("view"), values.Get("dimension"), values.Get("key")
+	if err := query.ValidateView(values.Has("key")); err != nil {
+		writeAdminError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
 	if name := values.Get("tz"); name != "" {
 		if query.Location, err = time.LoadLocation(name); err != nil {
 			writeAdminError(w, http.StatusBadRequest, "invalid_request", "tz 必须是 IANA 时区名")
@@ -322,7 +330,7 @@ func (s *server) handleUsage(w http.ResponseWriter, r *http.Request) {
 		writeAdminError(w, statusFromError(err), "usage_failed", err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, report)
+	writeJSON(w, http.StatusOK, report.ForView(query))
 }
 
 // parseUsageRecordQuery 读取请求记录的范围、筛选、状态码、关键字与分页参数

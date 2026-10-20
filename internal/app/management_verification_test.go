@@ -69,7 +69,7 @@ func verificationStorage(t *testing.T, value string) c.CredentialMaterial {
 }
 
 func verificationInput() c.VerificationInput {
-	return c.VerificationInput{Account: c.AccountRecord{Account: c.Account{AccountID: verificationAccountUUID, Index: 9, Versions: c.Versions{CredentialVersion: 2, StateVersion: 6}}, NativeID: "synthetic@example.test"}, Mode: c.VerificationModel, Model: "synthetic-model"}
+	return c.VerificationInput{Account: c.AccountRecord{Account: c.Account{AccountID: verificationAccountUUID, Index: 9, Versions: c.Versions{CredentialVersion: 2, StateVersion: 6}}, NativeID: "synthetic@example.test"}, Mode: c.VerificationModel, Model: "synthetic-model", Channels: []c.Channel{c.ChannelPlayground}}
 }
 
 type verificationSnapshot struct {
@@ -201,17 +201,23 @@ func newVerificationHarness(t *testing.T, input c.VerificationInput) *verificati
 		}
 		return input.Account.NativeID, 200, nil
 	}
-	h.onGenerate = func(context.Context, aistudio.GenerateRequest, aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
-		return verificationResponse(200, generatedResponse), nil
+	h.onGenerate = func(_ context.Context, _ aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
+		if rpc.Method == "GenerateContent" {
+			return verificationResponse(200, generatedResponse), nil
+		}
+		return verificationResponse(200, verificationBuildFrame(false)), nil
 	}
 	h.target.protocol = func(pool *aistudio.AccountPool, _ managementVerificationWorker, _ managementVerificationEnvironment) (aistudio.RPCTransport, aistudio.ProtectedTransport, func(), error) {
-		if pool.BuildEnabled() {
-			return nil, nil, nil, verificationCallbackError(t, errors.New("Build enabled in isolated pool"))
+		if pool.BuildEnabled() == pool.PlaygroundEnabled() {
+			return nil, nil, nil, verificationCallbackError(t, errors.New("isolated pool must enable one channel"))
 		}
 		return verificationRPCFunc(func(_ context.Context, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 				h.catalog.Add(1)
-				if rpc.AccountID != input.Account.NativeID || rpc.Method != "ListModels" {
+				if rpc.AccountID != input.Account.NativeID || (pool.BuildEnabled() && rpc.Method != "ProxyUnaryCall") || (pool.PlaygroundEnabled() && rpc.Method != "ListModels") {
 					return nil, verificationCallbackError(t, errors.New("wrong catalog request"))
+				}
+				if pool.BuildEnabled() {
+					return verificationResponse(200, verificationBuildModels(input.Model)), nil
 				}
 				return verificationResponse(200, modelResponse), nil
 			}), aistudio.ProtectedTransportFunc(func(ctx context.Context, request aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
@@ -619,4 +625,233 @@ func TestManagementVerificationFixturePathContainment(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Build upstream fixtures use the real proxy envelope and decoder, rather than
+// returning a verification result directly.
+func verificationBuildModels(model string) string {
+	raw, _ := json.Marshal(map[string]any{"models": []any{map[string]any{"name": "models/" + model, "inputTokenLimit": 4096, "outputTokenLimit": 1024, "supportedGenerationMethods": []string{"generateContent"}}}})
+	envelope, _ := json.Marshal([]any{string(raw)})
+	return string(envelope)
+}
+func verificationBuildFrame(unary bool) string {
+	raw := `{"candidates":[{"content":{"role":"model","parts":[{"text":"OK"}]},"finishReason":"STOP"}]}`
+	var envelope any = []any{[]any{[]any{raw}}}
+	if unary {
+		envelope = []any{raw}
+	}
+	encoded, _ := json.Marshal(envelope)
+	return string(encoded)
+}
+
+func TestManagementVerificationSelectableChannelsRealProtocol(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		channels []c.Channel
+		mode     c.VerificationMode
+		want     []c.Channel
+	}{
+		{"default-build", nil, c.VerificationModel, []c.Channel{c.ChannelBuild}},
+		{"playground", []c.Channel{c.ChannelPlayground}, c.VerificationModel, []c.Channel{c.ChannelPlayground}},
+		{"both-canonical", []c.Channel{c.ChannelPlayground, c.ChannelBuild}, c.VerificationModel, []c.Channel{c.ChannelBuild, c.ChannelPlayground}},
+		{"build-connection", nil, c.VerificationConnection, []c.Channel{c.ChannelBuild}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			input := verificationInput()
+			input.Channels, input.Mode = tc.channels, tc.mode
+			h := newVerificationHarness(t, input)
+			v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+			out, err := v.Verify(context.Background(), input, nil)
+			if err != nil || !c.ValidVerificationResult(out.Result) || !out.Result.Success || len(out.Result.ChannelResults) != len(tc.want) {
+				t.Fatalf("result=%+v err=%v", out.Result, err)
+			}
+			for i, channel := range tc.want {
+				child := out.Result.ChannelResults[i]
+				if child.RequestedChannel != channel || child.ActualChannel != channel {
+					t.Fatalf("wrong channel evidence: %+v", child)
+				}
+			}
+			if len(tc.want) == 2 && (out.Result.ActualChannel != "" || out.Result.RequestID != "") {
+				t.Fatal("aggregate fabricated a single transport")
+			}
+			wantCalls := int32(len(tc.want))
+			if tc.mode == c.VerificationConnection {
+				wantCalls = 0
+			}
+			if h.protected.Load() != wantCalls || h.catalog.Load() != int32(len(tc.want)) {
+				t.Fatalf("generation=%d catalog=%d", h.protected.Load(), h.catalog.Load())
+			}
+			h.assertReleased(t)
+		})
+	}
+}
+
+func TestManagementVerificationSelectedChannelNeverFallsBack(t *testing.T) {
+	for _, channel := range []c.Channel{c.ChannelBuild, c.ChannelPlayground} {
+		t.Run(string(channel), func(t *testing.T) {
+			input := verificationInput()
+			input.Channels = []c.Channel{channel}
+			h := newVerificationHarness(t, input)
+			var methods []string
+			h.onGenerate = func(_ context.Context, _ aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
+				methods = append(methods, rpc.Method)
+				return verificationResponse(403, "[]"), nil
+			}
+			v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+			out, err := v.Verify(context.Background(), input, nil)
+			if err == nil || out.Result.Success || !c.ValidVerificationResult(out.Result) || len(methods) != 1 {
+				t.Fatalf("result=%+v methods=%v err=%v", out.Result, methods, err)
+			}
+			if (channel == c.ChannelBuild && methods[0] != "ProxyStreamedCall" && methods[0] != "ProxyUnaryCall") || (channel == c.ChannelPlayground && methods[0] != "GenerateContent") {
+				t.Fatal("cross-channel fallback", methods)
+			}
+			if out.Result.ChannelResults[0].ActualChannel != channel || *out.Result.ChannelResults[0].UpstreamStatus != 403 {
+				t.Fatal("lost failure evidence")
+			}
+			h.assertReleased(t)
+		})
+	}
+}
+
+func TestManagementVerificationBothPreservesCompletedEvidenceOnCancel(t *testing.T) {
+	input := verificationInput()
+	input.Channels = []c.Channel{c.ChannelBuild, c.ChannelPlayground}
+	h := newVerificationHarness(t, input)
+	opened := make(chan struct{})
+	reader, writer := io.Pipe()
+	defer writer.Close()
+	h.onGenerate = func(_ context.Context, _ aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
+		if rpc.Method == "GenerateContent" {
+			close(opened)
+			return &aistudio.RPCResponse{StatusCode: 200, Header: http.Header{}, Body: reader}, nil
+		}
+		return verificationResponse(200, verificationBuildFrame(rpc.Method == "ProxyUnaryCall")), nil
+	}
+	checkpoints := make(chan c.VerificationResult, 2)
+	input.Checkpoint = func(result c.VerificationResult) error { checkpoints <- result; return nil }
+	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+	ctx, cancel := context.WithTimeout(context.Background(), verificationWaitTimeout)
+	defer cancel()
+	type answer struct {
+		out c.VerificationOutput
+		err error
+	}
+	done := make(chan answer, 1)
+	go func() { out, err := v.Verify(ctx, input, nil); done <- answer{out, err} }()
+	select {
+	case <-opened:
+	case a := <-done:
+		t.Fatalf("early return: %v", a.err)
+	case <-ctx.Done():
+		t.Fatal("second channel never opened")
+	}
+	select {
+	case first := <-checkpoints:
+		if first.Success || len(first.ChannelResults) != 1 || !first.ChannelResults[0].Success {
+			t.Fatalf("bad durable checkpoint: %+v", first)
+		}
+	default:
+		t.Fatal("first channel was not checkpointed before second started")
+	}
+	cancel()
+	select {
+	case a := <-done:
+		if a.err == nil || a.out.Result.Success || len(a.out.Result.ChannelResults) != 2 || !a.out.Result.ChannelResults[0].Success || a.out.Result.ChannelResults[1].Success || !c.ValidVerificationResult(a.out.Result) {
+			t.Fatalf("lost completed evidence: %+v %v", a.out.Result, a.err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("cancel did not release stream")
+	}
+	h.assertReleased(t)
+}
+
+func TestManagementVerificationBothVersionConflictDoesNotGenerateSuccessor(t *testing.T) {
+	input := verificationInput()
+	input.Channels = []c.Channel{c.ChannelBuild, c.ChannelPlayground}
+	h := newVerificationHarness(t, input)
+	input.Checkpoint = func(result c.VerificationResult) error {
+		if len(result.ChannelResults) == 1 {
+			h.store.record.StateVersion++
+		}
+		return nil
+	}
+	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+	out, err := v.Verify(context.Background(), input, nil)
+	if c.PublicError(err).Code != c.CodeVersionConflict || out.Result.Success || h.protected.Load() != 1 || len(out.Result.ChannelResults) != 2 || !out.Result.ChannelResults[0].Success {
+		t.Fatalf("conflict replayed: %+v %v calls=%d", out.Result, err, h.protected.Load())
+	}
+	h.assertReleased(t)
+}
+
+func TestManagementVerificationBuildRealProtectedTransport(t *testing.T) {
+	input := verificationInput()
+	input.Channels = []c.Channel{c.ChannelBuild}
+	h := newVerificationHarness(t, input)
+	workerFactory := h.target.worker
+	h.target.worker = func(ctx context.Context, id string, options camoufoxnative.Options) (managementVerificationWorker, error) {
+		worker, err := workerFactory(ctx, id, options)
+		if err != nil {
+			return nil, err
+		}
+		h.worker.prepare = func(_ context.Context, request aistudio.ProtectedRequest) (aistudio.PreparedProtectedRequest, error) {
+			if request.ProofField != 3 || request.URL != aistudio.MakerSuiteRPCBase+"ProxyStreamedCall" || !strings.HasPrefix(request.Prompt, "/v1beta/models/"+input.Model+":streamGenerateContent ") {
+				return aistudio.PreparedProtectedRequest{}, errors.New("Build proof bound to wrong entry")
+			}
+			return aistudio.PreparedProtectedRequest{Body: request.Body, Headers: http.Header{"X-Goog-Authuser": []string{"0"}}}, nil
+		}
+		h.worker.send = func(_ context.Context, request aistudio.ProtectedRequest) (*aistudio.RPCResponse, error) {
+			h.protected.Add(1)
+			if !strings.Contains(request.Headers.Get("Authorization"), "SAPISID3PHASH") {
+				return nil, errors.New("real signer not used")
+			}
+			return verificationResponse(200, verificationBuildFrame(false)), nil
+		}
+		return worker, nil
+	}
+	fakeProtocol := h.target.protocol
+	h.target.protocol = func(pool *aistudio.AccountPool, worker managementVerificationWorker, env managementVerificationEnvironment) (aistudio.RPCTransport, aistudio.ProtectedTransport, func(), error) {
+		rpc, _, _, err := fakeProtocol(pool, worker, env)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		_, protected, closeProtocol, err := newManagementVerificationProtocol(pool, worker, env)
+		return rpc, protected, closeProtocol, err
+	}
+	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+	out, err := v.Verify(context.Background(), input, nil)
+	if err != nil || !out.Result.Success || out.Result.ActualChannel != c.ChannelBuild || h.protected.Load() != 1 {
+		t.Fatalf("Build protected stack: %+v %v calls=%d", out.Result, err, h.protected.Load())
+	}
+	h.assertReleased(t)
+}
+
+func TestManagementVerificationBothCandidateRefreshStaysPrivate(t *testing.T) {
+	input := verificationInput()
+	input.Channels = []c.Channel{c.ChannelBuild, c.ChannelPlayground}
+	candidate := verificationStorage(t, "candidate-private")
+	input.Candidate = &candidate
+	original := string(candidate.StorageState)
+	h := newVerificationHarness(t, input)
+	h.onGenerate = func(_ context.Context, _ aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
+		if rpc.Method == "GenerateContent" {
+			if h.worker.state.Cookies[0].Value != "build-private-refresh" {
+				return nil, errors.New("second isolated channel lost candidate lineage")
+			}
+			h.worker.state.Cookies[0].Value = "playground-private-refresh"
+			return verificationResponse(200, verificationFrame(t, "OK", false, true)), nil
+		}
+		h.worker.state.Cookies[0].Value = "build-private-refresh"
+		return verificationResponse(200, verificationBuildFrame(false)), nil
+	}
+	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+	out, err := v.Verify(context.Background(), input, nil)
+	if err != nil || !out.Result.Success || out.RefreshedCandidate == nil || !strings.Contains(string(out.RefreshedCandidate.StorageState), "playground-private-refresh") || string(candidate.StorageState) != original || strings.Contains(string(h.store.material.StorageState), "private-refresh") {
+		t.Fatalf("candidate lineage failed: %v", err)
+	}
+	for _, child := range out.Result.ChannelResults {
+		if child.Versions != input.Account.Versions {
+			t.Fatal("candidate evidence version rewritten")
+		}
+	}
+	h.assertReleased(t)
 }
