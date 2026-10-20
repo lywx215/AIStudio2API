@@ -1660,9 +1660,10 @@ func (writer *responsesStreamWriter) terminal(response map[string]any) error {
 
 // failed 发送 response.failed：output 为已写出的输出项，error.code 取 Responses 错误枚举
 func (writer *responsesStreamWriter) failed(err error) error {
+	setAccessLogResponseError(writer.w, err.Error())
 	response := responseShell(writer.id, writer.created, "failed", writer.request)
 	response["output"] = writer.items()
-	response["error"] = map[string]any{"code": responsesErrorCode(err), "message": err.Error()}
+	response["error"] = map[string]any{"code": responsesErrorCode(err), "message": clientRequestErrorMessage(err)}
 	return writer.emit("response.failed", map[string]any{"response": response})
 }
 

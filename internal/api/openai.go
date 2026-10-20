@@ -985,8 +985,9 @@ func (s *server) streamChatCompletion(w http.ResponseWriter, r *http.Request, re
 		if shouldWriteRequestError(r, err) {
 			status := statusFromError(err)
 			code := openAIErrorCode(err)
+			setAccessLogResponseError(w, err.Error())
 			_ = writeSSE(w, "", map[string]any{"error": map[string]any{
-				"message": err.Error(),
+				"message": clientRequestErrorMessage(err),
 				"type":    openAIErrorType(status, code),
 				"param":   nil,
 				"code":    code,

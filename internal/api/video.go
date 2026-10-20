@@ -462,7 +462,7 @@ func openAIVideoObject(operation aistudio.VideoOperation) map[string]any {
 		"size": operation.Size, "seconds": operation.Seconds,
 	}
 	if operation.Missing != "" {
-		object["error"] = map[string]any{"code": "video_not_found", "message": operation.Missing}
+		object["error"] = map[string]any{"code": "video_not_found", "message": clientErrorMessage(http.StatusNotFound, "video_not_found")}
 	}
 	return object
 }

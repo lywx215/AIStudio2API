@@ -1032,12 +1032,14 @@ func geminiPromptFeedback(request aistudio.GenerateRequest, err error) (map[stri
 		return nil, false
 	}
 	reason := strings.ToUpper(strings.TrimSpace(feedback.Reason))
-	if reason == "" || reason == "UNSPECIFIED" {
+	switch reason {
+	case "SAFETY", "OTHER", "BLOCKLIST", "PROHIBITED_CONTENT", "IMAGE_SAFETY", "MODEL_ARMOR", "JAILBREAK":
+	default:
 		reason = "BLOCK_REASON_UNSPECIFIED"
 	}
 	block := map[string]any{"blockReason": reason}
 	if feedback.Message != "" {
-		block["blockReasonMessage"] = feedback.Message
+		block["blockReasonMessage"] = "请求内容无法处理，请调整输入后重试。"
 	}
 	return map[string]any{"promptFeedback": block, "modelVersion": request.Model, "responseId": request.ID}, true
 }
@@ -1456,8 +1458,9 @@ func (s *server) streamGemini(w http.ResponseWriter, r *http.Request, request ai
 			_ = write(response)
 			return
 		}
+		setAccessLogResponseError(w, err.Error())
 		_ = write(map[string]any{"error": map[string]any{
-			"code": statusFromError(err), "message": err.Error(), "status": geminiErrorStatus(err),
+			"code": statusFromError(err), "message": clientRequestErrorMessage(err), "status": geminiErrorStatus(err),
 		}})
 		return
 	}

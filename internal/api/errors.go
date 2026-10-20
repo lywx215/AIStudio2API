@@ -187,7 +187,7 @@ func protocolForRequest(r *http.Request) string {
 func writeOpenAIError(w http.ResponseWriter, status int, code string, message string) {
 	setAccessLogResponseError(w, message)
 	writeJSON(w, status, map[string]any{"error": map[string]any{
-		"message": message,
+		"message": clientErrorMessage(status, code),
 		"type":    openAIErrorType(status, code),
 		"param":   nil,
 		"code":    code,
@@ -206,11 +206,15 @@ func openAIErrorType(status int, code string) string {
 
 func writeAnthropicError(w http.ResponseWriter, status int, errorType string, message string) {
 	setAccessLogResponseError(w, message)
+	publicMessage := clientErrorMessage(status, errorType)
+	if status == http.StatusBadRequest && strings.HasPrefix(message, "prompt is too long:") {
+		publicMessage = "prompt is too long"
+	}
 	writeJSON(w, status, map[string]any{
 		"type": "error",
 		"error": map[string]string{
 			"type":    errorType,
-			"message": message,
+			"message": publicMessage,
 		},
 	})
 }
@@ -219,7 +223,7 @@ func writeGeminiError(w http.ResponseWriter, status int, statusName string, mess
 	setAccessLogResponseError(w, message)
 	writeJSON(w, status, map[string]any{"error": map[string]any{
 		"code":    status,
-		"message": message,
+		"message": clientErrorMessage(status, statusName),
 		"status":  statusName,
 	}})
 }
@@ -233,7 +237,11 @@ func writeOpenAIRequestError(w http.ResponseWriter, err error) {
 // writeAnthropicRequestError 以 Anthropic 错误体写出请求失败，可重试时带 Retry-After
 func writeAnthropicRequestError(w http.ResponseWriter, err error) {
 	setRetryAfter(w, err)
-	writeAnthropicError(w, statusFromError(err), anthropicErrorType(err), anthropicErrorMessage(err))
+	message := err.Error()
+	if contextOverflow(err) {
+		message = "prompt is too long: " + message
+	}
+	writeAnthropicError(w, statusFromError(err), anthropicErrorType(err), message)
 }
 
 // contextOverflow 判断错误是否为上游的上下文超限
@@ -245,15 +253,15 @@ func contextOverflow(err error) bool {
 // anthropicErrorMessage 返回 Anthropic 错误消息，上下文超限时以 prompt is too long 开头
 func anthropicErrorMessage(err error) string {
 	if contextOverflow(err) {
-		return "prompt is too long: " + err.Error()
+		return "prompt is too long"
 	}
-	return err.Error()
+	return clientRequestErrorMessage(err)
 }
 
 // writeGeminiRequestError 以 Gemini 错误体写出请求失败，可重试时带 Retry-After 与 RetryInfo
 func writeGeminiRequestError(w http.ResponseWriter, err error) {
 	status := statusFromError(err)
-	payload := map[string]any{"code": status, "message": err.Error(), "status": geminiErrorStatus(err)}
+	payload := map[string]any{"code": status, "message": clientRequestErrorMessage(err), "status": geminiErrorStatus(err)}
 	if seconds := setRetryAfter(w, err); seconds > 0 {
 		payload["details"] = []any{map[string]any{"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": strconv.FormatInt(seconds, 10) + "s"}}
 	}
@@ -278,9 +286,10 @@ func setRetryAfter(w http.ResponseWriter, err error) int64 {
 }
 
 func writeAdminError(w http.ResponseWriter, status int, code string, message string) {
+	setAccessLogResponseError(w, message)
 	writeJSON(w, status, map[string]any{"error": map[string]string{
 		"code":    code,
-		"message": message,
+		"message": clientErrorMessage(status, code),
 	}})
 }
 

@@ -60,8 +60,12 @@ export interface AdminSession {
 }
 
 // checkSessionResponse 通知页面清理失效会话中的管理数据
-function checkSessionResponse(path: string, response: Response): void {
-  if (response.status === 401 && !path.startsWith('/api/auth/')) {
+function checkSessionResponse(path: string, error: ApiError): void {
+  if (
+    error.status === 401 &&
+    error.code === 'admin_login_required' &&
+    !path.startsWith('/api/auth/')
+  ) {
     window.dispatchEvent(new Event('admin-session-expired'))
   }
 }
@@ -83,14 +87,19 @@ async function responseError(response: Response): Promise<ApiError> {
   const body = await response.text()
   if (body === '') return new ApiError(response.statusText, response.status)
   if (!response.headers.get('content-type')?.includes('application/json')) {
-    return new ApiError(body, response.status)
+    return new ApiError(response.statusText || 'Request failed', response.status)
   }
 
-  const value: unknown = JSON.parse(body)
+  let value: unknown
+  try {
+    value = JSON.parse(body)
+  } catch {
+    return new ApiError(response.statusText, response.status)
+  }
   const message = pathValue(value, ['error', 'message'])
   const code = pathValue(value, ['error', 'code'])
   return new ApiError(
-    typeof message === 'string' ? message : body,
+    typeof message === 'string' ? message : response.statusText || 'Request failed',
     response.status,
     typeof code === 'string' ? code : '',
   )
@@ -104,9 +113,10 @@ async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   const response = await fetch(path, { ...init, headers })
-  checkSessionResponse(path, response)
   if (!response.ok) {
-    throw await responseError(response)
+    const error = await responseError(response)
+    checkSessionResponse(path, error)
+    throw error
   }
 
   return (await response.json()) as T
@@ -120,9 +130,10 @@ async function requestCommand(path: string, init: RequestInit): Promise<void> {
   }
 
   const response = await fetch(path, { ...init, headers })
-  checkSessionResponse(path, response)
   if (!response.ok) {
-    throw await responseError(response)
+    const error = await responseError(response)
+    checkSessionResponse(path, error)
+    throw error
   }
 }
 

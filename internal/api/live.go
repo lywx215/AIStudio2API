@@ -110,7 +110,7 @@ func (s *server) serveBidi(w http.ResponseWriter, r *http.Request, mode aistudio
 	request, inputModalities, err := bidiRequestFromSetup(mode, setup)
 	if err != nil {
 		SetAccessLogError(r.Context(), err)
-		_ = writeBidiJSON(connection, bidiServerMessage{Type: "error", Code: "invalid_request", Error: err.Error()})
+		_ = writeBidiJSON(connection, bidiServerMessage{Type: "error", Code: "invalid_request", Error: clientErrorMessage(http.StatusBadRequest, "invalid_request")})
 		_ = connection.Close()
 		return
 	}
@@ -385,8 +385,6 @@ func (s *server) writeBidiEvents(
 			message := mapBidiServerEvent(event)
 			if event.Err != nil {
 				SetAccessLogError(r.Context(), event.Err)
-				message = bidiErrorMessage(event.Err)
-				message.Raw = event.Raw
 			}
 			if err := writeBidiJSON(connection, message); err != nil {
 				return
@@ -401,9 +399,9 @@ func (s *server) writeBidiEvents(
 }
 
 func bidiErrorMessage(err error) bidiServerMessage {
-	message := bidiServerMessage{Type: "error"}
+	message := bidiServerMessage{Type: "error", Error: clientErrorMessage(http.StatusBadGateway, "upstream_error")}
 	if err != nil {
-		message.Error = err.Error()
+		message.Error = clientRequestErrorMessage(err)
 	}
 	var coded errorCodeProvider
 	switch {
@@ -432,6 +430,9 @@ func waitBidiRoutine(done <-chan struct{}) {
 }
 
 func mapBidiServerEvent(event aistudio.BidiEvent) bidiServerMessage {
+	if event.Err != nil || event.Kind == aistudio.BidiEventError {
+		return bidiErrorMessage(event.Err)
+	}
 	message := bidiServerMessage{
 		Type: string(event.Kind), Text: event.Text, Transcription: event.Transcription,
 		ToolCall: event.ToolCall, SessionToken: event.SessionToken, Resumable: event.Resumable,
@@ -441,9 +442,6 @@ func mapBidiServerEvent(event aistudio.BidiEvent) bidiServerMessage {
 	if event.Media != nil {
 		message.MIMEType = event.Media.MIME
 		message.Data = event.Media.Data
-	}
-	if event.Err != nil {
-		message.Error = event.Err.Error()
 	}
 	return message
 }

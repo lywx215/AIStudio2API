@@ -1076,6 +1076,7 @@ func (writer *anthropicStreamWriter) finish(result generationResult) error {
 }
 
 func (writer *anthropicStreamWriter) error(err error) error {
+	setAccessLogResponseError(writer.w, err.Error())
 	return writer.emit("error", map[string]any{
 		"type":  "error",
 		"error": map[string]string{"type": anthropicErrorType(err), "message": anthropicErrorMessage(err)},
