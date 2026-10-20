@@ -51,3 +51,17 @@ Windows 阻止原文：`An Application Control policy has blocked this file.` �
 共享管理响应边界现对提前拒绝的残体最多排空 64 KiB（额外 1 字节探测）并限定 250 ms，超限/超时关闭连接，Expect:100-continue 拒绝不触发上传；显式 Content-Length 与刷新使响应完整。原 403、认证、权限与账号变更规则均保留。新增真实 TCP 回归覆盖小体关闭/复用、超限、慢体及 Expect 场景。
 
 修复后的 fixture SHA256：`5692047F61005BEE2DF23ADD5890B3928184E701319F07492F492E670436C072`。旧 HTTP 22 项和通道 12 项均以该文件完整通过，执行前后哈希相同。最终证据为 `runtime/acceptance/management-http-final.log`、`channel-http-final.log`、`channel-result-final.json` 和 `compile-final.log`；首轮错误及修复前单项结果没有覆盖或抹除。此次没有修改 Python driver 或弱化断言。
+
+## 推送前复核（正式项目 dev）
+
+用户授权检查、合并并推送本地变更后，在正式目录重新核对。复核起点为已存在的合并提交 `3abd4a46fb359dc4ba9db3d47683c789d2fc9584`；正式目录和同步工作区均无未提交文件，远程 `dev` 仍为 `bdfe9eb867024f6b099c677773fe0c71940bb57f`，本地领先 6 个提交。合并已经包含旧 `dev` 和上述上游历史，无须重复合并或挑选提交。
+
+- 索引无未解决项，源码无冲突标记，`git diff --check origin/dev..HEAD` 通过。旧 `dev` 相对共同祖先新增的 121 个路径全部保留；该计数与前述“本地独有文件”统计口径不同。
+- 对本次待推送的 48,229 行新增文本执行密钥模式扫描，未发现匹配；没有收录账号、运行数据库、凭据、本地二进制或构建产物。
+- 正式目录原有 `node_modules` 缺少上游新增依赖，首次类型检查失败。执行 `npm ci` 按现有锁文件同步后，未改写依赖清单或锁文件；最终 Node 回归 46/46、typecheck、lint、format:check 均通过。前端构建通过，输出到独立临时目录；保留既有大 chunk 提示。
+- `go test -mod=readonly -p 2` 对 api、app、aistudio、management、managementcontract、managementmaintenance、managementverify、config、chromeauth、camoufoxnative、setup 执行回归（`-count=1 -timeout=2m`）：除 api 外的 10 个包通过；`api.test.exe` 本轮被 Windows Application Control 阻止启动，整体 exit 1，API 断言未执行。未重试该程序，也未重跑先前受阻的 managementstore/requestdb 测试程序，不将旧轮次通过记录替代本轮结果。
+- `go vet ./...` 首次扫入被 Git 忽略的 `runtime/review-20261020/media_output_review_test.go`，因独立评审片段缺少 `NewHandler` 而失败。未删除或改写该临时文件；改对正式源码 `./cmd/... ./internal/...` 执行 `go vet -mod=readonly -p 2`，CLI 默认路径与 `-tags desktop,production` 路径均通过。
+- Windows CLI 和 `desktop,production` 编译检查通过，使用既有内嵌资源并输出到独立临时目录，没有启动或交付这些检查产物。首次命令的 PowerShell `ldflags` 参数未展开，改用参数数组后完成编译。
+- `npm audit --json` 报告 4 项依赖告警（2 高、2 低）：Vue/server-renderer 及 KaTeX/markdown-it-katex 依赖链。仅记录检查结果，本次没有执行自动修复或依赖升级。
+
+本次提交保留既有合并历史，并补充此复核记录；推送的最终提交附带 `[skip ci]`，本轮不执行 GitHub Actions。未部署、重启、迁移数据库或调用真实模型；Windows 以外的平台未重新实机验证。
