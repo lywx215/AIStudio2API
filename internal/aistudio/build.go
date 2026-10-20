@@ -445,7 +445,13 @@ type buildResponse struct {
 				EndIndex   int    `json:"endIndex"`
 			} `json:"citationSources"`
 		} `json:"citationMetadata"`
-		GroundingMetadata *buildGrounding `json:"groundingMetadata"`
+		GroundingMetadata  *buildGrounding `json:"groundingMetadata"`
+		URLContextMetadata *struct {
+			URLs []struct {
+				RetrievedURL    string `json:"retrievedUrl"`
+				RetrievalStatus string `json:"urlRetrievalStatus"`
+			} `json:"urlMetadata"`
+		} `json:"urlContextMetadata"`
 	} `json:"candidates"`
 	PromptFeedback *struct {
 		BlockReason        string `json:"blockReason"`
@@ -560,6 +566,13 @@ func (d *BuildStreamDecoder) Decode(raw []byte) ([]Event, error) {
 	}
 	if grounding := candidate.GroundingMetadata; grounding != nil {
 		events = append(events, Event{Kind: EventGrounding, Grounding: decodeBuildGrounding(*grounding)})
+	}
+	if context := candidate.URLContextMetadata; context != nil {
+		metadata := &URLContextMetadata{URLs: make([]URLMetadata, 0, len(context.URLs))}
+		for _, entry := range context.URLs {
+			metadata.URLs = append(metadata.URLs, URLMetadata{RetrievedURL: entry.RetrievedURL, RetrievalStatus: entry.RetrievalStatus})
+		}
+		events = append(events, Event{Kind: EventURLContext, URLContext: metadata})
 	}
 	if candidate.FinishReason != "" && !d.finished {
 		if d.usage != nil {

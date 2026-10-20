@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -22,6 +23,34 @@ import (
 
 const verificationAccountUUID = "f596663f-cb0c-41ca-a00d-fc035e7ec075"
 const verificationReqUUID = "req_676ad95f-04ae-4ceb-b6ad-614f647772bd"
+const verificationWaitTimeout = 5 * time.Second
+
+func verificationPathWithin(root, target string) error {
+	absoluteRoot, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return fmt.Errorf("normalize temporary root: %w", err)
+	}
+	absoluteTarget, err := filepath.Abs(filepath.Clean(target))
+	if err != nil {
+		return fmt.Errorf("normalize temporary storage: %w", err)
+	}
+	relative, err := filepath.Rel(absoluteRoot, absoluteTarget)
+	if err != nil {
+		return fmt.Errorf("resolve temporary storage: %w", err)
+	}
+	if relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || !filepath.IsLocal(relative) {
+		return errors.New("storage outside temporary directory")
+	}
+	return nil
+}
+
+// Error is safe in worker goroutines; Fatal/FailNow would Goexit before Verify
+// can return its result and leave the test waiting on an unreachable signal.
+func verificationCallbackError(t *testing.T, err error) error {
+	t.Helper()
+	t.Error(err)
+	return err
+}
 
 func verificationStorage(t *testing.T, value string) c.CredentialMaterial {
 	t.Helper()
@@ -149,40 +178,42 @@ func newVerificationHarness(t *testing.T, input c.VerificationInput) *verificati
 		t.Fatal(err)
 	}
 	h := &verificationHarness{target: target.(*managementVerificationTarget), store: store, temp: temp}
+	modelResponse := verificationModels(t, input.Model)
+	generatedResponse := verificationFrame(t, "OK", false, true)
 	h.target.worker = func(_ context.Context, id string, options camoufoxnative.Options) (managementVerificationWorker, error) {
 		if id != input.Account.NativeID || options.ExecutablePath != "" || options.Model != input.Model || !options.TemporaryChat || !options.Headless {
-			t.Fatal("worker not isolated/pinned")
+			return nil, verificationCallbackError(t, errors.New("worker not isolated/pinned"))
+		}
+		if err := verificationPathWithin(temp, options.StorageStatePath); err != nil {
+			return nil, verificationCallbackError(t, err)
 		}
 		state, err := aistudio.LoadStorageState(options.StorageStatePath)
 		if err != nil {
 			return nil, err
 		}
 		h.root = filepath.Dir(filepath.Dir(filepath.Dir(options.StorageStatePath)))
-		if !strings.HasPrefix(options.StorageStatePath, temp+string(filepath.Separator)) {
-			t.Fatal("storage outside temp")
-		}
 		h.worker = &verificationWorker{state: state}
 		return h.worker, nil
 	}
 	h.target.identity = func(_ context.Context, state aistudio.StorageState, _ managementVerificationEnvironment) (string, int, error) {
 		if len(state.Cookies) != 3 {
-			t.Fatal("wrong credential set")
+			return "", 0, verificationCallbackError(t, errors.New("wrong credential set"))
 		}
 		return input.Account.NativeID, 200, nil
 	}
 	h.onGenerate = func(context.Context, aistudio.GenerateRequest, aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
-		return verificationResponse(200, verificationFrame(t, "OK", false, true)), nil
+		return verificationResponse(200, generatedResponse), nil
 	}
 	h.target.protocol = func(pool *aistudio.AccountPool, _ managementVerificationWorker, _ managementVerificationEnvironment) (aistudio.RPCTransport, aistudio.ProtectedTransport, func(), error) {
 		if pool.BuildEnabled() {
-			t.Fatal("Build enabled in isolated pool")
+			return nil, nil, nil, verificationCallbackError(t, errors.New("Build enabled in isolated pool"))
 		}
 		return verificationRPCFunc(func(_ context.Context, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 				h.catalog.Add(1)
 				if rpc.AccountID != input.Account.NativeID || rpc.Method != "ListModels" {
-					t.Fatal("wrong catalog request")
+					return nil, verificationCallbackError(t, errors.New("wrong catalog request"))
 				}
-				return verificationResponse(200, verificationModels(t, input.Model)), nil
+				return verificationResponse(200, modelResponse), nil
 			}), aistudio.ProtectedTransportFunc(func(ctx context.Context, request aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 				h.protected.Add(1)
 				return h.onGenerate(ctx, request, rpc)
@@ -213,14 +244,15 @@ func TestManagementVerificationRealDecoderAndIsolation(t *testing.T) {
 			candidate := verificationStorage(t, "candidate")
 			input.Candidate = &candidate
 			h := newVerificationHarness(t, input)
+			generatedResponse := verificationFrame(t, tc.text, tc.thought, tc.finish)
 			h.onGenerate = func(_ context.Context, request aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 				if request.AccountID != input.Account.NativeID || request.Model != input.Model || rpc.Method != "GenerateContent" || rpc.URL != aistudio.MakerSuiteRPCBase+"GenerateContent" || request.ID != verificationReqUUID {
-					t.Fatal("request not pinned")
+					return nil, verificationCallbackError(t, errors.New("request not pinned"))
 				}
 				if h.worker.state.Cookies[0].Value != "candidate" || strings.Contains(string(h.store.material.StorageState), "candidate") {
-					t.Fatal("candidate crossed production boundary")
+					return nil, verificationCallbackError(t, errors.New("candidate crossed production boundary"))
 				}
-				return verificationResponse(tc.status, verificationFrame(t, tc.text, tc.thought, tc.finish)), nil
+				return verificationResponse(tc.status, generatedResponse), nil
 			}
 			v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
 			out, err := v.Verify(context.Background(), input, nil)
@@ -257,10 +289,11 @@ func TestManagementVerificationCandidateRefreshPrivate(t *testing.T) {
 	input.Candidate = &candidate
 	h := newVerificationHarness(t, input)
 	original := string(candidate.StorageState)
+	generatedResponse := verificationFrame(t, "OK", false, true)
 	h.onGenerate = func(context.Context, aistudio.GenerateRequest, aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 		h.worker.state.Cookies[0].Value = "rotated-private"
 		h.store.record.StateVersion++ // Simulates a later production disable; verifier must not publish over it.
-		return verificationResponse(200, verificationFrame(t, "OK", false, true)), nil
+		return verificationResponse(200, generatedResponse), nil
 	}
 	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
 	out, err := v.Verify(context.Background(), input, nil)
@@ -294,13 +327,14 @@ func TestManagementVerificationVersionIdentityAndMissingPlayground(t *testing.T)
 					return "other@example.test", 200, nil
 				}
 			case "playground-fails-build-available":
+				buildResponse := verificationFrame(t, "Build OK", false, true)
 				h.onGenerate = func(_ context.Context, _ aistudio.GenerateRequest, rpc aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 					// The synthetic upstream can serve Build successfully. A
 					// Playground denial must still fail with exactly one send.
 					if rpc.Method == "GenerateContent" {
 						return verificationResponse(403, "[]"), nil
 					}
-					return verificationResponse(200, verificationFrame(t, "Build OK", false, true)), nil
+					return verificationResponse(200, buildResponse), nil
 				}
 			case "worker-failure":
 				h.target.worker = func(context.Context, string, camoufoxnative.Options) (managementVerificationWorker, error) {
@@ -331,25 +365,53 @@ func TestManagementVerificationCancelCloseReleasesStream(t *testing.T) {
 	h := newVerificationHarness(t, input)
 	opened := make(chan struct{})
 	reader, writer := io.Pipe()
+	defer reader.Close()
 	defer writer.Close()
 	h.onGenerate = func(context.Context, aistudio.GenerateRequest, aistudio.RPCRequest) (*aistudio.RPCResponse, error) {
 		close(opened)
 		return &aistudio.RPCResponse{StatusCode: 200, Header: http.Header{"Content-Type": []string{aistudio.JSONProtobufContentType}}, Body: reader}, nil
 	}
 	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+	verificationCtx, stopVerification := context.WithTimeout(context.Background(), verificationWaitTimeout)
+	defer func() {
+		stopVerification()
+		_ = reader.Close()
+		_ = writer.Close()
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = v.Close(cleanupCtx)
+	}()
 	done := make(chan error, 1)
-	go func() { _, err := v.Verify(context.Background(), input, nil); done <- err }()
-	<-opened
+	go func() { _, err := v.Verify(verificationCtx, input, nil); done <- err }()
+	select {
+	case <-opened:
+	case err := <-done:
+		t.Fatalf("verification returned before stream opened: %v", err)
+	case <-verificationCtx.Done():
+		t.Fatal("timed out waiting for stream to open")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := v.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := <-done; err == nil {
-		t.Fatal("cancelled stream succeeded")
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("cancelled stream succeeded")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for cancelled verification")
 	}
-	if _, err := writer.Write([]byte("[]")); err == nil {
-		t.Fatal("cancel did not close stream")
+	written := make(chan error, 1)
+	go func() { _, err := writer.Write([]byte("[]")); written <- err }()
+	select {
+	case err := <-written:
+		if err == nil {
+			t.Fatal("cancel did not close stream")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out checking cancelled stream closure")
 	}
 	if h.protected.Load() != 1 {
 		t.Fatal("cancel replayed upstream")
@@ -404,6 +466,7 @@ func TestManagementVerificationRealProtectedTransport(t *testing.T) {
 	candidate := verificationStorage(t, "candidate")
 	input.Candidate = &candidate
 	h := newVerificationHarness(t, input)
+	generatedResponse := verificationFrame(t, "OK", false, true)
 	workerFactory := h.target.worker
 	h.target.worker = func(ctx context.Context, id string, options camoufoxnative.Options) (managementVerificationWorker, error) {
 		worker, err := workerFactory(ctx, id, options)
@@ -412,17 +475,17 @@ func TestManagementVerificationRealProtectedTransport(t *testing.T) {
 		}
 		h.worker.prepare = func(_ context.Context, request aistudio.ProtectedRequest) (aistudio.PreparedProtectedRequest, error) {
 			if request.ProofField != 5 || request.Prompt != managementverify.ProbePrompt || request.URL != aistudio.MakerSuiteRPCBase+"GenerateContent" {
-				t.Fatal("wrong Playground binding")
+				return aistudio.PreparedProtectedRequest{}, verificationCallbackError(t, errors.New("wrong Playground binding"))
 			}
 			return aistudio.PreparedProtectedRequest{Body: request.Body, Headers: http.Header{"X-Goog-Authuser": []string{"0"}}}, nil
 		}
 		h.worker.send = func(_ context.Context, request aistudio.ProtectedRequest) (*aistudio.RPCResponse, error) {
 			h.protected.Add(1)
 			if !strings.Contains(request.Headers.Get("Authorization"), "SAPISID3PHASH") {
-				t.Fatal("real signer not used")
+				return nil, verificationCallbackError(t, errors.New("real signer not used"))
 			}
 			h.worker.state.Cookies[0].Value = "rotated-in-fake-browser"
-			return verificationResponse(200, verificationFrame(t, "OK", false, true)), nil
+			return verificationResponse(200, generatedResponse), nil
 		}
 		return worker, nil
 	}
@@ -456,16 +519,34 @@ func TestManagementVerificationCloseDuringOpen(t *testing.T) {
 		return nil, ctx.Err()
 	}
 	v, _ := managementverify.New(c.VerifierOptions{Target: h.target})
+	verificationCtx, stopVerification := context.WithTimeout(context.Background(), verificationWaitTimeout)
+	defer func() {
+		stopVerification()
+		cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = v.Close(cleanupCtx)
+	}()
 	done := make(chan error, 1)
-	go func() { _, err := v.Verify(context.Background(), input, nil); done <- err }()
-	<-opening
+	go func() { _, err := v.Verify(verificationCtx, input, nil); done <- err }()
+	select {
+	case <-opening:
+	case err := <-done:
+		t.Fatalf("verification returned before worker opening: %v", err)
+	case <-verificationCtx.Done():
+		t.Fatal("timed out waiting for worker opening")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := v.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := <-done; err == nil {
-		t.Fatal("cancelled opening succeeded")
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("cancelled opening succeeded")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for cancelled opening")
 	}
 	h.assertReleased(t)
 }
@@ -495,6 +576,7 @@ func TestManagementVerificationPartialWorkerFailureAndSingleRun(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer session.Close()
 		probe := c.VerificationProbe{Mode: input.Mode, Model: input.Model, Prompt: managementverify.ProbePrompt, MaxOutputTokens: managementverify.ProbeMaxOutputTokens}
 		if _, err := session.Run(context.Background(), probe, nil); err != nil {
 			t.Fatal(err)
@@ -513,4 +595,28 @@ func TestManagementVerificationPartialWorkerFailureAndSingleRun(t *testing.T) {
 		}
 		h.assertReleased(t)
 	})
+}
+
+func TestManagementVerificationFixturePathContainment(t *testing.T) {
+	root := t.TempDir()
+	for _, tc := range []struct {
+		name   string
+		root   string
+		path   string
+		inside bool
+	}{
+		{"mixed-separators", filepath.ToSlash(root), filepath.Join(root, "account", "storage-state.json"), true},
+		{"slash-child", root, filepath.ToSlash(filepath.Join(root, "account", "storage-state.json")), true},
+		{"normalized-components", root, filepath.Join(root, "account", "..", "other", "storage-state.json"), true},
+		{"parent-escape", root, filepath.Join(root, "..", "outside", "storage-state.json"), false},
+		{"prefix-sibling", root, filepath.Join(root+"-sibling", "storage-state.json"), false},
+		{"root-itself", root, root, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := verificationPathWithin(tc.root, tc.path)
+			if (err == nil) != tc.inside {
+				t.Fatalf("containment inside=%t error=%v", tc.inside, err)
+			}
+		})
+	}
 }

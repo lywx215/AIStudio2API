@@ -1324,6 +1324,9 @@ func setGeminiCandidateEnd(candidate map[string]any, result generationResult) {
 	if result.grounding != nil {
 		candidate["groundingMetadata"] = geminiGroundingMetadata(*result.grounding)
 	}
+	if result.urlContext != nil {
+		candidate["urlContextMetadata"] = geminiURLContextMetadata(*result.urlContext)
+	}
 	citations := make([]aistudio.Citation, 0)
 	for _, event := range result.events {
 		if event.Kind == aistudio.EventCitation && event.Citation != nil {

@@ -202,6 +202,11 @@ func (contract *toolContract) forward(ctx context.Context, source <-chan Event) 
 			if event.Kind == EventGrounding || event.Kind == EventExecutableCode || event.Kind == EventCodeExecutionResult {
 				serverSideUsed = true
 			}
+			if event.Kind == EventURLContext && event.URLContext != nil && slices.ContainsFunc(event.URLContext.URLs, func(entry URLMetadata) bool {
+				return strings.TrimSpace(entry.RetrievedURL) != "" && entry.RetrievalStatus != "" && entry.RetrievalStatus != "URL_RETRIEVAL_STATUS_UNSPECIFIED"
+			}) {
+				serverSideUsed = true
+			}
 			if event.Kind == EventToolCall && event.ToolCall != nil {
 				calls++
 				call := event.ToolCall

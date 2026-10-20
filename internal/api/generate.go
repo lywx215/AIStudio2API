@@ -26,6 +26,7 @@ type generationResult struct {
 	toolCalls     []aistudio.FunctionCall
 	citations     []aistudio.Citation
 	grounding     *aistudio.GroundingMetadata
+	urlContext    *aistudio.URLContextMetadata
 	media         []aistudio.Media
 	usage         *aistudio.Usage
 	finishReason  string
@@ -71,6 +72,10 @@ func (result *generationResult) apply(event aistudio.Event) error {
 			grounding := *event.Grounding
 			result.grounding = &grounding
 			result.citations = append(result.citations, groundingCitations(grounding)...)
+		}
+	case aistudio.EventURLContext:
+		if event.URLContext != nil {
+			result.urlContext = mergeURLContextMetadata(result.urlContext, event.URLContext)
 		}
 	case aistudio.EventCitation:
 		if event.Citation != nil {

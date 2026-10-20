@@ -113,6 +113,17 @@ type GroundingMetadata struct {
 	MapsWidgetContextToken string             `json:"maps_widget_context_token,omitempty"`
 }
 
+// URLMetadata preserves one upstream URL retrieval outcome, independently of
+// search citations. A cited URL is not proof of successful URL-context retrieval.
+type URLMetadata struct {
+	RetrievedURL    string `json:"retrieved_url"`
+	RetrievalStatus string `json:"url_retrieval_status,omitempty"`
+}
+
+type URLContextMetadata struct {
+	URLs []URLMetadata `json:"url_metadata"`
+}
+
 // Part 表示规范消息中的一个内容块
 type Part struct {
 	Text                string               `json:"text,omitempty"`
@@ -366,6 +377,8 @@ const (
 	EventCodeExecutionResult EventKind = "code_execution_result"
 	// EventGrounding 表示 Google 工具来源信息
 	EventGrounding EventKind = "grounding"
+	// EventURLContext carries upstream URL retrieval evidence, including failures.
+	EventURLContext EventKind = "url_context"
 	// EventCitation 表示来源信息
 	EventCitation EventKind = "citation"
 	// EventMedia 表示媒体产物
@@ -388,6 +401,7 @@ type Event struct {
 	ExecutableCode      *ExecutableCode      `json:"executable_code,omitempty"`
 	CodeExecutionResult *CodeExecutionResult `json:"code_execution_result,omitempty"`
 	Grounding           *GroundingMetadata   `json:"grounding,omitempty"`
+	URLContext          *URLContextMetadata  `json:"url_context,omitempty"`
 	Citation            *Citation            `json:"citation,omitempty"`
 	Media               *Media               `json:"media,omitempty"`
 	Transcript          *TranscriptMetadata  `json:"transcript,omitempty"`
