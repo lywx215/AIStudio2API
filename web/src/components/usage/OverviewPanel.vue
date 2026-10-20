@@ -204,7 +204,9 @@ const ticks = computed(() => {
 </script>
 <template>
   <div class="space-y-4">
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div
+      class="grid grid-cols-1 gap-3 @min-[37rem]:grid-cols-2 @min-[56rem]:grid-cols-3 @min-[110rem]:grid-cols-6"
+    >
       <KpiCard v-for="kpi in kpis" :key="kpi.label" v-bind="kpi" />
     </div>
     <figure class="rounded-lg border border-line bg-panel p-4">

@@ -8,12 +8,14 @@ RUN npm run build
 FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS build
 ARG TARGETOS
 ARG TARGETARCH
+ARG VERSION=dev
+ARG MANAGED_BY=lywx215
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web /src/internal/webui/dist internal/webui/dist
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags='-s -w' -o /out/aistudio2api ./cmd/aistudio2api
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -mod=readonly -trimpath -ldflags="-s -w -X github.com/Mag1cFall/AIStudio2API/internal/app.version=$VERSION -X github.com/Mag1cFall/AIStudio2API/internal/app.managedBy=$MANAGED_BY" -o /out/aistudio2api ./cmd/aistudio2api
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \

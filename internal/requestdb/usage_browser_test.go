@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/api"
+	"github.com/Mag1cFall/AIStudio2API/internal/webui"
 )
 
 // Opt-in local acceptance server. It never starts model workers or reads user data.
@@ -25,7 +26,7 @@ func TestUsageBrowserServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	ledger := api.NewHandler(nil, api.Config{Ledger: store})
-	after := http.FileServer(http.Dir(filepath.Join(root, "internal/webui/dist")))
+	after := webui.Handler()
 	before := http.FileServer(http.Dir(filepath.Join(root, "runtime/usage-verification/frontend-before")))
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

@@ -208,6 +208,8 @@ Build 目录保存在账户内存中，不写入 `runtime-state.json`。读取�
 
 以下请求只使用 Playground：CountTokens、Playground 目录中的 Live 与 Robotics 模型、Veo、转录、Interactions 模型、带 Drive 文件引用的生成、带多说话人 `mode` 的 TTS。
 
+`MODEL_CHANNELS` 限定的模型只经所列通道调用。限定为 `build` 的模型收到带文件引用或只有 Playground 支持的参数的 `generateContent` 请求时，在选择账户前返回 400，错误写明该模型限定的通道。
+
 Playground 目录没有的 embedding（`embedContent`）、Live（`bidiGenerateContent`）与实时音乐（`bidiGenerateMusic`）模型只经 Build 通道调用：`UPSTREAM_CHANNELS` 启用 `build`，且账户的 Build 目录包含该模型与方法时，账户可以承担请求。`aqa` 等其他方法不进入 Build 通道。
 
 ### 公开目录
@@ -346,6 +348,7 @@ Playground 私有字段在 Build 请求中不发送：账户时区、GenerateCon
 | 只有 `thoughtSignature` 的 Part | thought signature |
 | `citationMetadata.citationSources` | citation（`uri`、`title`、`startIndex`、`endIndex`） |
 | `groundingMetadata` | grounding |
+| `urlContextMetadata.urlMetadata` | 独立 `url_context` 事件的 URL 读取结果（`retrievedUrl`、`urlRetrievalStatus`），按 URL 累积，不由 grounding 覆盖 |
 | `usageMetadata` | usage |
 | `finishReason` | usage 与 finish |
 
@@ -355,7 +358,7 @@ Playground 私有字段在 Build 请求中不发送：账户时区、GenerateCon
 - `usageMetadata` 的 `totalTokenCount` 大于 0 时记录：`promptTokenCount` 为输入，`candidatesTokenCount` 为输出，`thoughtsTokenCount` 为思考，`toolUsePromptTokenCount` 为工具；缺少 `candidatesTokenCount` 时输出为总数减去其余三项
 - 第一次出现 `finishReason` 时先发出最近的 usage，再发出 finish；终止原因为去掉 `FINISH_REASON_` 前缀后的小写枚举名，与 Playground 的规范终止原因一致，`UNSPECIFIED` 为 `unspecified`
 - 没有 candidate 且带 `promptFeedback.blockReason` 时返回 prompt feedback 错误，原因为去掉 `BLOCK_REASON_` 前缀的小写枚举名
-- candidate 数量不是 1、正文不是 JSON 或 Base64 无效时返回带路径的协议错误；流结束时没有 `finishReason` 同样为协议错误
+- candidate 数量不是 1、正文不是 JSON 或 Base64 无效时返回带路径的协议错误；流结束时没有 `finishReason` 与读取中断相同，报告为上游流中断与已接收帧数
 
 ### 停止序列、usage 与终态
 
@@ -655,6 +658,6 @@ Part 的 field 2 为文本，field 13 为 `1` 或 `true` 时是思考。只修�
 | --- | --- |
 | 附件上传、`CreateApplet`、`CodeAssistantOffline` 或任务流返回非 200 | 按“错误、额度与能力边界”解码与换算，进入换号与冷却流程，冷却 scope 为 `-build` 模型 ID |
 | 流尾状态非 0 | 同上；首个语义事件之后以流内 error 结束 |
-| 步骤 field 6 非空 | HTTP 502，消息为 “生成步骤失败: <上游消息>”，按 5xx 处理 |
+| 步骤 field 6 非空 | HTTP 502，按 5xx 处理；上游详情保留于内部诊断，对外使用固定错误文案 |
 | 应用 ID、任务 ID 缺失或流结构不符 | 协议错误，HTTP 502 |
 | 流关闭时没有完成的模型回复 | 协议错误，HTTP 502 |

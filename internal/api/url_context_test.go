@@ -48,8 +48,9 @@ func TestGeminiURLContextMetadataHTTP(t *testing.T) {
 	for _, method := range []string{"generateContent", "streamGenerateContent", "streamGenerateContent?alt=sse"} {
 		t.Run(method, func(t *testing.T) {
 			service := urlMetadataFixtureService{chunks: []string{
-				`{"candidates":[{"content":{"parts":[{"text":"Retrieved document."}]},"urlContextMetadata":{"urlMetadata":[{"retrievedUrl":"https://example.invalid/doc","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_ERROR"},{"retrievedUrl":"https://example.invalid/blocked","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_UNSAFE"}]}}]}`,
-				`{"candidates":[{"finishReason":"STOP","urlContextMetadata":{"urlMetadata":[{"retrievedUrl":"https://example.invalid/doc","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_SUCCESS"},{"retrievedUrl":"https://example.invalid/paid","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_PAYWALL"},{"retrievedUrl":"https://example.invalid/future","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_FUTURE"}]}}],"usageMetadata":{"promptTokenCount":7,"candidatesTokenCount":3,"totalTokenCount":10}}`,
+				`{"candidates":[{"urlContextMetadata":{"urlMetadata":[{"retrievedUrl":"https://example.invalid/doc","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_ERROR"},{"retrievedUrl":"https://example.invalid/blocked","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_UNSAFE"}]}}]}`,
+				`{"candidates":[{"content":{"parts":[{"text":"Retrieved document."}]},"urlContextMetadata":{"urlMetadata":[{"retrievedUrl":"https://example.invalid/doc","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_SUCCESS"},{"retrievedUrl":"https://example.invalid/paid","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_PAYWALL"},{"retrievedUrl":"https://example.invalid/future","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_FUTURE"}]}}]}`,
+				`{"candidates":[{"finishReason":"STOP","groundingMetadata":{"webSearchQueries":["synthetic query"]}}],"usageMetadata":{"promptTokenCount":7,"candidatesTokenCount":3,"totalTokenCount":10}}`,
 			}}
 			request := httptest.NewRequest(http.MethodPost, "/v1beta/models/gemini-3.8-flash:"+method, strings.NewReader(`{"contents":[{"role":"user","parts":[{"text":"Read the document"}]}],"tools":[{"url_context":{}}]}`))
 			response := httptest.NewRecorder()
@@ -125,5 +126,26 @@ func TestURLContextMetadataDoesNotAliasUpstream(t *testing.T) {
 	data, err := json.Marshal(empty)
 	if err != nil || string(data) != `{"urlMetadata":[]}` {
 		t.Fatalf("empty metadata must not fabricate a URL/status: %s, %v", data, err)
+	}
+}
+
+// Both malformed data and a missing terminal frame keep their upstream detail
+// inside the service, including when URL metadata is the only received frame.
+func TestGeminiURLContextDecoderErrorsStayPrivate(t *testing.T) {
+	for name, chunks := range map[string][]string{
+		"metadata without finish": {`{"candidates":[{"urlContextMetadata":{"urlMetadata":[{"retrievedUrl":"https://internal.example.invalid/doc","urlRetrievalStatus":"URL_RETRIEVAL_STATUS_ERROR"}]}}]}`},
+		"malformed metadata":      {`{"candidates":[{"urlContextMetadata":"internal.example.invalid"}]}`},
+	} {
+		for _, method := range []string{"generateContent", "streamGenerateContent?alt=sse"} {
+			t.Run(name+"/"+method, func(t *testing.T) {
+				handler := NewHandler(urlMetadataFixtureService{chunks: chunks}, Config{})
+				response := httptest.NewRecorder()
+				handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/v1beta/models/public-alias:"+method, strings.NewReader(`{"contents":[{"parts":[{"text":"hello"}]}]}`)))
+				if response.Code != http.StatusBadGateway || !strings.Contains(response.Body.String(), clientErrorMessage(http.StatusBadGateway, "upstream_error")) {
+					t.Fatalf("decoder failure response=%d %s", response.Code, response.Body)
+				}
+				assertPrivateErrorAbsent(t, response.Body.String())
+			})
+		}
 	}
 }

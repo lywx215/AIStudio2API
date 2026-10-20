@@ -17,15 +17,8 @@ import UiSelect from './UiSelect.vue'
 import FilterMenu from './usage/FilterMenu.vue'
 import RangePicker from './usage/RangePicker.vue'
 import { useUsageFormat } from './usage/format'
-import {
-  dimensions,
-  liveRange,
-  readPreference,
-  resolveRange,
-  useUsageState,
-  writePreference,
-  type RangePreset,
-} from './usage/model'
+import { readPreference, writePreference } from '@/preference'
+import { dimensions, liveRange, resolveRange, useUsageState, type RangePreset } from './usage/model'
 import { UsageCache, UsageRequest, usageRefreshDue } from './usage/loading'
 
 const OverviewPanel = defineAsyncComponent(() => import('./usage/OverviewPanel.vue'))
@@ -383,7 +376,7 @@ const countdown = computed(() => {
       :id="`usage-panel-${state.view}`"
       role="tabpanel"
       :aria-labelledby="`usage-tab-${state.view}`"
-      class="w-full shrink-0 space-y-4 p-4 md:p-8"
+      class="@container w-full shrink-0 space-y-4 p-4 md:p-8"
       :aria-busy="loading"
     >
       <div

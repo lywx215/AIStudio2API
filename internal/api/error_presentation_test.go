@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/aistudio"
+	"github.com/Mag1cFall/AIStudio2API/internal/camoufoxnative"
 )
 
 const privateErrorDetail = "AI Studio Build playground internal-backend-model-947 RPC internal.example.invalid"
@@ -96,7 +97,7 @@ func TestStreamingErrorPresentation(t *testing.T) {
 
 type presentationAdmin struct{ AdminService }
 
-func (presentationAdmin) LoginAccount(context.Context, string) (AdminAccount, error) {
+func (presentationAdmin) LoginAccount(context.Context, string, *camoufoxnative.LiveView) (AdminAccount, error) {
 	return AdminAccount{}, &aistudio.RPCError{StatusCode: 401, Message: privateErrorDetail}
 }
 func (presentationAdmin) RefreshAccount(context.Context, string) (AdminAccountRefresh, error) {

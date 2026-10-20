@@ -19,10 +19,17 @@ type Config struct {
 	AdminAuthEnabled bool
 	AdminUsername    string
 	AdminPassword    string
+	// AdminSessionPath 是记住我的管理会话文件
+	AdminSessionPath string
 	Ledger           RequestLedger
+	Prompts          PromptStore
 	Updates          UpdateService
 	// Management is process-scoped and independent of model and console auth.
 	Management managementcontract.HTTPRegistrar
+	// MediaDir 是媒体 URL 模式下生成媒体的保存目录
+	MediaDir string
+	// MediaLinks 返回媒体输出是否使用 URL 与设置的服务地址
+	MediaLinks func() (enabled bool, base string)
 }
 
 type server struct {
@@ -32,6 +39,7 @@ type server struct {
 	uploads           *geminiUploads
 	thoughtSignatures *thoughtSignatureStore
 	pairing           *pairingTokens
+	loginViews        *loginViews
 	// background 按响应 ID 保存进行中的 Responses 后台响应
 	background sync.Map
 }
@@ -42,7 +50,7 @@ var idSequence atomic.Uint64
 func NewHandler(service aistudio.Service, config Config) http.Handler {
 	s := &server{
 		service: service, config: config, responseStates: newResponseStateStore(), uploads: newGeminiUploads(),
-		thoughtSignatures: newThoughtSignatureStore(), pairing: &pairingTokens{},
+		thoughtSignatures: newThoughtSignatureStore(), pairing: &pairingTokens{}, loginViews: &loginViews{},
 	}
 	public := http.NewServeMux()
 	public.HandleFunc("GET /v1/models", s.handleOpenAIModels)
@@ -90,6 +98,7 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 	public.HandleFunc("POST /upload/v1beta/files", s.handleGeminiFileUpload)
 	public.HandleFunc("GET /v1beta/files", s.handleGeminiFileList)
 	public.HandleFunc("GET /v1beta/files/{file}", s.handleGeminiFileGet)
+	public.HandleFunc("GET /v1beta/files/{uri...}", s.handleGeminiFileURIGet)
 	public.HandleFunc("DELETE /v1beta/files/{file}", s.handleGeminiFileDelete)
 
 	control := http.NewServeMux()
@@ -100,6 +109,9 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 	}
 	if config.Ledger != nil {
 		s.registerLedger(control)
+	}
+	if config.Prompts != nil {
+		s.registerPrompts(control)
 	}
 	if config.Updates != nil {
 		s.registerUpdates(control)
@@ -114,6 +126,9 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 	root.Handle("/upload/", requestLoggingMiddleware(config.Admin, corsMiddleware(s.geminiUploadHandler(publicHandler))))
 	consoleAuth := newAdminAuth(config)
 	root.Handle("/api/", consoleAuth.handler(control))
+	if config.MediaDir != "" {
+		root.Handle("GET /media/{file}", corsMiddleware(http.HandlerFunc(s.handleMedia)))
+	}
 	if config.Admin != nil {
 		root.HandleFunc("POST /api/pairing/accounts", s.handlePairingAccount)
 	}

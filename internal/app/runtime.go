@@ -100,6 +100,7 @@ func newRuntime(
 	}
 	pool.SetRoutingStrategy(cfg.RoutingStrategy)
 	pool.SetUpstreamChannels(upstreamChannels(cfg.UpstreamChannels))
+	pool.SetModelChannels(modelChannels(cfg.ModelChannels))
 	proxies := aistudio.NewProxyPool(pool, proxyList)
 	if len(proxyList) > 1 {
 		if _, err := proxies.Probe(launchCtx, checkProxy); err != nil {

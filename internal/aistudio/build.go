@@ -287,6 +287,13 @@ func encodeBuildTools(tools Tools) ([]any, bool, error) {
 			if declaration.Description != "" {
 				encoded["description"] = declaration.Description
 			}
+			behavior, _, err := functionBehavior(declaration)
+			if err != nil {
+				return nil, false, fmt.Errorf("function declaration %d: %w", index, err)
+			}
+			if behavior != "" {
+				encoded["behavior"] = behavior
+			}
 			if len(bytes.TrimSpace(declaration.Parameters)) > 0 {
 				parameters, err := normalizeFunctionParameters(declaration.Parameters)
 				if err != nil {
@@ -514,10 +521,12 @@ var buildChunkSources = map[string]string{"web": "web", "retrievedContext": "ret
 type BuildStreamDecoder struct {
 	usage    *Usage
 	finished bool
+	frames   int
 }
 
 // Decode 解码一个 Gemini API GenerateContentResponse JSON
 func (d *BuildStreamDecoder) Decode(raw []byte) ([]Event, error) {
+	d.frames++
 	var response buildResponse
 	if err := json.Unmarshal(raw, &response); err != nil {
 		return nil, &ProtocolEvidenceError{Method: buildProxyStreamedMethod, Path: "$chunk", Detail: err.Error(), Raw: cloneRaw(raw)}
@@ -590,7 +599,7 @@ func (d *BuildStreamDecoder) End() error {
 	if d.finished {
 		return nil
 	}
-	return &ProtocolEvidenceError{Method: buildProxyStreamedMethod, Path: "$", Detail: "流结束前没有 finishReason"}
+	return &StreamInterruptedError{Method: buildProxyStreamedMethod, Frames: d.frames, Err: errMissingFinishFrame}
 }
 
 // buildEnumName 把 Gemini API 枚举名转换为规范小写名称
@@ -758,7 +767,7 @@ func DecodeBuildStream(source io.Reader, decoder *BuildStreamDecoder, emit func(
 func DecodeBuildUnary(source io.Reader, decoder *BuildStreamDecoder, emit func(Event) error) error {
 	raw, err := io.ReadAll(source)
 	if err != nil {
-		return fmt.Errorf("读取 AI Studio %s: %w", buildProxyUnaryMethod, err)
+		return &StreamInterruptedError{Method: buildProxyUnaryMethod, Err: err}
 	}
 	decoded, err := decodeJSONValue(raw)
 	if err != nil {

@@ -8,9 +8,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -134,7 +136,7 @@ func (h *httpService) requestID() string {
 	return id
 }
 
-func writeResponse(w http.ResponseWriter, id string, status int, data any, err error) {
+func writeResponse(w http.ResponseWriter, r *http.Request, id string, status int, data any, err error) {
 	var body []byte
 	if err != nil {
 		public := c.PublicError(err)
@@ -148,47 +150,85 @@ func writeResponse(w http.ResponseWriter, id string, status int, data any, err e
 			body, _ = json.Marshal(c.ErrorEnvelope{Error: public, RequestID: id})
 		}
 	}
+	if status >= http.StatusBadRequest {
+		drainRejectedBody(w, r)
+	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Request-Id", id)
 	w.WriteHeader(status)
 	_, _ = w.Write(body)
+	_ = http.NewResponseController(w).Flush()
+}
+
+// Bound both bytes and time spent discarding an early-rejected upload. With
+// Connection: close, net/http skips its usual pre-response body drain; unread
+// request bytes can otherwise turn a complete JSON rejection into a TCP reset.
+const rejectedBodyDrainBytes int64 = 64 << 10
+const rejectedBodyDrainTimeout = 250 * time.Millisecond
+
+func drainRejectedBody(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil || r.Body == http.NoBody {
+		return
+	}
+	if strings.EqualFold(strings.TrimSpace(r.Header.Get("Expect")), "100-continue") {
+		// A rejected client waiting for permission must not be invited to upload.
+		w.Header().Set("Connection", "close")
+		return
+	}
+	controller := http.NewResponseController(w)
+	if err := controller.SetReadDeadline(time.Now().Add(rejectedBodyDrainTimeout)); err != nil {
+		// Do not perform potentially blocking reads through an unsupported host.
+		w.Header().Set("Connection", "close")
+		return
+	}
+	// MaxBytesReader also tells the native HTTP server to close an oversized
+	// request gracefully. The extra probe byte is its only read beyond the cap.
+	_, err := io.Copy(io.Discard, http.MaxBytesReader(w, r.Body, rejectedBodyDrainBytes))
+	if err != nil {
+		w.Header().Set("Connection", "close")
+		// Do not let the server's final body cleanup wait on a stalled sender.
+		_ = controller.SetReadDeadline(time.Now())
+		return
+	}
+	_ = controller.SetReadDeadline(time.Time{})
 }
 
 func (h *httpService) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := h.requestID()
 		if !canonicalPath(r, c.Namespace) {
-			writeResponse(w, id, 0, nil, c.NewError(c.CodeNotFound))
+			writeResponse(w, r, id, 0, nil, c.NewError(c.CodeNotFound))
 			return
 		}
 		route, known := managementRoute(r.URL.Path, r.Method)
 		if !known {
-			writeResponse(w, id, 0, nil, c.NewError(c.CodeNotFound))
+			writeResponse(w, r, id, 0, nil, c.NewError(c.CodeNotFound))
 			return
 		}
 		if route.operation == "" {
 			w.Header().Set("Allow", route.allow)
-			writeResponse(w, id, 0, nil, c.NewError(c.CodeMethodNotAllowed))
+			writeResponse(w, r, id, 0, nil, c.NewError(c.CodeMethodNotAllowed))
 			return
 		}
 		values := r.Header.Values("Authorization")
 		if len(values) != 1 {
-			writeResponse(w, id, 0, nil, c.NewError(c.CodeUnauthorized))
+			writeResponse(w, r, id, 0, nil, c.NewError(c.CodeUnauthorized))
 			return
 		}
 		parts := strings.Fields(values[0])
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || !strings.HasPrefix(parts[1], "mgmt_") {
-			writeResponse(w, id, 0, nil, c.NewError(c.CodeUnauthorized))
+			writeResponse(w, r, id, 0, nil, c.NewError(c.CodeUnauthorized))
 			return
 		}
 		principal, err := h.options.Store.AuthenticateKey(r.Context(), parts[1])
 		if err != nil {
-			writeResponse(w, id, 0, nil, err)
+			writeResponse(w, r, id, 0, nil, err)
 			return
 		}
 		if !principal.Has(route.scope) {
-			writeResponse(w, id, 0, nil, c.NewError(c.CodeForbidden))
+			writeResponse(w, r, id, 0, nil, c.NewError(c.CodeForbidden))
 			return
 		}
 		if route.id != "" {
@@ -197,12 +237,12 @@ func (h *httpService) Handler() http.Handler {
 				valid = strings.HasPrefix(route.id, "task_") && c.ValidAccountID(strings.TrimPrefix(route.id, "task_"))
 			}
 			if !valid {
-				writeResponse(w, id, 0, nil, invalid())
+				writeResponse(w, r, id, 0, nil, invalid())
 				return
 			}
 		}
 		data, status, err := h.dispatch(w, r, route, principal, id)
-		writeResponse(w, id, status, data, err)
+		writeResponse(w, r, id, status, data, err)
 	})
 }
 
@@ -574,7 +614,7 @@ func publicTask(task c.Task) c.Task {
 func (h *httpService) KeyHandler(authorizer c.ConsoleAuthorizer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := h.requestID()
-		fail := func(e error) { writeResponse(w, id, 0, nil, e) }
+		fail := func(e error) { writeResponse(w, r, id, 0, nil, e) }
 		if !canonicalPath(r, c.KeyNamespace) {
 			fail(c.NewError(c.CodeNotFound))
 			return
@@ -622,7 +662,7 @@ func (h *httpService) KeyHandler(authorizer c.ConsoleAuthorizer) http.Handler {
 					v.Items[i].Scopes = []c.Scope{}
 				}
 			}
-			writeResponse(w, id, 200, v, e)
+			writeResponse(w, r, id, 200, v, e)
 		case "POST":
 			raw, e := readObject(w, r, false)
 			if e != nil {
@@ -650,7 +690,7 @@ func (h *httpService) KeyHandler(authorizer c.ConsoleAuthorizer) http.Handler {
 				return
 			}
 			v, e := h.options.Store.CreateKey(r.Context(), body)
-			writeResponse(w, id, 200, v, e)
+			writeResponse(w, r, id, 200, v, e)
 		case "DELETE":
 			if !strings.HasPrefix(keyID, "mkey_") || !c.ValidAccountID(strings.TrimPrefix(keyID, "mkey_")) {
 				fail(invalid())
@@ -674,7 +714,7 @@ func (h *httpService) KeyHandler(authorizer c.ConsoleAuthorizer) http.Handler {
 					e = c.NewError(c.CodePersistenceError)
 				}
 			}
-			writeResponse(w, id, 200, v, e)
+			writeResponse(w, r, id, 200, v, e)
 		}
 	})
 }

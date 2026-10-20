@@ -18,14 +18,8 @@ import UiSelect from '../UiSelect.vue'
 import ChartLegend from './ChartLegend.vue'
 import LazyChart from './LazyChart.vue'
 import { useUsageFormat } from './format'
-import {
-  assignColors,
-  dimensions,
-  otherColor,
-  readPreference,
-  successRate,
-  writePreference,
-} from './model'
+import { readPreference, writePreference } from '@/preference'
+import { assignColors, dimensions, otherColor, successRate } from './model'
 
 use([
   CanvasRenderer,
