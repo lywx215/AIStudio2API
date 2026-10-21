@@ -472,7 +472,7 @@ func requestBodyMiddleware(ledger RequestLedger, next http.Handler) http.Handler
 		r.Body = &captureReader{ReadCloser: r.Body, capture: request}
 		next.ServeHTTP(&captureWriter{ResponseWriter: w, capture: response}, r)
 		metadata, ok := r.Context().Value(accessLogContextKey{}).(*accessLogMetadata)
-		if !ok {
+		if !ok || !AccessLogUpstreamAttempted(r.Context()) {
 			return
 		}
 		body := RequestBody{ID: metadata.id(), Time: time.Now().UTC()}

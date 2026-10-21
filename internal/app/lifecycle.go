@@ -559,13 +559,19 @@ func (manager *runtimeManager) Events(ctx context.Context) (<-chan api.AdminEven
 
 // RecordAccessStart 记录公开 API 请求开始
 func (manager *runtimeManager) RecordAccessStart(entry api.AccessLog) {
+	if !entry.UpstreamAttempted {
+		return
+	}
 	manager.mu.RLock()
 	manager.current.admin.RecordAccessStart(entry)
 	manager.mu.RUnlock()
 }
 
-// RecordAccessLog 记录公开 API 请求结果，通过 API key 校验的 POST 请求同时写入用量账本
+// RecordAccessLog 记录已尝试访问上游的请求；已认证的 POST 请求同时写入用量账本。
 func (manager *runtimeManager) RecordAccessLog(entry api.AccessLog) {
+	if !entry.UpstreamAttempted {
+		return
+	}
 	manager.mu.RLock()
 	manager.current.admin.RecordAccessLog(entry)
 	manager.mu.RUnlock()

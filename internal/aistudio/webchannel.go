@@ -565,7 +565,7 @@ func (s *BidiSession) handshake(ctx context.Context, protocolHeaders http.Header
 	}
 	request.Header = s.cloneHeaders()
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := s.client.Do(request)
+	response, err := doUpstreamRequest(s.client, request)
 	if err != nil {
 		return fmt.Errorf("执行 bidi WebChannel handshake: %w", err)
 	}
@@ -760,7 +760,7 @@ func (s *BidiSession) postBatch(ctx context.Context, batch []bidiOutgoing) (resu
 	}
 	request.Header = s.cloneHeaders()
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := s.client.Do(request)
+	response, err := doUpstreamRequest(s.client, request)
 	if err != nil {
 		return fmt.Errorf("执行 bidi WebChannel message: %w", err)
 	}
@@ -878,7 +878,7 @@ func (s *BidiSession) readBackchannel(first bool, ready func(error)) (int, error
 		return 0, fmt.Errorf("创建 bidi WebChannel backchannel: %w", err)
 	}
 	request.Header = s.cloneHeaders()
-	response, err := s.client.Do(request)
+	response, err := doUpstreamRequest(s.client, request)
 	if err != nil {
 		if first {
 			ready(err)
@@ -1124,7 +1124,7 @@ func (s *BidiSession) terminate() error {
 	}
 	request.Header = s.cloneHeaders()
 	request.Header.Set("Content-Type", "text/plain;charset=UTF-8")
-	response, err := s.client.Do(request)
+	response, err := doUpstreamRequest(s.client, request)
 	if err != nil {
 		return fmt.Errorf("执行 bidi WebChannel terminate: %w", err)
 	}

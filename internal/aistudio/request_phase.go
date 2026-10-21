@@ -1,6 +1,9 @@
 package aistudio
 
-import "context"
+import (
+	"context"
+	"net/http"
+)
 
 // RequestPhase 表示受保护请求的当前准备阶段
 type RequestPhase string
@@ -17,6 +20,36 @@ const (
 type requestPhaseContextKey struct{}
 
 type upstreamModeContextKey struct{}
+
+type upstreamRequestContextKey struct{}
+
+// ContextWithUpstreamRequestObserver 观察业务请求进入发送入口，保留父上下文的观察器。
+func ContextWithUpstreamRequestObserver(ctx context.Context, observer func()) context.Context {
+	previous, _ := ctx.Value(upstreamRequestContextKey{}).(func())
+	return context.WithValue(ctx, upstreamRequestContextKey{}, func() {
+		if previous != nil {
+			previous()
+		}
+		if observer != nil {
+			observer()
+		}
+	})
+}
+
+func observeUpstreamRequest(ctx context.Context) {
+	if observer, ok := ctx.Value(upstreamRequestContextKey{}).(func()); ok && observer != nil {
+		observer()
+	}
+}
+
+// doUpstreamRequest 在本地准备成功后标记一次真实的业务发送尝试，包括连接失败。
+func doUpstreamRequest(client *http.Client, request *http.Request) (*http.Response, error) {
+	if err := request.Context().Err(); err != nil {
+		return nil, err
+	}
+	observeUpstreamRequest(request.Context())
+	return client.Do(request)
+}
 
 // ContextWithUpstreamModeObserver 记录实际 RPC、传输模式与流式回退原因
 func ContextWithUpstreamModeObserver(ctx context.Context, observer func(string, string, string)) context.Context {

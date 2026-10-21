@@ -23,7 +23,9 @@ type queueAdmissionService struct {
 	events   <-chan aistudio.Event
 }
 
-func (service *queueAdmissionService) Generate(ctx context.Context, _ aistudio.GenerateRequest) (<-chan aistudio.Event, error) {
+func (service *queueAdmissionService) Generate(ctx context.Context, request aistudio.GenerateRequest) (<-chan aistudio.Event, error) {
+	SetAccessLogTarget(ctx, request.Model, "")
+	SetAccessLogGenerationInput(ctx, request)
 	service.calls++
 	if service.onStart != nil {
 		service.onStart(ctx)
@@ -31,6 +33,7 @@ func (service *queueAdmissionService) Generate(ctx context.Context, _ aistudio.G
 	if service.calls == service.rejectAt {
 		return nil, &aistudio.RequestQueueFullError{Queued: 4, Limit: 4}
 	}
+	MarkAccessLogUpstreamAttempt(ctx)
 	if service.events != nil {
 		return service.events, nil
 	}
@@ -41,7 +44,9 @@ func (service *queueAdmissionService) Generate(ctx context.Context, _ aistudio.G
 	return events, nil
 }
 
-func (service *queueAdmissionService) CountTokens(context.Context, aistudio.TokenCountRequest) (aistudio.TokenCount, error) {
+func (service *queueAdmissionService) CountTokens(ctx context.Context, request aistudio.TokenCountRequest) (aistudio.TokenCount, error) {
+	SetAccessLogTarget(ctx, request.Model, "")
+	MarkAccessLogUpstreamAttempt(ctx)
 	service.counts++
 	return aistudio.TokenCount{InputTokens: 100000}, nil
 }
@@ -79,8 +84,8 @@ func TestQueueAdmissionHTTP429Protocols(t *testing.T) {
 				if w.Code != 429 || !strings.Contains(w.Body.String(), protocol.code) || strings.Contains(w.Header().Get("Content-Type"), "event-stream") || w.Flushed {
 					t.Fatalf("admission response=%d %s", w.Code, w.Body)
 				}
-				if len(admin.logs) != 1 || admin.logs[0].Status != 429 || !strings.Contains(admin.logs[0].Error, "当前排队 4，上限 4") {
-					t.Fatalf("queue diagnostics missing: %+v", admin.logs)
+				if len(admin.logs) != 0 {
+					t.Fatalf("local queue rejection was logged: %+v", admin.logs)
 				}
 			})
 		}

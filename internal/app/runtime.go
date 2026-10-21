@@ -3519,8 +3519,10 @@ func (service *trackedService) generateWithRetry(
 		api.MarkAccessLogScheduled(requestCtx)
 		service.requests.markRunning(request.ID, request.AccountID, accountLabel)
 		service.requests.markChannel(request.ID, string(lease.Channel()))
-		service.requests.logRequestProgress(request.ID, accountLabel, "INFO", "等待上游响应")
+		service.requests.logRequestProgress(requestCtx, request.ID, accountLabel, "INFO", "等待上游响应")
 		attemptCtx := aistudio.ContextWithAccountLease(requestCtx, lease)
+		var attemptedUpstream atomic.Bool
+		attemptCtx = aistudio.ContextWithUpstreamRequestObserver(attemptCtx, func() { attemptedUpstream.Store(true) })
 		attemptCtx = aistudio.ContextWithUpstreamModeObserver(attemptCtx, func(method, mode, reason string) {
 			level := "INFO"
 			message := fmt.Sprintf("上游调用 | 通道=%s | 模式=%s | RPC=%s", lease.Channel(), mode, method)
@@ -3531,7 +3533,7 @@ func (service *trackedService) generateWithRetry(
 				}
 				message += " | 回退流式 | 原因=" + reason
 			}
-			service.requests.logRequestProgress(request.ID, accountLabel, level, message)
+			service.requests.logRequestProgress(requestCtx, request.ID, accountLabel, level, message)
 		})
 		var attemptCopies *aistudio.TemporaryFileCopies
 		copiedFileCount := 0
@@ -3575,7 +3577,7 @@ func (service *trackedService) generateWithRetry(
 		prepareWarningDone := make(chan struct{})
 		prepareWarning := time.AfterFunc(streamStallThreshold, func() {
 			current, _, _ := prepareTiming.snapshot(time.Now())
-			service.requests.logRequestProgress(request.ID, accountLabel, "WARN", fmt.Sprintf(
+			service.requests.logRequestProgress(requestCtx, request.ID, accountLabel, "WARN", fmt.Sprintf(
 				"请求准备等待 | 已等待=%s | 当前=%s | 模型=%s",
 				streamStallThreshold, current, modelID,
 			))
@@ -3609,7 +3611,7 @@ func (service *trackedService) generateWithRetry(
 		if !prepareWarning.Stop() {
 			<-prepareWarningDone
 			_, waa, responseHeader := prepareTiming.snapshot(time.Now())
-			service.requests.logRequestProgress(request.ID, accountLabel, "INFO", fmt.Sprintf(
+			service.requests.logRequestProgress(requestCtx, request.ID, accountLabel, "INFO", fmt.Sprintf(
 				"请求准备结束 | 等待=%s | WAA=%s | 响应头=%s | 模型=%s",
 				prepareElapsed.Round(time.Millisecond), waa.Round(time.Millisecond),
 				responseHeader.Round(time.Millisecond), modelID,
@@ -3620,13 +3622,13 @@ func (service *trackedService) generateWithRetry(
 			firstEventDelayed := false
 			first, err = firstGenerateEvent(requestCtx, source, func() {
 				firstEventDelayed = true
-				service.requests.logRequestProgress(request.ID, accountLabel, "WARN", fmt.Sprintf(
+				service.requests.logRequestProgress(requestCtx, request.ID, accountLabel, "WARN", fmt.Sprintf(
 					"上游首事件等待 | 已等待=%s | 模型=%s | %s",
 					streamStallThreshold, modelID, activity.logFields(time.Now()),
 				))
 			})
 			if firstEventDelayed && err == nil {
-				service.requests.logRequestProgress(request.ID, accountLabel, "INFO", fmt.Sprintf(
+				service.requests.logRequestProgress(requestCtx, request.ID, accountLabel, "INFO", fmt.Sprintf(
 					"上游首事件到达 | 等待=%s | 事件=%s | 模型=%s",
 					time.Since(upstreamStartedAt).Round(time.Millisecond), first.Kind, modelID,
 				))
@@ -3650,10 +3652,12 @@ func (service *trackedService) generateWithRetry(
 		if attemptCopies != nil {
 			err = errors.Join(err, attemptCopies.Cleanup())
 		}
-		api.AddAccessLogAttempt(requestCtx, api.RequestAttempt{
-			Account: accountLabel, Channel: string(lease.Channel()), Error: err.Error(),
-			DurationMS: time.Since(attemptStartedAt).Milliseconds(),
-		})
+		if attemptedUpstream.Load() {
+			api.AddAccessLogAttempt(requestCtx, api.RequestAttempt{
+				Account: accountLabel, Channel: string(lease.Channel()), Error: err.Error(),
+				DurationMS: time.Since(attemptStartedAt).Milliseconds(),
+			})
+		}
 		if proxyNetworkError(requestCtx, err) {
 			service.reportProxyFailure(attemptProxy, accountLabel, err)
 		}
@@ -4014,7 +4018,7 @@ func (service *trackedService) forwardEvents(
 			case <-stall:
 				stalled = true
 				stall = nil
-				service.requests.logRequestProgress(requestID, accountLabel, "WARN", fmt.Sprintf(
+				service.requests.logRequestProgress(requestCtx, requestID, accountLabel, "WARN", fmt.Sprintf(
 					"事件流停顿 | 模型=%s | 已等待=%s | 最近事件=%s | 推理=%d | 正文=%d | %s",
 					modelID, streamStallThreshold, lastEventKind, reasoningEvents, contentEvents,
 					activity.logFields(time.Now()),
@@ -4040,7 +4044,7 @@ func (service *trackedService) forwardEvents(
 		}
 		now := time.Now()
 		if stalled {
-			service.requests.logRequestProgress(requestID, accountLabel, "INFO", fmt.Sprintf(
+			service.requests.logRequestProgress(requestCtx, requestID, accountLabel, "INFO", fmt.Sprintf(
 				"事件流恢复 | 模型=%s | 停顿=%s | 当前事件=%s",
 				modelID, now.Sub(lastEventAt).Round(time.Millisecond), event.Kind,
 			))

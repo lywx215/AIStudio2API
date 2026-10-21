@@ -518,7 +518,7 @@ func g6SyntheticBody(raw []byte) bool {
 	visit = func(value any) bool {
 		switch node := value.(type) {
 		case map[string]any:
-			if name, ok := node["accountName"].(string); ok && !strings.HasSuffix(strings.ToLower(name), "@example.invalid") {
+			if name, ok := node["accountName"].(string); ok && !strings.HasSuffix(strings.ToLower(name), "@example.invalid") && !g6PersonalSyntheticName(name) {
 				return false
 			}
 			if cookies, ok := node["cookies"].([]any); ok {
@@ -886,8 +886,26 @@ func (g6Projection) Settings(context.Context) (c.SettingsSnapshot, error) {
 func (g6Projection) PatchSettings(context.Context, c.SettingsPatch) (c.SettingsUpdated, error) {
 	return c.SettingsUpdated{}, c.NewError(c.CodeInvalidState)
 }
-func (g6Projection) Diagnostics(_ context.Context, q c.PageQuery) (c.Diagnostics, error) {
-	return c.Diagnostics{ServiceState: "synthetic_stopped", WAABackend: "go", Accounts: c.Page[c.AccountRuntimeState]{Items: []c.AccountRuntimeState{}, Offset: q.Offset, Limit: q.Limit}}, nil
+func (p g6Projection) Diagnostics(ctx context.Context, q c.PageQuery) (c.Diagnostics, error) {
+	// A stopped fixture still projects every stored UUID, as the real runtime
+	// projection does. Empty runtime membership would falsely claim a changing
+	// snapshot while the accounts endpoint contains stable synthetic records.
+	page, err := p.store.ListAccounts(ctx, q)
+	if err != nil {
+		return c.Diagnostics{}, err
+	}
+	result := c.Diagnostics{ServiceState: "synthetic_stopped", WAABackend: "go",
+		Accounts: c.Page[c.AccountRuntimeState]{Items: []c.AccountRuntimeState{}, Total: page.Total, Offset: page.Offset, Limit: page.Limit}}
+	for _, account := range page.Items {
+		state := "unavailable"
+		if account.Archived {
+			state = "archived"
+		} else if !account.Enabled {
+			state = "disabled"
+		}
+		result.Accounts.Items = append(result.Accounts.Items, c.AccountRuntimeState{AccountID: account.AccountID, State: state})
+	}
+	return result, nil
 }
 func (g6Projection) Usage(_ context.Context, q c.PageQuery) (c.Page[c.UsageRecord], error) {
 	return c.Page[c.UsageRecord]{Items: []c.UsageRecord{}, Offset: q.Offset, Limit: q.Limit}, nil

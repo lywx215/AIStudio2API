@@ -559,6 +559,8 @@ The service loads every account from `AISTUDIO_AUTH_STATES`. `WARM_WORKER_LIMIT`
 
 Generation requests share a global queue limit of `floor(MAX_ACTIVE_WORKERS × PER_ACCOUNT_CONCURRENCY / 5)` across all models. Only requests that need to wait use queue slots; new requests that cannot run immediately receive HTTP 429 when the queue is full. A configured maximum concurrency of 20 allows 4 waiting requests; values below 5 allow no queueing. Capacity updates also update this limit without cancelling existing waiters. Background Responses complete compaction and generation admission before acknowledging acceptance, so queue overflow returns HTTP 429; automatic compaction may delay that initial response.
 
+Request logs, records, optional bodies and usage statistics only retain business requests that actually attempt to contact Google. Local queue overflow, validation failures, a stopped service and cancellation before sending create no records; Google 429/5xx responses and connection failures during sending remain recorded. Retries and background compaction share one request marker and one final record per client request. Existing history follows the current retention policy.
+
 ### Port Configuration
 
 The console allows passwordless loopback access by default. For remote management:

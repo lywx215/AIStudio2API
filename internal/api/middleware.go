@@ -20,69 +20,71 @@ import (
 type accessLogContextKey struct{}
 
 type accessLogMetadata struct {
-	mu              sync.Mutex
-	admin           AdminService
-	method          string
-	path            string
-	started         bool
-	generation      bool
-	model           string
-	account         string
-	channel         string
-	finishReason    string
-	err             string
-	canceled        bool
-	detached        bool
-	failureStatus   int
-	firstEvent      time.Duration
-	upstreamBytes   int64
-	usage           *aistudio.Usage
-	toolCalls       int
-	inputMessages   int
-	inputTextChars  int
-	inputMedia      int
-	inputMediaBytes int64
-	inputFiles      int
-	temperature     string
-	topP            string
-	thinking        string
-	maxOutputTokens string
-	requestID       string
-	startedAt       time.Time
-	queueWait       time.Duration
-	proof           time.Duration
-	attempts        []RequestAttempt
-	authorized      bool
+	mu                sync.Mutex
+	admin             AdminService
+	method            string
+	path              string
+	started           bool
+	upstreamAttempted bool
+	generation        bool
+	model             string
+	account           string
+	channel           string
+	finishReason      string
+	err               string
+	canceled          bool
+	detached          bool
+	failureStatus     int
+	firstEvent        time.Duration
+	upstreamBytes     int64
+	usage             *aistudio.Usage
+	toolCalls         int
+	inputMessages     int
+	inputTextChars    int
+	inputMedia        int
+	inputMediaBytes   int64
+	inputFiles        int
+	temperature       string
+	topP              string
+	thinking          string
+	maxOutputTokens   string
+	requestID         string
+	startedAt         time.Time
+	queueWait         time.Duration
+	proof             time.Duration
+	attempts          []RequestAttempt
+	authorized        bool
 }
 
 type accessLogSnapshot struct {
-	generation      bool
-	model           string
-	account         string
-	channel         string
-	finishReason    string
-	requestErr      string
-	canceled        bool
-	detached        bool
-	failureStatus   int
-	firstEvent      time.Duration
-	upstreamBytes   int64
-	usage           *aistudio.Usage
-	toolCalls       int
-	inputMessages   int
-	inputTextChars  int
-	inputMedia      int
-	inputMediaBytes int64
-	inputFiles      int
-	temperature     string
-	topP            string
-	thinking        string
-	maxOutputTokens string
-	requestID       string
-	queueWait       time.Duration
-	proof           time.Duration
-	attempts        []RequestAttempt
-	authorized      bool
+	upstreamAttempted bool
+	generation        bool
+	model             string
+	account           string
+	channel           string
+	finishReason      string
+	requestErr        string
+	canceled          bool
+	detached          bool
+	failureStatus     int
+	firstEvent        time.Duration
+	upstreamBytes     int64
+	usage             *aistudio.Usage
+	toolCalls         int
+	inputMessages     int
+	inputTextChars    int
+	inputMedia        int
+	inputMediaBytes   int64
+	inputFiles        int
+	temperature       string
+	topP              string
+	thinking          string
+	maxOutputTokens   string
+	requestID         string
+	queueWait         time.Duration
+	proof             time.Duration
+	attempts          []RequestAttempt
+	authorized        bool
 }
 
 type accessLogResponseWriter struct {
@@ -136,14 +138,15 @@ func (metadata *accessLogMetadata) setTarget(model string, account string) {
 
 func (metadata *accessLogMetadata) start(force bool) {
 	metadata.mu.Lock()
-	if metadata.started || !force && metadata.account == "" {
+	if metadata.started || !metadata.upstreamAttempted || !force && metadata.account == "" {
 		metadata.mu.Unlock()
 		return
 	}
 	metadata.started = true
 	admin := metadata.admin
 	entry := AccessLog{
-		Method: metadata.method, Path: metadata.path, Model: metadata.model, Account: metadata.account, Channel: metadata.channel,
+		UpstreamAttempted: true,
+		Method:            metadata.method, Path: metadata.path, Model: metadata.model, Account: metadata.account, Channel: metadata.channel,
 		Temperature: metadata.temperature, TopP: metadata.topP, Thinking: metadata.thinking,
 		MaxOutputTokens: metadata.maxOutputTokens, Generation: metadata.generation, RequestID: metadata.requestID,
 		InputMessages: metadata.inputMessages, InputTextChars: metadata.inputTextChars,
@@ -230,7 +233,9 @@ func (metadata *accessLogMetadata) setGenerationInput(request aistudio.GenerateR
 		}
 	}
 	metadata.mu.Lock()
-	metadata.requestID = strings.TrimSpace(request.ID)
+	if id := strings.TrimSpace(request.ID); !metadata.started && id != "" {
+		metadata.requestID = id
+	}
 	metadata.inputMessages = len(request.Contents)
 	metadata.inputTextChars = textChars
 	metadata.inputMedia = media
@@ -256,8 +261,9 @@ func (metadata *accessLogMetadata) setFirstEvent(firstEvent time.Duration) {
 func (metadata *accessLogMetadata) snapshot() accessLogSnapshot {
 	metadata.mu.Lock()
 	snapshot := accessLogSnapshot{
-		generation: metadata.generation,
-		model:      metadata.model, account: metadata.account, channel: metadata.channel, finishReason: metadata.finishReason,
+		upstreamAttempted: metadata.upstreamAttempted,
+		generation:        metadata.generation,
+		model:             metadata.model, account: metadata.account, channel: metadata.channel, finishReason: metadata.finishReason,
 		requestErr: metadata.err, canceled: metadata.canceled, detached: metadata.detached,
 		failureStatus: metadata.failureStatus,
 		firstEvent:    metadata.firstEvent,
@@ -355,11 +361,39 @@ func SetAccessLogUpstreamBytes(ctx context.Context, bytes int64) {
 	}
 }
 
-// StartAccessLog 立即写入已经完成解析的请求开始记录
+// StartAccessLog 仅在业务请求已尝试发送时写入开始记录。
 func StartAccessLog(ctx context.Context) {
 	if metadata, ok := ctx.Value(accessLogContextKey{}).(*accessLogMetadata); ok {
 		metadata.start(true)
 	}
+}
+
+// MarkAccessLogUpstreamAttempt 标记请求已经进入上游发送入口，只生成一条开始日志。
+func MarkAccessLogUpstreamAttempt(ctx context.Context) {
+	if metadata, ok := ctx.Value(accessLogContextKey{}).(*accessLogMetadata); ok {
+		metadata.mu.Lock()
+		metadata.upstreamAttempted = true
+		metadata.mu.Unlock()
+		metadata.start(true)
+	}
+}
+
+// AccessLogUpstreamAttempted 判断整个客户端请求是否已经尝试访问上游。
+func AccessLogUpstreamAttempted(ctx context.Context) bool {
+	if metadata, ok := ctx.Value(accessLogContextKey{}).(*accessLogMetadata); ok {
+		metadata.mu.Lock()
+		defer metadata.mu.Unlock()
+		return metadata.upstreamAttempted
+	}
+	return false
+}
+
+// AccessLogRequestID 返回整个客户端请求共享的日志 ID，首次发送后不再随子生成改变。
+func AccessLogRequestID(ctx context.Context) string {
+	if metadata, ok := ctx.Value(accessLogContextKey{}).(*accessLogMetadata); ok {
+		return metadata.id()
+	}
+	return ""
 }
 
 func formatLogFloat(value *float64) string {
@@ -435,7 +469,9 @@ func requestLoggingMiddleware(admin AdminService, next http.Handler) http.Handle
 		started := time.Now()
 		metadata := &accessLogMetadata{admin: admin, method: r.Method, path: r.URL.Path, requestID: newID("req"), startedAt: started}
 		writer := &accessLogResponseWriter{ResponseWriter: w, metadata: metadata}
-		request := r.WithContext(context.WithValue(r.Context(), accessLogContextKey{}, metadata))
+		ctx := context.WithValue(r.Context(), accessLogContextKey{}, metadata)
+		observed := aistudio.ContextWithUpstreamRequestObserver(ctx, func() { MarkAccessLogUpstreamAttempt(ctx) })
+		request := r.WithContext(observed)
 		next.ServeHTTP(writer, request)
 		status := writer.status
 		if status == 0 {
@@ -447,7 +483,7 @@ func requestLoggingMiddleware(admin AdminService, next http.Handler) http.Handle
 		} else if status < http.StatusBadRequest && snapshot.failureStatus >= http.StatusBadRequest {
 			status = snapshot.failureStatus
 		}
-		if admin != nil {
+		if admin != nil && snapshot.upstreamAttempted {
 			admin.RecordAccessLog(AccessLog{
 				Status: status, Latency: time.Since(started), FirstEvent: snapshot.firstEvent,
 				QueueWait: snapshot.queueWait, Proof: snapshot.proof,
@@ -460,7 +496,8 @@ func requestLoggingMiddleware(admin AdminService, next http.Handler) http.Handle
 				Method:    r.Method, Path: r.URL.Path, Model: snapshot.model, Account: snapshot.account, Channel: snapshot.channel,
 				FinishReason: snapshot.finishReason, Error: snapshot.requestErr,
 				Canceled: snapshot.canceled, Generation: snapshot.generation, Attempts: snapshot.attempts,
-				Authorized: snapshot.authorized,
+				Authorized:        snapshot.authorized,
+				UpstreamAttempted: snapshot.upstreamAttempted,
 			})
 		}
 	})

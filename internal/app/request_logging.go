@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -43,6 +44,9 @@ func requestLogData(entry api.AccessLog) *api.RequestLog {
 
 // RecordAccessStart 保存可与后续事件关联的请求开始记录
 func (admin *runtimeAdmin) RecordAccessStart(entry api.AccessLog) {
+	if !entry.UpstreamAttempted {
+		return
+	}
 	data := requestLogData(entry)
 	data.State = "running"
 	admin.recordRequestLog(entry.Account, "INFO", "request.started", "请求开始", data)
@@ -78,6 +82,9 @@ func finishedRequestLog(entry api.AccessLog) (*api.RequestLog, string, string) {
 
 // RecordAccessLog 保存请求结果日志
 func (admin *runtimeAdmin) RecordAccessLog(entry api.AccessLog) {
+	if !entry.UpstreamAttempted {
+		return
+	}
 	data, level, message := finishedRequestLog(entry)
 	admin.recordRequestLog(entry.Account, level, "request.finished", message, data)
 }
@@ -132,7 +139,13 @@ func (admin *runtimeAdmin) recordRequestLog(source, level, event, message string
 }
 
 // logRequestProgress 将等待与恢复事件关联到所属请求
-func (registry *requestRegistry) logRequestProgress(id, source, level, message string) {
+func (registry *requestRegistry) logRequestProgress(ctx context.Context, id, source, level, message string) {
+	if !api.AccessLogUpstreamAttempted(ctx) {
+		return
+	}
+	if requestID := api.AccessLogRequestID(ctx); requestID != "" {
+		id = requestID
+	}
 	registry.recordLog(api.AdminLog{Source: source, Level: level, Event: "request.progress", Message: message,
 		Request: &api.RequestLog{ID: id, State: "running"}})
 }

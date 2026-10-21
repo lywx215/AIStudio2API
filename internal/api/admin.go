@@ -99,35 +99,36 @@ type RequestLogUsage struct {
 
 // AccessLog 表示一次公开 API 请求的最终访问记录
 type AccessLog struct {
-	Status          int
-	Latency         time.Duration
-	FirstEvent      time.Duration
-	QueueWait       time.Duration
-	Proof           time.Duration
-	UpstreamBytes   int64
-	Usage           *aistudio.Usage
-	ToolCalls       int
-	InputMessages   int
-	InputTextChars  int
-	InputMedia      int
-	InputMediaBytes int64
-	InputFiles      int
-	Temperature     string
-	TopP            string
-	Thinking        string
-	MaxOutputTokens string
-	RequestID       string
-	Method          string
-	Path            string
-	Model           string
-	Account         string
-	Channel         string
-	FinishReason    string
-	Error           string
-	Canceled        bool
-	Generation      bool
-	Attempts        []RequestAttempt
-	Authorized      bool
+	Status            int
+	Latency           time.Duration
+	FirstEvent        time.Duration
+	QueueWait         time.Duration
+	Proof             time.Duration
+	UpstreamBytes     int64
+	Usage             *aistudio.Usage
+	ToolCalls         int
+	InputMessages     int
+	InputTextChars    int
+	InputMedia        int
+	InputMediaBytes   int64
+	InputFiles        int
+	Temperature       string
+	TopP              string
+	Thinking          string
+	MaxOutputTokens   string
+	RequestID         string
+	Method            string
+	Path              string
+	Model             string
+	Account           string
+	Channel           string
+	FinishReason      string
+	Error             string
+	Canceled          bool
+	Generation        bool
+	Attempts          []RequestAttempt
+	Authorized        bool
+	UpstreamAttempted bool
 }
 
 // AdminAccountCounts 表示账户状态计数

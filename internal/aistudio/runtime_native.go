@@ -150,6 +150,10 @@ func arrayElementSpan(body []byte, index int) (int, int, error) {
 
 // SendProtected 经账户 WAA runtime 流式发送已准备的请求
 func (worker *NativeWorker) SendProtected(ctx context.Context, request ProtectedRequest) (*RPCResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	observeUpstreamRequest(ctx)
 	response, err := worker.runtime.SendProtected(ctx, request.URL, request.Headers, request.Body)
 	if err != nil {
 		if ctx.Err() == nil {

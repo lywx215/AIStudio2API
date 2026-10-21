@@ -212,7 +212,7 @@ func (t *MakerSuiteHTTPTransport) UploadAssistantFile(ctx context.Context, accou
 			return nil, nil, fmt.Errorf("创建写代码助手附件上传请求: %w", err)
 		}
 		request.Header = header
-		response, err := client.Do(request)
+		response, err := doUpstreamRequest(client, request)
 		if err != nil {
 			return nil, nil, fmt.Errorf("执行写代码助手附件上传: %w", err)
 		}
@@ -287,7 +287,7 @@ func (t *MakerSuiteHTTPTransport) Do(ctx context.Context, rpc RPCRequest) (*RPCR
 	if err != nil {
 		return nil, releaseOnError(err)
 	}
-	response, err := client.Do(request)
+	response, err := doUpstreamRequest(client, request)
 	if err != nil {
 		return nil, releaseOnError(fmt.Errorf("执行 MakerSuite %s 请求: %w", rpc.Method, err))
 	}

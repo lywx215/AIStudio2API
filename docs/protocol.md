@@ -1242,6 +1242,8 @@ server content 的 index `0/1/2/4/5/6` 分别为 model content、turn complete�
 
 `AdminStatus.state` 为 `STOPPED`、`LAUNCHING` 或 `RUNNING`；`running` 只在 `RUNNING` 为 true；`ready` 要求 `RUNNING` 且至少一个账户处于 ready 或 busy；`version` 来自构建信息；`active_requests` 是当前进程请求注册表数量。`AdminAccount.message` 保存当前状态原因，`models` 是该账户实时目录 ID。`until` 与 `started_at` 使用 RFC 3339 JSON time。
 
+请求日志、明细、正文和用量统计仅记录实际尝试发送 Google 业务请求的客户端请求。本地队满 429、参数校验失败、服务停止和发送前取消不产生记录；发送时的连接错误、Google 返回的 429/5xx 仍记录。一个客户端请求的重试和后台压缩共享发送标记；先访问 Google、再遇到本地队满时仍保留一条明细。历史记录按原保留策略处理，系统与管理操作日志不受该规则影响。
+
 `GET /api/usage` 的参数：
 
 | 参数 | 含义 |
