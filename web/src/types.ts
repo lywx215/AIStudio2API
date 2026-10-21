@@ -21,6 +21,7 @@ export type AccountState =
   | 'disabled'
 
 export interface Account {
+  login_password_set?: boolean
   id: string
   label: string
   enabled: boolean

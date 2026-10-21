@@ -73,6 +73,8 @@ func (driver *NativeLoginDriver) Login(ctx context.Context, request IsolatedLogi
 
 func (driver *NativeLoginDriver) options(request IsolatedLoginRequest) camoufoxnative.LoginOptions {
 	return camoufoxnative.LoginOptions{
+		Email:          request.AccountID,
+		Password:       request.Password,
 		ExecutablePath: driver.camoufox,
 		Directory:      request.Directory,
 		Locale:         request.Locale,

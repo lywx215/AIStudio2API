@@ -27,6 +27,8 @@ const loginEmailExpression = `(() => {
 
 // LoginOptions 定义纯 Go 隔离登录环境，View 不为空时浏览器以无头方式运行，画面与输入经管理页登录窗口传递
 type LoginOptions struct {
+	Email          string `json:"-"`
+	Password       string `json:"-"`
 	ExecutablePath string
 	Directory      string
 	Locale         string
@@ -37,6 +39,9 @@ type LoginOptions struct {
 	Log            io.Writer
 	View           *LiveView
 }
+
+func (LoginOptions) String() string   { return "[login options]" }
+func (LoginOptions) GoString() string { return "[login options]" }
 
 // LoginResult 返回隔离浏览器导出的 Playwright storage state
 type LoginResult struct {
@@ -49,6 +54,7 @@ type LoginResult struct {
 }
 
 type loginSession struct {
+	automation *loginAutomation
 	process    *browserProcess
 	connection *websocket.Conn
 	client     *bidiClient
@@ -90,6 +96,7 @@ func Login(ctx context.Context, options LoginOptions) (result LoginResult, err e
 		err = errors.Join(err, closeErr)
 	}()
 	options.View.setStatus(liveViewWaiting)
+	session.automation = newLoginAutomation(options.Email, options.Password, options.View)
 	origins := make(map[string]storageOrigin)
 	pageURL, err := session.waitLogin(loginCtx, origins)
 	if err != nil {
@@ -262,6 +269,9 @@ func (session *loginSession) waitLogin(ctx context.Context, origins map[string]s
 			continue
 		}
 		session.captureCurrentOrigin(ctx, pageURL, origins)
+		if session.automation != nil {
+			session.automation.step(ctx, session)
+		}
 		ready, readyErr := session.client.evaluateBool(ctx, session.contextID, promptReadyExpression)
 		if readyErr != nil && !retryablePageEvaluation(readyErr) {
 			return "", fmt.Errorf("检查隔离登录页面: %w", readyErr)

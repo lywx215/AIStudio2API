@@ -7512,6 +7512,895 @@
           }
         }
       }
+    },
+    "/api/manage/v1/accounts/{id}/login-password": {
+      "get": {
+        "operationId": "getLoginPasswordStatus",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AccountId"
+          }
+        ],
+        "security": [
+          {
+            "ManagementBearer": []
+          }
+        ],
+        "summary": "getLoginPasswordStatus",
+        "x-required-scopes": [
+          "accounts:read"
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid management request.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A valid management bearer token is required.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A console-password session is required.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Management resource not found.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Account drain is pending; active requests were not interrupted.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Management payload exceeds its limit.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Management task queue is full.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The operation was committed but its audit record could not be persisted. Read current state before retrying.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginPasswordStatusEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setLoginPassword",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AccountId"
+          }
+        ],
+        "security": [
+          {
+            "ManagementBearer": []
+          }
+        ],
+        "summary": "setLoginPassword",
+        "x-required-scopes": [
+          "accounts:write"
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid management request.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A valid management bearer token is required.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A console-password session is required.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Management resource not found.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Account drain is pending; active requests were not interrupted.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Management payload exceeds its limit.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Management task queue is full.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The operation was committed but its audit record could not be persisted. Read current state before retrying.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginPasswordStatusEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginPasswordWriteInput"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearLoginPassword",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AccountId"
+          }
+        ],
+        "security": [
+          {
+            "ManagementBearer": []
+          }
+        ],
+        "summary": "clearLoginPassword",
+        "x-required-scopes": [
+          "accounts:write"
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid management request.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A valid management bearer token is required.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A console-password session is required.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Management resource not found.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Account drain is pending; active requests were not interrupted.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Management payload exceeds its limit.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Management task queue is full.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The operation was committed but its audit record could not be persisted. Read current state before retrying.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identical to envelope requestId; server-generated req_UUIDv4.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginPasswordStatusEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginPasswordClearInput"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8941,6 +9830,10 @@
           },
           "accountProxyWrite": {
             "type": "boolean"
+          },
+          "loginPasswordSync": {
+            "type": "boolean",
+            "description": "Supports separate write-only Google login password synchronization."
           }
         },
         "required": [
@@ -9911,6 +10804,102 @@
           "stateVersion",
           "channels",
           "channelResults"
+        ]
+      },
+      "LoginPasswordStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "configured",
+          "version",
+          "lastOperationId"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastOperationId": {
+            "type": "string",
+            "description": "Empty until the first password operation; otherwise its UUID."
+          }
+        }
+      },
+      "LoginPasswordStatusEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "requestId"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoginPasswordStatus"
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        }
+      },
+      "LoginPasswordWriteInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384,
+            "writeOnly": true,
+            "description": "Stored verbatim. Whitespace is significant."
+          }
+        },
+        "required": [
+          "email",
+          "expectedVersion",
+          "operationId",
+          "password"
+        ]
+      },
+      "LoginPasswordClearInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "email",
+          "expectedVersion",
+          "operationId"
         ]
       }
     },

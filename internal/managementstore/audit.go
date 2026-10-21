@@ -12,6 +12,7 @@ func (s *store) AppendAudit(ctx context.Context, e c.AuditEntry) error {
 		return c.NewError(c.CodeInvalidRequest)
 	}
 	switch e.Action {
+	case c.AuditLoginPasswordWrite, c.AuditLoginPasswordClear:
 	case "import", "replace", "test", "archive", "restore", "reload", "reload-auth", "batch", "patch", "export", "account-patch", "settings-patch", "accounts.patch", "accounts.export", "account.patch", "account.export", "cancel", "task.cancel", "key.create", "key.revoke":
 	default:
 		return c.NewError(c.CodeInvalidRequest)

@@ -102,6 +102,7 @@ func (s StorageState) AuthExtension() (AuthExtension, bool, error) {
 
 // IsolatedLoginRequest 描述独立浏览器登录所需的稳定环境，View 不为空时登录画面显示在管理页登录窗口
 type IsolatedLoginRequest struct {
+	Password  string `json:"-"`
 	AccountID string
 	Directory string
 	Proxy     string
@@ -109,6 +110,9 @@ type IsolatedLoginRequest struct {
 	Timezone  string
 	View      *camoufoxnative.LiveView
 }
+
+func (IsolatedLoginRequest) String() string   { return "[isolated login request]" }
+func (IsolatedLoginRequest) GoString() string { return "[isolated login request]" }
 
 // IsolatedLoginResult 返回独立浏览器导出的认证状态
 type IsolatedLoginResult struct {

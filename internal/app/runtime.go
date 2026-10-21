@@ -2415,7 +2415,13 @@ func (service *trackedService) publishModelAccess() {
 	statuses := service.pool.Status()
 	accounts := make([]api.AdminAccount, 0, len(statuses))
 	for _, status := range statuses {
-		accounts = append(accounts, adminAccountDTO(status))
+		accountDTO := adminAccountDTO(status)
+		if account, err := service.pool.Account(status.ID); err == nil {
+			if stored, err := aistudio.ReadLoginCredentials(account.Directory, account.ID); err == nil {
+				accountDTO.LoginPasswordSet = stored.Password != ""
+			}
+		}
+		accounts = append(accounts, accountDTO)
 	}
 	service.requests.publish(api.AdminEvent{Type: "accounts", Data: map[string]any{"accounts": accounts}})
 	service.requests.publish(api.AdminEvent{Type: "models", Data: map[string]any{"models": service.catalogModels()}})

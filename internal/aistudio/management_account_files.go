@@ -27,6 +27,7 @@ type AccountFileParticipant struct {
 }
 
 type accountFileImage struct {
+	BeforeDigest string `json:"beforeDigest,omitempty"`
 	Name         string `json:"name"`
 	Before       []byte `json:"before"`
 	After        []byte `json:"after"`
@@ -270,6 +271,12 @@ func (p *AccountFileParticipant) Prepare(ctx context.Context, plan contract.Comm
 				image.AfterExists = true
 			}
 		}
+		if journal.Delete && isLoginCredentialsFile(name) && image.BeforeExists {
+			// Delete moves the original file with its directory. Recovery needs
+			// integrity evidence, never another plaintext password in the journal.
+			image.BeforeDigest = fmt.Sprintf("%x", sha256.Sum256(image.Before))
+			image.Before = nil
+		}
 		journal.Files = append(journal.Files, image)
 	}
 	if err := os.MkdirAll(filepath.Dir(ref), 0o700); err != nil {
@@ -350,6 +357,9 @@ func (p *AccountFileParticipant) load(record contract.RecoveryRecord) (accountFi
 	for _, file := range journal.Files {
 		if file.Name == "" || filepath.Base(file.Name) != file.Name || file.Name == "." || file.Name == ".." {
 			return journal, ref, fmt.Errorf("invalid journal file")
+		}
+		if file.BeforeDigest != "" && (!journal.Delete || !isLoginCredentialsFile(file.Name) || !file.BeforeExists || len(file.BeforeDigest) != 64 || len(file.Before) != 0 || file.AfterExists) {
+			return journal, ref, fmt.Errorf("invalid password delete evidence")
 		}
 	}
 	return journal, ref, nil
@@ -529,6 +539,14 @@ func checkAccountDeleteBackup(journal accountFileJournal, allowRemoved bool) err
 	for _, file := range journal.Files {
 		path := filepath.Join(journal.BackupDirectory, file.Name)
 		before, err := matchesFile(path, file.Before, file.BeforeExists)
+		if file.BeforeDigest != "" {
+			var data []byte
+			data, err = readPrivateAccountFile(path)
+			before = err == nil && fmt.Sprintf("%x", sha256.Sum256(data)) == file.BeforeDigest
+			if os.IsNotExist(err) {
+				err = nil
+			}
+		}
 		if err != nil {
 			return err
 		}

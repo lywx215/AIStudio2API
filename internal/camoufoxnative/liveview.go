@@ -55,12 +55,14 @@ var errLiveViewReplaced = errors.New("登录窗口已在其他连接中打开")
 
 // LiveView 把无头隔离登录浏览器的画面推给管理页登录窗口，并把窗口中的输入转发给浏览器
 type LiveView struct {
-	mu        sync.Mutex
-	status    string
-	frame     *liveFrame
-	frameSeq  int
-	dialog    *liveDialog
-	dialogSeq int
+	manualTakeover bool
+	automationMu   sync.Mutex
+	mu             sync.Mutex
+	status         string
+	frame          *liveFrame
+	frameSeq       int
+	dialog         *liveDialog
+	dialogSeq      int
 	// contexts 为顶层页面，按打开顺序排列，画面取最后一个
 	contexts []string
 	viewer   *liveViewer
@@ -192,8 +194,22 @@ func (view *LiveView) receive(connection *websocket.Conn) error {
 			view.answerDialog(input.Accept, input.Text)
 			continue
 		}
+		if input.Type == "takeover" {
+			view.takeOver()
+			continue
+		}
 		view.enqueue(input)
 	}
+}
+
+func (view *LiveView) takeOver() {
+	view.automationMu.Lock()
+	defer view.automationMu.Unlock()
+	view.mu.Lock()
+	view.manualTakeover = true
+	view.status = "manual"
+	view.notify()
+	view.mu.Unlock()
 }
 
 // enqueue 把输入排入转发队列，连续的指针移动只保留最后一次，同一位置连续的滚动合并

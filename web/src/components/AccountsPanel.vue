@@ -694,6 +694,11 @@ async function refreshAllAccounts(): Promise<void> {
             >
               {{ t(stateKeys[account.state]) }}
             </span>
+            <span class="text-xs text-gray-500">
+              {{
+                t(account.login_password_set ? 'accounts.passwordSet' : 'accounts.passwordMissing')
+              }}
+            </span>
             <button
               v-if="account.message"
               type="button"

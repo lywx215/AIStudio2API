@@ -78,6 +78,8 @@ const host = computed(() => pageURL.value?.hostname ?? '')
 const secure = computed(() => pageURL.value?.protocol === 'https:')
 const busy = computed(() => status.value === 'starting' || status.value === 'saving')
 const statusText = computed(() => {
+  if (status.value === 'autofilling') return t('accounts.liveAutofilling')
+  if (status.value === 'manual') return t('accounts.liveManual')
   if (status.value === 'starting') return t('accounts.liveStarting')
   if (status.value === 'saving') return t('accounts.liveSaving')
   return t('accounts.liveWaiting')
@@ -412,6 +414,14 @@ onBeforeUnmount(() => {
           <span v-else class="h-2 w-2 rounded-full bg-green-500"></span>
           <span class="max-sm:sr-only">{{ statusText }}</span>
         </span>
+        <button
+          v-if="!busy && status !== 'manual' && error === ''"
+          type="button"
+          class="shrink-0 rounded border border-line px-3 py-1.5 text-sm text-gray-200"
+          @click="send({ type: 'takeover' })"
+        >
+          {{ t('accounts.liveTakeover') }}
+        </button>
         <button
           v-if="fitScale < 1"
           v-tooltip="actualSize ? t('accounts.liveFit') : t('accounts.liveActual')"

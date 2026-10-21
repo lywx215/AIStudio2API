@@ -155,7 +155,7 @@ func (admin *runtimeAdmin) Accounts(context.Context) ([]api.AdminAccount, error)
 	statuses := admin.pool.Status()
 	accounts := make([]api.AdminAccount, 0, len(statuses))
 	for _, status := range statuses {
-		accounts = append(accounts, adminAccountDTO(status))
+		accounts = append(accounts, admin.accountDTO(status))
 	}
 	return accounts, nil
 }
@@ -591,6 +591,11 @@ func (admin *runtimeAdmin) LoginAccount(ctx context.Context, accountID string, v
 	startedAt := time.Now()
 	admin.requests.log(account.Config.Label, "INFO", "账户登录 | 1/2 | 等待隔离登录")
 	request := admin.loginRequest(account, directory)
+	if credentials, readErr := admin.store.LoadLoginCredentials(ctx, account); readErr == nil {
+		request.Password = credentials.Password
+	} else {
+		admin.requests.log(account.Config.Label, "WARN", "登录密码不可读取，将使用手动登录")
+	}
 	request.View = view
 	result, err := admin.login.Login(ctx, request)
 	if err != nil {
@@ -820,7 +825,7 @@ func (admin *runtimeAdmin) publishRuntimeSnapshot(ctx context.Context, status ap
 func (admin *runtimeAdmin) account(accountID string) (api.AdminAccount, error) {
 	for _, status := range admin.pool.Status() {
 		if status.ID == accountID {
-			return adminAccountDTO(status), nil
+			return admin.accountDTO(status), nil
 		}
 	}
 	return api.AdminAccount{}, accountOperationError(fmt.Errorf("%w: %s", aistudio.ErrAccountNotFound, accountID))
@@ -862,6 +867,18 @@ func adminAccountDTO(status aistudio.AccountStatus) api.AdminAccount {
 		Proxy: status.Proxy, Egress: status.Egress, Locale: status.Locale, Timezone: status.Timezone,
 		Models: models, BenefitTier: status.BenefitTier, Message: status.Message,
 	}
+}
+
+func (admin *runtimeAdmin) accountDTO(status aistudio.AccountStatus) api.AdminAccount {
+	result := adminAccountDTO(status)
+	if admin.store != nil && admin.pool != nil {
+		if account, err := admin.pool.Account(status.ID); err == nil {
+			if stored, err := admin.store.LoadLoginCredentials(context.Background(), account); err == nil {
+				result.LoginPasswordSet = stored.Password != ""
+			}
+		}
+	}
+	return result
 }
 
 func invalidAccount(err error) error {

@@ -72,6 +72,7 @@ type Capabilities struct {
 	MultiChannelVerification    bool      `json:"multiChannelVerification"`
 	SettingsWrite               bool      `json:"settingsWrite"`
 	AccountProxyWrite           bool      `json:"accountProxyWrite"`
+	LoginPasswordSync           bool      `json:"loginPasswordSync"`
 }
 type SystemStatus struct {
 	Ready               bool   `json:"ready"`

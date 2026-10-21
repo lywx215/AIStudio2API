@@ -94,6 +94,13 @@ func managementRoute(p, method string) (route, bool) {
 			}
 		} else if len(parts) == 3 {
 			switch parts[2] {
+			case "login-password":
+				result.allow = "GET, PUT, DELETE"
+				result.operation = "login-password"
+				result.scope = c.ScopeAccountsWrite
+				if method == "GET" {
+					result.scope = c.ScopeAccountsRead
+				}
 			case "credentials":
 				result.allow = "PUT"
 				result.operation = "replace"
@@ -250,6 +257,9 @@ func (h *httpService) Handler() http.Handler {
 func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route, p c.Principal, requestID string) (any, int, error) {
 	ctx := r.Context()
 	o := h.options
+	if rt.operation == "login-password" {
+		return h.loginPassword(w, r, rt.id, p, requestID)
+	}
 	if r.Method == "GET" {
 		switch rt.operation {
 		case "status":
