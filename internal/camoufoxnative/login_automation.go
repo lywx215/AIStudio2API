@@ -15,7 +15,7 @@ const loginAutomationFunction = `function(action, value, email) {
     const unique = selector => { const es = [...document.querySelectorAll(selector)].filter(visible); return es.length === 1 ? es[0] : null; };
     const origin = location.origin;
     if (origin === 'https://myaccount.google.com') {
-      const paths = ['/', '/signinoptions/two-step-verification/enroll-welcome', '/signinoptions/two-step-verification/enroll',
+      const paths = ['/', '/interstitials/twosvrequired', '/signinoptions/two-step-verification/enroll-welcome', '/signinoptions/two-step-verification/enroll',
         '/signinoptions/twosv/enroll-welcome', '/signinoptions/twosv/enroll', '/signinoptions/two-step-verification',
         '/intro/signinoptions/two-step-verification'];
       const text = document.body?.innerText || '';

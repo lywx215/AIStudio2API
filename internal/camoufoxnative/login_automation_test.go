@@ -14,6 +14,9 @@ func TestLoginAutomationPageGuardsAndExactPassword(t *testing.T) {
 		{"captcha", "https://accounts.google.com", "challenge", "password", "manual"},
 		{"wrong_identity", "https://accounts.google.com", "wrong_identity", "password", "manual"},
 		{"later", "https://myaccount.google.com", "later", "later", "submitted"},
+		{"later_interstitial", "https://myaccount.google.com", "later_interstitial", "later", "submitted"},
+		{"later_interstitial_zh", "https://myaccount.google.com", "later_interstitial_zh", "later", "submitted"},
+		{"later_unrecognized_path", "https://myaccount.google.com", "later_other_path", "later", "unknown"},
 		{"later_zh", "https://myaccount.google.com", "later_zh", "later", "submitted"},
 		{"later_ambiguous", "https://myaccount.google.com", "ambiguous", "later", "manual"},
 	} {
@@ -29,8 +32,8 @@ Object.defineProperty(HTMLInputElement.prototype, 'value', {set: function(v){ fi
 function Event() {}
 const element = {getAttribute: () => null, getClientRects: () => [1], dispatchEvent: () => {}, click: () => {clicked++}, value: ''};
 const password = Object.assign(new HTMLInputElement(), {getAttribute: element.getAttribute, getClientRects: element.getClientRects, dispatchEvent:element.dispatchEvent});
-const later = Object.assign({},element,{innerText: testPhase === 'later_zh' ? '以后再说' : 'Do this later'});
-const location = {origin:testOrigin,pathname:'/signinoptions/two-step-verification/enroll-welcome'};
+const later = Object.assign({},element,{innerText: testPhase === 'later_zh' || testPhase === 'later_interstitial_zh' ? '以后再说' : 'Do this later'});
+const location = {origin:testOrigin,pathname:testPhase.startsWith('later_interstitial') ? '/interstitials/twosvrequired' : testPhase === 'later_other_path' ? '/other' : '/signinoptions/two-step-verification/enroll-welcome'};
 const getComputedStyle = () => ({visibility:'visible'});
 const document = {body:{innerText:"Don't get locked out · 2-Step Verification"}, querySelectorAll: function(s){
  if(s.startsWith('a,button')) return testPhase === 'ambiguous' ? [later,later] : [later];
