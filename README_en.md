@@ -557,6 +557,8 @@ cp .env.example .env
 
 The service loads every account from `AISTUDIO_AUTH_STATES`. `WARM_WORKER_LIMIT` sets the resident warm pool, `MAX_ACTIVE_WORKERS` caps peak worker count, `WARM_STARTUP_CONCURRENCY` controls how many Camoufox workers cold-start at once, and `PER_ACCOUNT_CONCURRENCY` controls request slots per account. Saving these four in the console applies them to scheduling right away: lowering the peak limit closes the extra idle workers, and raising the resident count prewarms more.
 
+Generation requests share a global queue limit of `floor(MAX_ACTIVE_WORKERS × PER_ACCOUNT_CONCURRENCY / 5)` across all models. Only requests that need to wait use queue slots; new requests that cannot run immediately receive HTTP 429 when the queue is full. A configured maximum concurrency of 20 allows 4 waiting requests; values below 5 allow no queueing. Capacity updates also update this limit without cancelling existing waiters. Background Responses complete compaction and generation admission before acknowledging acceptance, so queue overflow returns HTTP 429; automatic compaction may delay that initial response.
+
 ### Port Configuration
 
 The console allows passwordless loopback access by default. For remote management:

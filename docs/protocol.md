@@ -1683,7 +1683,8 @@ Chat SSE 顺序：
 
 - namespace 内的函数以全名编码，输出恢复 `namespace` 与原函数名，不同 namespace 可声明同名函数
 - `store` 省略或为 `true` 时保存当前进程会话节点与输出项；`false` 只返回本次结果，不建立节点，既有续接链保持不变
-- `background:true` 的非流式请求立即返回 `status:"queued"` 的响应对象（带 `Content-Length` 与 `Connection: close`），生成在服务端继续，开始后保存为 `in_progress`，结束后保存为最终对象；客户端连接关闭不影响生成。该响应不论 `store` 取值都会保存，供查询、取消与续传
+- 后台请求先完成自动上下文压缩及主生成准入，再发送 HTTP 200 或 SSE 响应头；全局排队名额用尽时直接返回 HTTP 429，不创建已接受的响应对象。自动压缩可能延迟首次接收响应；成功预留排队名额后不等待排队结束或主生成结果。
+- `background:true` 的非流式请求在准入通过后返回 `status:"queued"` 的响应对象（带 `Content-Length` 与 `Connection: close`），生成在服务端继续，开始后保存为 `in_progress`，结束后保存为最终对象；客户端连接关闭不影响生成。该响应不论 `store` 取值都会保存，供查询、取消与续传
 - `background:true` 且 `stream:true` 时，事件依次为 `queued` 状态的 `response.created` 与 `response.queued`、`response.in_progress`、输出项事件与终止事件，全部写入事件记录；客户端断开后生成继续，`GET /v1/responses/{id}?stream=true&starting_after=<sequence_number>` 从该序号之后续传并跟随到结束，不带 `starting_after` 时从头回放
 - `context_management` 的 compaction 阈值被超过时（输入 token 按 countTokens 计），先按 `compaction_trigger` 的方式压缩当前上下文，再以被压缩部分中的 developer 与 system 消息、保留的条目与 compaction 项作为输入生成；compaction 项排在 `output` 首位，流式时在其他输出项之前写出它的 `output_item.added` 与 `output_item.done`
 
@@ -2462,6 +2463,7 @@ OpenAI Responses 的 `previous_response_id` 与 Interactions 的 `previous_inter
 | 文件超过 512 MiB | 413 | `file_too_large` | `request_too_large` | `INTERNAL` |
 | 上游配额或限流（上游给出重试时长时带 `Retry-After`，Gemini 错误体带 `RetryInfo`） | 429 | `rate_limit_exceeded` | `rate_limit_error` | `RESOURCE_EXHAUSTED` |
 | 候选账户均在冷却且 1 分钟内不恢复（带 `Retry-After`，Gemini 错误体带 `RetryInfo`） | 429 | `rate_limit_exceeded` | `rate_limit_error` | `RESOURCE_EXHAUSTED` |
+| 全局排队名额已满（上限为 `floor(MAX_ACTIVE_WORKERS × PER_ACCOUNT_CONCURRENCY / 5)`，所有模型共享；无确定的 `Retry-After`） | 429 | `rate_limit_exceeded` | `rate_limit_error` | `RESOURCE_EXHAUSTED` |
 | 上游过载 | 529 | `upstream_error` | `overloaded_error` | `INTERNAL` |
 | 当前客户端请求被管理端取消 | 503 | `request_canceled` | `api_error` | `UNAVAILABLE` |
 | 生成服务已停止 | 503 | `service_stopped` | `api_error` | `UNAVAILABLE` |

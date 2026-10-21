@@ -45,10 +45,23 @@ func (s *server) storeBackgroundEnd(ctx context.Context, id string, created int6
 	}
 }
 
-// respondBackground 保存并返回 queued 状态的响应对象，随后在本请求内完成生成：响应带 Content-Length 与 Connection: close 使客户端立即收到完整响应，生成开始后保存为 in_progress，结束后保存最终对象
+// respondBackground 在压缩及生成准入通过后返回 queued 对象，随后在本请求内完成生成。
 func (s *server) respondBackground(w http.ResponseWriter, r *http.Request, request responsesRequest, prepared responsesPreparation, id string) {
 	ctx, finish := s.startBackground(r, id)
 	defer finish()
+	compaction, err := s.compactOverThreshold(ctx, &request, &prepared, id)
+	var events <-chan aistudio.Event
+	if err == nil {
+		generate := prepared.generate
+		generate.Unary = true
+		events, err = s.service.Generate(ctx, generate)
+	}
+	if err != nil {
+		if shouldWriteRequestError(r, err) {
+			writeOpenAIRequestError(w, err)
+		}
+		return
+	}
 	created := time.Now().Unix()
 	queued := responseShell(id, created, "queued", request)
 	s.storeResponse(id, request, prepared, generationResult{}, queued)
@@ -59,18 +72,8 @@ func (s *server) respondBackground(w http.ResponseWriter, r *http.Request, reque
 	_, _ = w.Write(body)
 	_ = http.NewResponseController(w).Flush()
 
-	compaction, err := s.compactOverThreshold(ctx, &request, &prepared, id)
-	var events <-chan aistudio.Event
-	if err == nil {
-		generate := prepared.generate
-		generate.Unary = true
-		events, err = s.service.Generate(ctx, generate)
-	}
-	var result generationResult
-	if err == nil {
-		s.storeResponse(id, request, prepared, generationResult{}, responseShell(id, created, "in_progress", request))
-		result, err = consumeEvents(ctx, events, nil)
-	}
+	s.storeResponse(id, request, prepared, generationResult{}, responseShell(id, created, "in_progress", request))
+	result, err := consumeEvents(ctx, events, nil)
 	var response map[string]any
 	if err == nil {
 		response, err = buildResponsesObject(id, created, request, result, compaction)
@@ -85,6 +88,18 @@ func (s *server) respondBackground(w http.ResponseWriter, r *http.Request, reque
 // streamBackground 以后台模式发送流式响应：事件依次为 queued 状态的 response.created 与 response.queued、生成开始后的 response.in_progress、输出项与终止事件，都写入事件记录；本请求从头跟随事件记录，客户端断开后生成继续，GET ?stream=true&starting_after= 从指定序号之后续传；被 cancel 接口终止时保存为 cancelled 并结束流，其他错误写出 response.failed
 func (s *server) streamBackground(w http.ResponseWriter, r *http.Request, request responsesRequest, prepared responsesPreparation, id string) {
 	ctx, finish := s.startBackground(r, id)
+	defer finish()
+	compaction, err := s.compactOverThreshold(ctx, &request, &prepared, id)
+	var events <-chan aistudio.Event
+	if err == nil {
+		events, err = s.service.Generate(ctx, prepared.generate)
+	}
+	if err != nil {
+		if shouldWriteRequestError(r, err) {
+			writeOpenAIRequestError(w, err)
+		}
+		return
+	}
 	stream := newStreamLog()
 	prepared.stream = stream
 	following := make(chan struct{})
@@ -97,7 +112,6 @@ func (s *server) streamBackground(w http.ResponseWriter, r *http.Request, reques
 	defer func() {
 		stream.finish()
 		<-following
-		finish()
 	}()
 	created := time.Now().Unix()
 	queued := responseShell(id, created, "queued", request)
@@ -106,21 +120,11 @@ func (s *server) streamBackground(w http.ResponseWriter, r *http.Request, reques
 	_ = writer.emit("response.created", map[string]any{"response": queued})
 	_ = writer.emit("response.queued", map[string]any{"response": queued})
 
-	compaction, err := s.compactOverThreshold(ctx, &request, &prepared, id)
-	prepared.stream = stream
-	var events <-chan aistudio.Event
-	if err == nil {
-		events, err = s.service.Generate(ctx, prepared.generate)
-	}
 	reported := func(error) bool { return !errors.Is(ctx.Err(), context.Canceled) }
-	if err == nil {
-		inProgress := responseShell(id, created, "in_progress", request)
-		s.storeResponse(id, request, prepared, generationResult{}, inProgress)
-		_ = writer.emit("response.in_progress", map[string]any{"response": inProgress})
-		err = s.streamOutput(ctx, writer, prepared, events, compaction, reported)
-	} else if reported(err) {
-		_ = writer.failed(err)
-	}
+	inProgress := responseShell(id, created, "in_progress", request)
+	s.storeResponse(id, request, prepared, generationResult{}, inProgress)
+	_ = writer.emit("response.in_progress", map[string]any{"response": inProgress})
+	err = s.streamOutput(ctx, writer, prepared, events, compaction, reported)
 	if err != nil || ctx.Err() != nil {
 		s.storeBackgroundEnd(ctx, id, created, request, prepared, err)
 	}

@@ -557,6 +557,8 @@ cp .env.example .env
 
 服务启动时会载入 `AISTUDIO_AUTH_STATES` 中的全部账户；`WARM_WORKER_LIMIT` 控制常驻预热规模，`MAX_ACTIVE_WORKERS` 控制峰值 Worker 上限，`WARM_STARTUP_CONCURRENCY` 控制同时冷启动的 Camoufox Worker 数，`PER_ACCOUNT_CONCURRENCY` 控制单账户请求槽位；这四项在管理页面保存后立即作用于后续调度，峰值上限调低时关闭多出的空闲 Worker，常驻数调高时补足预热。
 
+生成请求的全局排队上限为 `floor(MAX_ACTIVE_WORKERS × PER_ACCOUNT_CONCURRENCY / 5)`，所有模型共享。只有需要等待的请求占用排队名额；队满时新请求立即返回 HTTP 429。默认最大并发 20 时最多排队 4 个；最大并发小于 5 时不排队。容量保存后同步更新上限，调低上限不会取消已排队请求。后台 Responses 同样先完成压缩与生成准入，队满时直接返回 429；启用自动压缩时，后台接收响应可能更晚返回。
+
 ### 端口配置
 
 管理控制台默认通过本机回环地址免密访问。远程管理时：

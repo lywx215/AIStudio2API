@@ -379,6 +379,7 @@ func (manager *accountWorkerManager) setLimits(warmTarget int, maxActive int, st
 	}
 	manager.warmTarget.Store(int64(warmTarget))
 	manager.maxActive.Store(int64(maxActive))
+	manager.dispatch.setCapacity(maxActive, manager.pool.PerAccountConcurrency())
 	manager.startup.setLimit(max(startupConcurrency, 1))
 }
 
@@ -3028,15 +3029,28 @@ func (closer *trackedMediaReadCloser) Close() error {
 	return closer.err
 }
 
-func (service *trackedService) acquireWarmLease(ctx context.Context, selection aistudio.AccountSelection) (*aistudio.AccountLease, error) {
+func (service *trackedService) acquireWarmLease(ctx context.Context, selection aistudio.AccountSelection, onQueued func()) (*aistudio.AccountLease, error) {
 	fixedAccount := strings.TrimSpace(selection.AccountID) != "" || strings.TrimSpace(selection.ResourceID) != ""
 	failedWorkers := make(map[string]struct{})
 	var promoteFailure error
 	var waiter *dispatchWaiter
 	defer func() { service.workers.dispatch.leave(waiter) }()
-	wait := func(delay time.Duration) error {
+	join := func() error {
 		if waiter == nil {
-			waiter = service.workers.dispatch.join(dispatchKey(selection))
+			var err error
+			waiter, err = service.workers.dispatch.join(dispatchKey(selection))
+			if err != nil {
+				return err
+			}
+			if onQueued != nil {
+				onQueued()
+			}
+		}
+		return nil
+	}
+	wait := func(delay time.Duration) error {
+		if err := join(); err != nil {
+			return err
 		}
 		return waitScheduling(ctx, waiter.wake, delay)
 	}
@@ -3089,6 +3103,9 @@ func (service *trackedService) acquireWarmLease(ctx context.Context, selection a
 			if cold := service.workers.coldAccounts(standby); len(cold) > 0 {
 				standby = cold
 			}
+			if err := join(); err != nil {
+				return nil, err
+			}
 			service.workers.expandInBackground(standby[0], selection.ModelID)
 			if err := wait(schedulingRecheck); err != nil {
 				return nil, err
@@ -3119,7 +3136,6 @@ func (service *trackedService) acquireWarmLease(ctx context.Context, selection a
 				}
 				continue
 			}
-			workersChanged := service.workers.schedulingChanged()
 			_, promoteErr := service.workers.promote(aistudio.ContextWithAccountLease(ctx, lease), accountID, selection.ModelID)
 			if promoteErr == nil {
 				return lease, nil
@@ -3131,7 +3147,7 @@ func (service *trackedService) acquireWarmLease(ctx context.Context, selection a
 				continue
 			}
 			if errors.Is(promoteErr, errAccountWorkerCapacity) {
-				if err := waitScheduling(ctx, workersChanged, schedulingRecheck); err != nil {
+				if err := wait(schedulingRecheck); err != nil {
 					return nil, err
 				}
 				continue
@@ -3352,7 +3368,11 @@ func (service *trackedService) Generate(ctx context.Context, request aistudio.Ge
 		return nil, err
 	}
 	events := make(chan aistudio.Event, 8)
-	go service.generateWithRetry(ctx, requestCtx, cancel, generationStartedAt, request, resourceID, events)
+	admission := &generationAdmission{result: make(chan error, 1)}
+	go service.generateWithRetry(ctx, requestCtx, cancel, generationStartedAt, request, resourceID, events, admission)
+	if err := <-admission.result; err != nil {
+		return nil, err
+	}
 	return events, nil
 }
 
@@ -3369,6 +3389,7 @@ func (service *trackedService) generateWithRetry(
 	request aistudio.GenerateRequest,
 	resourceID string,
 	destination chan<- aistudio.Event,
+	admission *generationAdmission,
 ) {
 	maxAttempts := 1
 	requestedAccountID := strings.TrimSpace(request.AccountID)
@@ -3448,14 +3469,15 @@ func (service *trackedService) generateWithRetry(
 				}
 			}
 		}
-		nextLease, acquireErr := service.acquireWarmLease(requestCtx, selection)
+		onQueued := func() { admission.resolve(nil) }
+		nextLease, acquireErr := service.acquireWarmLease(requestCtx, selection, onQueued)
 		var buildCooling *aistudio.AllCoolingError
 		if acquireErr != nil && selection.Channel == aistudio.ChannelBuild && requestCtx.Err() == nil &&
 			(errors.Is(acquireErr, aistudio.ErrNoEligibleAccount) || errors.As(acquireErr, &buildCooling)) {
 			// 没有账户能经 Build 服务时，结构化输出 Schema 改用 Playground 载体
 			selection.Channel = ""
 			fallbackReason = "Build 通道没有可用账户"
-			nextLease, acquireErr = service.acquireWarmLease(requestCtx, selection)
+			nextLease, acquireErr = service.acquireWarmLease(requestCtx, selection, onQueued)
 		}
 		if acquireErr == nil && selection.PreferredChannel == aistudio.ChannelBuild && nextLease.Channel() != aistudio.ChannelBuild {
 			fallbackReason = "账户 Build 通道冷却或不支持此模型"
@@ -3469,13 +3491,15 @@ func (service *trackedService) generateWithRetry(
 			if err == nil || !errors.Is(acquireErr, aistudio.ErrNoEligibleAccount) {
 				err = acquireErr
 			}
-			if recoveringAccount && unbound && requestCtx.Err() == nil {
+			var queueFull *aistudio.RequestQueueFullError
+			if recoveringAccount && unbound && requestCtx.Err() == nil && !errors.As(acquireErr, &queueFull) {
 				attempted[selectionAccountID] = struct{}{}
 				continue
 			}
 			break
 		}
 		lease = nextLease
+		admission.resolve(nil)
 		attemptStartedAt := time.Now()
 		err = nil
 		source = nil
@@ -3726,6 +3750,7 @@ func (service *trackedService) generateWithRetry(
 		}
 		api.SetAccessLogError(requestCtx, err)
 		service.requests.finish(request.ID, finalRequestState(err), err)
+		admission.resolve(err)
 		select {
 		case destination <- aistudio.Event{Kind: aistudio.EventError, Err: err}:
 		case <-clientCtx.Done():

@@ -97,6 +97,19 @@ func (e *AllCoolingError) ErrorCode() string {
 	return "rate_limit_exceeded"
 }
 
+// RequestQueueFullError 表示请求需要等待，但全局排队名额已经用尽。
+type RequestQueueFullError struct {
+	Queued int
+	Limit  int
+}
+
+func (e *RequestQueueFullError) Error() string {
+	return fmt.Sprintf("请求排队已满：当前排队 %d，上限 %d，请稍后重试", e.Queued, e.Limit)
+}
+
+func (*RequestQueueFullError) HTTPStatus() int   { return http.StatusTooManyRequests }
+func (*RequestQueueFullError) ErrorCode() string { return "rate_limit_exceeded" }
+
 // AccountsNotReadyError 表示支持请求的账户都处于不可调度状态
 type AccountsNotReadyError struct {
 	Reasons []string
@@ -2853,6 +2866,13 @@ func (p *AccountPool) SetRoutingStrategy(strategy string) {
 	p.mu.Lock()
 	p.routingStrategy = strategy
 	p.mu.Unlock()
+}
+
+// PerAccountConcurrency 返回当前配置的单账户请求并发。
+func (p *AccountPool) PerAccountConcurrency() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.perAccountConcurrency
 }
 
 // SetPerAccountConcurrency 设置单账户同时处理的请求数并唤醒等待中的请求
