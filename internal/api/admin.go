@@ -143,6 +143,7 @@ type AdminAccountCounts struct {
 // AdminAccount 表示管理端账户摘要
 type AdminAccount struct {
 	LoginPasswordSet bool     `json:"login_password_set"`
+	LoginTotpSet     bool     `json:"login_totp_set"`
 	ID               string   `json:"id"`
 	Label            string   `json:"label"`
 	Enabled          bool     `json:"enabled"`

@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 	"time"
+
+	"github.com/Mag1cFall/AIStudio2API/internal/logintotp"
 )
 
 // This function returns only fixed phase names. Credentials are arguments, never
@@ -11,7 +13,7 @@ import (
 const loginAutomationFunction = `function(action, value, email) {
   try {
     const visible = e => !!e && !e.disabled && e.getAttribute('aria-disabled') !== 'true' &&
-      e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+      !e.readOnly && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
     const unique = selector => { const es = [...document.querySelectorAll(selector)].filter(visible); return es.length === 1 ? es[0] : null; };
     const origin = location.origin;
     if (origin === 'https://myaccount.google.com') {
@@ -31,17 +33,35 @@ const loginAutomationFunction = `function(action, value, email) {
     if (!window.__aistudioLoginObserved && typeof document.addEventListener === 'function') {
       window.__aistudioLoginObserved = true;
       for (const name of ['input', 'keydown', 'pointerdown']) document.addEventListener(name, event => {
-        if (event.isTrusted && event.target?.matches('input[type="email"],input[type="password"],input[name="identifier"]')) window.__aistudioLoginManual = true;
+        if (event.isTrusted && event.target?.matches('input')) window.__aistudioLoginManual = true;
       }, true);
     }
     if (window.__aistudioLoginManual) return 'manual';
     const p = unique('input[type="password"]');
     const identifier = unique('input[type="email"],input[name="identifier"]');
-    const challenge = [...document.querySelectorAll('input[type="tel"],input[autocomplete="one-time-code"],input[name="totpPin"],input[name="ca"],iframe[src*="recaptcha"],iframe[src*="captcha"]')].some(visible);
-    if (challenge) return 'manual';
+    if ([...document.querySelectorAll('input[name="ca"],iframe[src*="recaptcha"],iframe[src*="captcha"]')].some(visible)) return 'manual';
     const identities = [...document.querySelectorAll('#profileIdentifier,[data-email],[data-identifier]')].filter(visible)
       .map(e => (e.getAttribute('data-email') || e.getAttribute('data-identifier') || e.textContent || '').trim().toLowerCase()).filter(v => v.includes('@'));
     if (identities.some(v => v !== email.toLowerCase())) return 'manual';
+    const otp = unique('#totpPin,input[name="totpPin"],input[autocomplete="one-time-code"]');
+    const authenticator = /\/challenge\/totp(?:\/|$)/.test(location.pathname) || /Google Authenticator|Authenticator app|身份验证器|身分驗證器/i.test(document.body?.innerText || '');
+    if (otp && authenticator) {
+      const shown = identities.length ? identities : ((document.body?.innerText || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig) || []).map(v => v.toLowerCase());
+      if (!shown.includes(email.toLowerCase()) || shown.some(v => v !== email.toLowerCase()) || otp.getAttribute('aria-invalid') === 'true') return 'manual';
+      if (otp.value) return action === 'inspect' && otp.__aistudioTotpSubmitted ? 'totp_pending' : 'manual';
+      const next = unique('#totpNext');
+      if (!next || p || identifier) return 'manual';
+      if (action === 'inspect') return 'totp';
+      if (action !== 'totp' || !/^\d{6}$/.test(value)) return 'manual';
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(otp, value);
+      otp.dispatchEvent(new Event('input', {bubbles: true}));
+      otp.dispatchEvent(new Event('change', {bubbles: true}));
+      otp.__aistudioTotpSubmitted = true;
+      next.click();
+      return 'submitted';
+    }
+    const challenge = [...document.querySelectorAll('input[type="tel"],input[autocomplete="one-time-code"],input[name="totpPin"]')].some(visible);
+    if (challenge) return 'manual';
     let phase = p ? 'password' : identifier ? 'email' : 'unknown';
     if (p?.getAttribute('aria-invalid') === 'true' || identifier?.getAttribute('aria-invalid') === 'true') return 'manual';
     if (phase === 'unknown' && /\/challenge\//.test(location.pathname)) return 'manual';
@@ -60,6 +80,8 @@ const loginAutomationFunction = `function(action, value, email) {
 
 type loginAutomation struct {
 	email, password string
+	totpSecret      string
+	now             func() time.Time
 	view            *LiveView
 	submitted       map[string]bool
 	blocked         bool
@@ -67,17 +89,24 @@ type loginAutomation struct {
 	phaseSince      time.Time
 }
 
-func newLoginAutomation(email, password string, view *LiveView) *loginAutomation {
+func newLoginAutomation(email, password string, view *LiveView, totpSecret ...string) *loginAutomation {
 	if strings.TrimSpace(email) == "" {
 		return nil
 	}
-	return &loginAutomation{email: email, password: password, view: view, submitted: make(map[string]bool)}
+	secret := ""
+	if len(totpSecret) != 0 {
+		secret = totpSecret[0]
+	}
+	return &loginAutomation{email: email, password: password, totpSecret: secret, now: time.Now, view: view, submitted: make(map[string]bool)}
 }
 
 func (automation *loginAutomation) String() string   { return "[login automation]" }
 func (automation *loginAutomation) GoString() string { return "[login automation]" }
 
 func (automation *loginAutomation) step(ctx context.Context, session *loginSession) {
+	if ctx.Err() != nil {
+		return
+	}
 	if automation.view != nil {
 		automation.view.automationMu.Lock()
 		defer automation.view.automationMu.Unlock()
@@ -105,6 +134,31 @@ func (automation *loginAutomation) step(ctx context.Context, session *loginSessi
 		return
 	}
 	if automation.blocked {
+		return
+	}
+	if phase == "totp" && !automation.submitted[phase] {
+		if !logintotp.Valid(automation.totpSecret) {
+			automation.blocked = true
+			automation.view.setStatus("manual")
+			return
+		}
+		now := automation.now()
+		if logintotp.Remaining(now) < 8*time.Second {
+			automation.view.setStatus("totp_waiting")
+			return // The normal 300ms loop continues to check cancel/takeover.
+		}
+		code, err := logintotp.Code(automation.totpSecret, now)
+		if err != nil {
+			automation.blocked = true
+			automation.view.setStatus("manual")
+			return
+		}
+		automation.submitted[phase] = true
+		automation.view.setStatus("totp_filling")
+		if session.loginAction(ctx, phase, code, automation.email) != "submitted" {
+			automation.blocked = true
+			automation.view.setStatus("manual")
+		}
 		return
 	}
 	if phase != "email" && phase != "password" || automation.submitted[phase] {
@@ -147,7 +201,7 @@ func (session *loginSession) loginAction(ctx context.Context, action, value, ema
 	remote, _ := result["result"].(map[string]any)
 	phase, _ := remote["value"].(string)
 	switch phase {
-	case "email", "password", "later", "unknown", "submitted":
+	case "email", "password", "totp", "totp_pending", "later", "unknown", "submitted":
 		return phase
 	}
 	return "manual"

@@ -22,6 +22,7 @@ export type AccountState =
 
 export interface Account {
   login_password_set?: boolean
+  login_totp_set?: boolean
   id: string
   label: string
   enabled: boolean

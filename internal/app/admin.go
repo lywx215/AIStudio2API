@@ -596,6 +596,11 @@ func (admin *runtimeAdmin) LoginAccount(ctx context.Context, accountID string, v
 	} else {
 		admin.requests.log(account.Config.Label, "WARN", "登录密码不可读取，将使用手动登录")
 	}
+	if credentials, readErr := admin.store.LoadLoginTotpCredentials(ctx, account); readErr == nil {
+		request.TotpSecret = credentials.Secret
+	} else {
+		admin.requests.log(account.Config.Label, "WARN", "2FA 密钥不可读取，将使用手动验证")
+	}
 	request.View = view
 	result, err := admin.login.Login(ctx, request)
 	if err != nil {
@@ -875,6 +880,9 @@ func (admin *runtimeAdmin) accountDTO(status aistudio.AccountStatus) api.AdminAc
 		if account, err := admin.pool.Account(status.ID); err == nil {
 			if stored, err := admin.store.LoadLoginCredentials(context.Background(), account); err == nil {
 				result.LoginPasswordSet = stored.Password != ""
+			}
+			if stored, err := admin.store.LoadLoginTotpCredentials(context.Background(), account); err == nil {
+				result.LoginTotpSet = stored.Secret != ""
 			}
 		}
 	}

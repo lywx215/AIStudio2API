@@ -29,6 +29,7 @@ const loginEmailExpression = `(() => {
 type LoginOptions struct {
 	Email          string `json:"-"`
 	Password       string `json:"-"`
+	TotpSecret     string `json:"-"`
 	ExecutablePath string
 	Directory      string
 	Locale         string
@@ -96,7 +97,7 @@ func Login(ctx context.Context, options LoginOptions) (result LoginResult, err e
 		err = errors.Join(err, closeErr)
 	}()
 	options.View.setStatus(liveViewWaiting)
-	session.automation = newLoginAutomation(options.Email, options.Password, options.View)
+	session.automation = newLoginAutomation(options.Email, options.Password, options.View, options.TotpSecret)
 	origins := make(map[string]storageOrigin)
 	pageURL, err := session.waitLogin(loginCtx, origins)
 	if err != nil {

@@ -2420,6 +2420,9 @@ func (service *trackedService) publishModelAccess() {
 			if stored, err := aistudio.ReadLoginCredentials(account.Directory, account.ID); err == nil {
 				accountDTO.LoginPasswordSet = stored.Password != ""
 			}
+			if stored, err := aistudio.ReadLoginTotpCredentials(account.Directory, account.ID); err == nil {
+				accountDTO.LoginTotpSet = stored.Secret != ""
+			}
 		}
 		accounts = append(accounts, accountDTO)
 	}

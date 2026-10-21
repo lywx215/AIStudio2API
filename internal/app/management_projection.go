@@ -103,7 +103,11 @@ func (p *managementProjection) Capabilities(ctx context.Context) (contract.Capab
 		channels = append(channels, contract.ChannelBuild, contract.ChannelPlayground)
 	}
 	_, passwordSync := servicesPasswordCoordinator(services)
-	return contract.Capabilities{Backend: "aistudio2api", ProtocolVersion: contract.ProtocolVersion, StableAccountIDs: active, DualCAS: active, UploadReceipts: active, TargetedVerification: verification, VerificationChannels: channels, DefaultVerificationChannels: []contract.Channel{contract.ChannelBuild}, MultiChannelVerification: verification, SettingsWrite: false, AccountProxyWrite: active, LoginPasswordSync: active && passwordSync}, nil
+	totpSync := false
+	if services != nil {
+		_, totpSync = services.Accounts.(contract.LoginTotpCoordinator)
+	}
+	return contract.Capabilities{Backend: "aistudio2api", ProtocolVersion: contract.ProtocolVersion, StableAccountIDs: active, DualCAS: active, UploadReceipts: active, TargetedVerification: verification, VerificationChannels: channels, DefaultVerificationChannels: []contract.Channel{contract.ChannelBuild}, MultiChannelVerification: verification, SettingsWrite: false, AccountProxyWrite: active, LoginPasswordSync: active && passwordSync, LoginTotpSync: active && totpSync}, nil
 }
 
 func servicesPasswordCoordinator(services *contract.ProcessServices) (contract.LoginPasswordCoordinator, bool) {

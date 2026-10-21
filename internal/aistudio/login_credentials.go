@@ -28,7 +28,7 @@ func (s *AccountStore) LoadLoginCredentials(ctx context.Context, account *Accoun
 const LoginCredentialsName = "login-credentials.json"
 
 func isLoginCredentialsFile(name string) bool {
-	return name == LoginCredentialsName || strings.HasPrefix(name, "."+LoginCredentialsName+"-") && strings.HasSuffix(name, ".tmp")
+	return name == LoginTotpCredentialsName || strings.HasPrefix(name, "."+LoginTotpCredentialsName+"-") && strings.HasSuffix(name, ".tmp") || name == LoginCredentialsName || strings.HasPrefix(name, "."+LoginCredentialsName+"-") && strings.HasSuffix(name, ".tmp")
 }
 
 // AcquireLoginCredentialsLease shares the existing cross-process account lease

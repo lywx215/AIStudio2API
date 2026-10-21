@@ -73,6 +73,7 @@ type Capabilities struct {
 	SettingsWrite               bool      `json:"settingsWrite"`
 	AccountProxyWrite           bool      `json:"accountProxyWrite"`
 	LoginPasswordSync           bool      `json:"loginPasswordSync"`
+	LoginTotpSync               bool      `json:"loginTotpSync"`
 }
 type SystemStatus struct {
 	Ready               bool   `json:"ready"`
