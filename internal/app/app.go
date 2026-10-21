@@ -197,10 +197,17 @@ func runServer(ctx context.Context, cfg config.Config, manager *runtimeManager, 
 	if err != nil {
 		return false, fmt.Errorf("监听 %s: %w", cfg.ListenAddr, err)
 	}
+	proxyErrorCode := ""
+	if err := manager.prepareProxyManagement(ctx); err != nil {
+		proxyErrorCode = "PROXY_STORAGE_UNAVAILABLE"
+		manager.requests.log("proxy", "ERROR", proxyErrorCode)
+	}
 	apiHandler := api.NewHandler(manager, api.Config{
 		APIKey: cfg.ProxyAPIKey, Admin: manager, Ledger: manager.ledger, Prompts: manager.prompts, Updates: updater,
 		AdminAuthEnabled: cfg.AdminAuthEnabled, AdminUsername: cfg.AdminUsername, AdminPassword: cfg.AdminPassword,
 		Management:       manager.management.HTTP,
+		ProxyAdmin:       manager.proxyManagement,
+		ProxyAdminError:  proxyErrorCode,
 		AdminSessionPath: filepath.Join("runtime", "admin-sessions.json"),
 		MediaDir:         filepath.Join("runtime", "media"), MediaLinks: manager.mediaLinks,
 	})

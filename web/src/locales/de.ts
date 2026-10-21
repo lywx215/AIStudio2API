@@ -25,6 +25,7 @@ export const messages: Record<TranslationKey, string> = {
   'app.darkMode': 'Zum dunklen Modus wechseln',
   'nav.logs': 'Protokolle',
   'nav.accounts': 'Konten',
+  'nav.proxies': 'Proxys',
   'nav.models': 'Modellkatalog',
   'nav.requests': 'Cooldowns und Anfragen',
   'nav.settings': 'Einstellungen',

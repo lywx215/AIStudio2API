@@ -18,11 +18,12 @@ import (
 // recoverable commit. A journal is immutable until the store resolves it.
 // NewState/NewConfig are private command inputs, never persisted in metadata.
 type AccountFileParticipant struct {
-	AuthPaths  []string
-	JournalDir string
-	NewState   *StorageState
-	NewConfig  *AccountConfig
-	ExtraFiles map[string][]byte
+	AuthPaths     []string
+	JournalDir    string
+	NewState      *StorageState
+	NewConfig     *AccountConfig
+	ProxyOverride *string // Merge only the selected proxy into the current private config.
+	ExtraFiles    map[string][]byte
 }
 
 type accountFileImage struct {
@@ -224,6 +225,9 @@ func (p *AccountFileParticipant) Prepare(ctx context.Context, plan contract.Comm
 					}
 				} else {
 					config = DefaultAccountConfig(plan.After.NativeID)
+				}
+				if p.ProxyOverride != nil {
+					config.Proxy = *p.ProxyOverride
 				}
 				config.Label, config.Enabled = plan.After.NativeID, plan.After.Enabled && !plan.After.Archived && !plan.After.Deleted
 				if err := config.Validate(); err != nil {

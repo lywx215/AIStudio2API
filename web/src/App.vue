@@ -65,9 +65,11 @@ function lazyPanel(loader: AsyncComponentLoader) {
 const UsagePanel = lazyPanel(() => import('@/components/UsagePanel.vue'))
 const VersionPanel = lazyPanel(() => import('@/components/VersionPanel.vue'))
 const ManagementKeysPanel = lazyPanel(() => import('@/components/ManagementKeysPanel.vue'))
+const ProxiesPanel = lazyPanel(() => import('@/components/ProxiesPanel.vue'))
 const validTabs: TabID[] = [
   'logs',
   'accounts',
+  'proxies',
   'models',
   'requests',
   'usage',
@@ -188,6 +190,7 @@ const visibleAccounts = computed(() =>
 const navigation: { id: TabID; label: TranslationKey; icon: IconName }[] = [
   { id: 'logs', label: 'nav.logs', icon: 'logs' },
   { id: 'accounts', label: 'nav.accounts', icon: 'accounts' },
+  { id: 'proxies', label: 'nav.proxies', icon: 'network' },
   { id: 'models', label: 'nav.models', icon: 'models' },
   { id: 'requests', label: 'nav.requests', icon: 'requests' },
   { id: 'usage', label: 'nav.usage', icon: 'usage' },
@@ -688,6 +691,7 @@ onUnmounted(() => {
             :accounts="visibleAccounts"
             :loading="loading.accounts"
             :error="errors.accounts"
+            :console-password-session="consolePasswordSession"
             @refresh="loadAccountData"
             @notice="showNotice"
             @delete="deleteAccount"
@@ -700,6 +704,10 @@ onUnmounted(() => {
             :config="config"
             @saved="config = $event"
             @notice="showNotice"
+          />
+          <ProxiesPanel
+            v-else-if="currentTab === 'proxies'"
+            :console-password-session="consolePasswordSession"
           />
           <RequestsPanel
             v-else-if="currentTab === 'requests'"

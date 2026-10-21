@@ -43,7 +43,7 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 		if index >= len(in.Credentials) {
 			return nil, invalid()
 		}
-		commit, err := s.accounts.Import(ctx, c.ImportCommand{Operation: op, Credentials: in.Credentials[index]})
+		commit, err := s.accounts.Import(ctx, c.ImportCommand{Operation: op, Credentials: in.Credentials[index], Proxy: in.proxy(index)})
 		// A coordinator may return an error after durable commit/publication.
 		if err != nil {
 			return nil, err
@@ -111,7 +111,7 @@ func (s *taskService) executeItem(ctx context.Context, kind c.TaskKind, item c.T
 			}
 			verified = &out.Result
 		}
-		commit, err := s.accounts.Replace(ctx, c.ReplaceCommand{Operation: op, AccountID: item.AccountID, Credentials: in.Credentials[0], Expected: expected, Enable: !in.Legacy, Candidate: candidate})
+		commit, err := s.accounts.Replace(ctx, c.ReplaceCommand{Operation: op, AccountID: item.AccountID, Credentials: in.Credentials[0], Proxy: in.proxy(0), Expected: expected, Enable: !in.Legacy && (in.proxy(0) == nil || in.Verify), Candidate: candidate})
 		if err != nil {
 			if verified != nil {
 				verified.FailFinalization(c.PublicError(err).Code)

@@ -39,6 +39,8 @@ type CommitIntent struct {
 	State             *AccountState
 	CredentialChanged bool
 	CredentialDigest  [32]byte
+	ProxyChanged      bool // A real proxy change also advances the state version.
+	ProxyApplied      bool // Receipt-only proof; contains no proxy or authentication.
 	Upload            *UploadIdentity
 }
 

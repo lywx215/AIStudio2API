@@ -17,6 +17,7 @@ import (
 	"github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 	"github.com/Mag1cFall/AIStudio2API/internal/managementmaintenance"
 	"github.com/Mag1cFall/AIStudio2API/internal/promptdb"
+	"github.com/Mag1cFall/AIStudio2API/internal/proxymanager"
 	"github.com/Mag1cFall/AIStudio2API/internal/requestdb"
 )
 
@@ -87,6 +88,7 @@ type runtimeManager struct {
 	management            *managementcontract.ProcessServices
 	managementJournal     string
 	managementMaintenance *managementmaintenance.Service
+	proxyManagement       *proxymanager.Service
 	closeOnce             sync.Once
 	closeErr              error
 	closed                atomic.Bool
@@ -241,6 +243,9 @@ func (manager *runtimeManager) Close() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		var closeErrors []error
+		if manager.proxyManagement != nil {
+			closeErrors = append(closeErrors, manager.proxyManagement.Close())
+		}
 		services := manager.management
 		if services != nil && services.Tasks != nil {
 			closeErrors = append(closeErrors, services.Tasks.Close(ctx))

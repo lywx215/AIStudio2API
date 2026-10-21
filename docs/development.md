@@ -500,3 +500,8 @@ go build -trimpath -ldflags "-X github.com/Mag1cFall/AIStudio2API/internal/app.v
 脚本先按锁文件安装并构建前端，再分别生成 `dist/aistudio2api-cli.exe` 或 `dist/aistudio2api-desktop.exe`；已有本次前端构建时可传 `-SkipFrontend`。默认版本为 `v0.2.14-custom.1`，更新管理方固定为 `lywx215`。构建不会启动程序或替换现有运行文件。
 
 本 fork 的 CI 覆盖 `dev`，显式运行本地 Node 回归，并为 CLI、桌面和 Docker 产物写入版本及更新管理方。Docker 支持 `VERSION` 和 `MANAGED_BY` 构建参数。定制产物显示 `managed` 更新模式，避免从官方发行包更新后丢失本地功能。更新源码时从已验证的 `dev` 建分支合并上游，完成回归后再更新 `dev`。
+
+
+## 2026-10-21 原生代理管理
+
+网页新增独立代理库、批量网络检测及账户指定／随机代理设置，详见 [代理管理说明](proxy-management.md)。该代理库不替代或自动修改现有全局代理池，存储位于配置目录的 runtime/proxies/proxies.db；需要管理员密码会话。

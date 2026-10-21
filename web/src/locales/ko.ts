@@ -25,6 +25,7 @@ export const messages: Record<TranslationKey, string> = {
   'app.darkMode': '다크 모드로 전환',
   'nav.logs': '로그',
   'nav.accounts': '계정',
+  'nav.proxies': '프록시 관리',
   'nav.models': '모델 목록',
   'nav.requests': '쿨다운 및 요청',
   'nav.settings': '설정',

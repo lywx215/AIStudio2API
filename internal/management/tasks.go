@@ -22,6 +22,14 @@ type taskInput struct {
 	Action      string             `json:"action"`
 	Expected    c.ExpectedVersions `json:"expected"`
 	Credentials []c.Credentials    `json:"credentials"`
+	Proxies     []*string          `json:"proxies,omitempty"`
+}
+
+func (in taskInput) proxy(index int) *string {
+	if index >= 0 && index < len(in.Proxies) {
+		return in.Proxies[index]
+	}
+	return nil // Old durable task inputs do not have proxy fields.
 }
 
 type taskService struct {

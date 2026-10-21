@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/aistudio"
 	"github.com/Mag1cFall/AIStudio2API/internal/camoufoxnative"
+	"github.com/Mag1cFall/AIStudio2API/internal/config"
 	contract "github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 )
 
@@ -255,6 +257,34 @@ func (c *managementAccountCoordinator) commit(ctx context.Context, intent contra
 	}
 	c.gate.Lock()
 	defer c.gate.Unlock()
+	// Read current config only after the shared mutation lease and gate. The
+	// file participant merges a proxy override into this same current image.
+	if participant, ok := files.(*aistudio.AccountFileParticipant); ok {
+		var nextProxy *string
+		if participant.NewConfig != nil {
+			nextProxy = &participant.NewConfig.Proxy
+		}
+		if participant.ProxyOverride != nil {
+			nextProxy = participant.ProxyOverride
+			intent.ProxyApplied = true
+		}
+		if nextProxy != nil {
+			if config.ValidateProxy(*nextProxy) != nil {
+				return result, contract.NewError(contract.CodeInvalidRequest)
+			}
+			if intent.Kind != contract.MutationImport {
+				directory, readErr := aistudio.AccountDirectory(c.paths, intent.NativeID, false)
+				if readErr != nil {
+					return result, readErr
+				}
+				account, readErr := aistudio.LoadAccountDirectory(directory)
+				if readErr != nil {
+					return result, readErr
+				}
+				intent.ProxyChanged = account.Config.Proxy != *nextProxy
+			}
+		}
+	}
 	result, err = c.store.CommitAccount(ctx, intent, files)
 	// Keep the local publication inside the coordinator gate (never the DB or
 	// native storage locks), so a later native cookie commit cannot change the
@@ -281,6 +311,13 @@ func (c *managementAccountCoordinator) CommitNative(ctx context.Context, intent 
 }
 
 func (c *managementAccountCoordinator) Import(ctx context.Context, command contract.ImportCommand) (contract.AccountCommitResult, error) {
+	if command.Proxy != nil {
+		value := strings.TrimSpace(*command.Proxy)
+		if config.ValidateProxy(value) != nil {
+			return contract.AccountCommitResult{}, contract.NewError(contract.CodeInvalidRequest)
+		}
+		command.Proxy = &value
+	}
 	material, err := c.PrepareCredentials(command.Credentials)
 	if err != nil {
 		return contract.AccountCommitResult{}, err
@@ -300,11 +337,19 @@ func (c *managementAccountCoordinator) Import(ctx context.Context, command contr
 	}
 	files := c.files()
 	files.NewState = &state
+	files.ProxyOverride = command.Proxy
 	name := material.NativeID
 	return c.commit(ctx, contract.CommitIntent{Kind: contract.MutationImport, NativeID: name, AccountName: &name, CredentialChanged: true, CredentialDigest: digest, Upload: command.Operation.Upload}, files, false)
 }
 
 func (c *managementAccountCoordinator) Replace(ctx context.Context, command contract.ReplaceCommand) (contract.AccountCommitResult, error) {
+	if command.Proxy != nil {
+		value := strings.TrimSpace(*command.Proxy)
+		if config.ValidateProxy(value) != nil {
+			return contract.AccountCommitResult{}, contract.NewError(contract.CodeInvalidRequest)
+		}
+		command.Proxy = &value
+	}
 	if err := command.Expected.Validate(command.Enable); err != nil {
 		return contract.AccountCommitResult{}, err
 	}
@@ -351,6 +396,7 @@ func (c *managementAccountCoordinator) Replace(ctx context.Context, command cont
 	}
 	files := c.files()
 	files.NewState = &state
+	files.ProxyOverride = command.Proxy
 	intent := contract.CommitIntent{Kind: contract.MutationReplace, AccountID: record.AccountID, NativeID: record.NativeID, Expected: expectedAccount(record), CredentialChanged: true, CredentialDigest: digest, Upload: command.Operation.Upload}
 	if command.Enable {
 		next := contract.AccountState{Enabled: true}

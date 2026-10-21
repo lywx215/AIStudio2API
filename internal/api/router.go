@@ -10,6 +10,7 @@ import (
 
 	"github.com/Mag1cFall/AIStudio2API/internal/aistudio"
 	"github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
+	"github.com/Mag1cFall/AIStudio2API/internal/proxymanager"
 )
 
 // Config 定义公开 API 服务配置
@@ -25,7 +26,9 @@ type Config struct {
 	Prompts          PromptStore
 	Updates          UpdateService
 	// Management is process-scoped and independent of model and console auth.
-	Management managementcontract.HTTPRegistrar
+	Management      managementcontract.HTTPRegistrar
+	ProxyAdmin      *proxymanager.Service
+	ProxyAdminError string
 	// MediaDir 是媒体 URL 模式下生成媒体的保存目录
 	MediaDir string
 	// MediaLinks 返回媒体输出是否使用 URL 与设置的服务地址
@@ -101,7 +104,9 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 	public.HandleFunc("GET /v1beta/files/{uri...}", s.handleGeminiFileURIGet)
 	public.HandleFunc("DELETE /v1beta/files/{file}", s.handleGeminiFileDelete)
 
+	consoleAuth := newAdminAuth(config)
 	control := http.NewServeMux()
+	s.registerProxyAdmin(control, consoleAuth)
 	control.HandleFunc("GET /api/status", s.handleStatus)
 	control.HandleFunc("GET /api/models", s.handleAdminModels)
 	if config.Admin != nil {
@@ -124,7 +129,6 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 	root.Handle("/v1/", loggedHandler)
 	root.Handle("/v1beta/", loggedHandler)
 	root.Handle("/upload/", requestLoggingMiddleware(config.Admin, corsMiddleware(s.geminiUploadHandler(publicHandler))))
-	consoleAuth := newAdminAuth(config)
 	root.Handle("/api/", consoleAuth.handler(control))
 	if config.MediaDir != "" {
 		root.Handle("GET /media/{file}", corsMiddleware(http.HandlerFunc(s.handleMedia)))

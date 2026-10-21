@@ -71,6 +71,7 @@ type Capabilities struct {
 	DefaultVerificationChannels []Channel `json:"defaultVerificationChannels"`
 	MultiChannelVerification    bool      `json:"multiChannelVerification"`
 	SettingsWrite               bool      `json:"settingsWrite"`
+	AccountProxyWrite           bool      `json:"accountProxyWrite"`
 }
 type SystemStatus struct {
 	Ready               bool   `json:"ready"`

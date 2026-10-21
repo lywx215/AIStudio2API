@@ -23,6 +23,7 @@ export const messages = {
   'app.darkMode': '切换到深色模式',
   'nav.logs': '日志',
   'nav.accounts': '账户',
+  'nav.proxies': '代理管理',
   'nav.models': '模型目录',
   'nav.requests': '冷却与请求',
   'nav.settings': '服务配置',

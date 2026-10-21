@@ -258,7 +258,7 @@ func (s *store) plan(ctx context.Context, intent c.CommitIntent) (c.RecoveryReco
 			if intent.Kind == c.MutationRestore {
 				after.Archived = false
 			}
-			if !reflect.DeepEqual(a.AccountState, after.AccountState) {
+			if intent.ProxyChanged || !reflect.DeepEqual(a.AccountState, after.AccountState) {
 				after.StateVersion++
 			}
 		}
@@ -415,7 +415,7 @@ func (s *store) CommitAccount(ctx context.Context, intent c.CommitIntent, p c.Ac
 	}
 	// Capture the timestamp at the actual commit boundary, never at allocation.
 	if r.Plan.Intent.Upload != nil {
-		r.Plan.Receipt = &c.UploadReceipt{Status: "committed", AccountID: r.Plan.After.AccountID, Index: r.Plan.After.Index, Versions: r.Plan.After.Versions, CommittedAt: s.now()}
+		r.Plan.Receipt = &c.UploadReceipt{Status: "committed", AccountID: r.Plan.After.AccountID, Index: r.Plan.After.Index, Versions: r.Plan.After.Versions, CommittedAt: s.now(), ProxyApplied: r.Plan.Intent.ProxyApplied}
 	}
 	r.Phase = c.CommitCommitted
 	err = transaction(ctx, s.db, func(tx *sql.Tx) error {

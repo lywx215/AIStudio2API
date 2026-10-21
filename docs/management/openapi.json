@@ -7770,7 +7770,7 @@
         ]
       },
       "CredentialReplaceInput": {
-        "description": "Legacy raw storageState remains accepted and verifies by default. Versioned clients wrap it and supply both expected versions; verify:false saves credentials and enables without model verification.",
+        "description": "Legacy raw storageState remains accepted and verifies by default. Versioned clients wrap it and supply both expected versions; verify:false saves credentials and enables without model verification. With proxy and verify:false, preserve enabled/disabled state while committing both credentials and proxy.",
         "oneOf": [
           {
             "$ref": "#/components/schemas/CredentialInput"
@@ -7795,6 +7795,10 @@
               },
               "channels": {
                 "$ref": "#/components/schemas/VerificationChannels"
+              },
+              "proxy": {
+                "type": "string",
+                "description": "Optional private account proxy URL committed with credentials. Omission preserves the current proxy."
               }
             },
             "required": [
@@ -8147,6 +8151,10 @@
                 },
                 "credentials": {
                   "$ref": "#/components/schemas/CredentialInput"
+                },
+                "proxy": {
+                  "type": "string",
+                  "description": "Optional private account proxy URL. Omission retains the default egress."
                 }
               },
               "required": [
@@ -8713,6 +8721,10 @@
             ],
             "type": "string",
             "const": "committed"
+          },
+          "proxyApplied": {
+            "type": "boolean",
+            "description": "True only when this credential commit also applied the requested account proxy; no authentication is returned."
           }
         },
         "required": [
@@ -8925,6 +8937,9 @@
             }
           },
           "multiChannelVerification": {
+            "type": "boolean"
+          },
+          "accountProxyWrite": {
             "type": "boolean"
           }
         },

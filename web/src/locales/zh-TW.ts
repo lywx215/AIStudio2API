@@ -25,6 +25,7 @@ export const messages: Record<TranslationKey, string> = {
   'app.darkMode': '切換為深色模式',
   'nav.logs': '記錄',
   'nav.accounts': '帳號',
+  'nav.proxies': '代理管理',
   'nav.models': '模型目錄',
   'nav.requests': '冷卻與請求',
   'nav.settings': '服務設定',

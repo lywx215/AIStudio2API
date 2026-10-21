@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -23,11 +23,14 @@ import type { IconName } from '@/icons'
 import DetailDialog from './DetailDialog.vue'
 import LoginViewer from './LoginViewer.vue'
 import UiIcon from './UiIcon.vue'
+import AccountProxyDialog from './AccountProxyDialog.vue'
+import { useProxyText } from '@/proxy-management'
 
 const props = defineProps<{
   accounts: Account[]
   loading: boolean
   error: string
+  consolePasswordSession?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,6 +40,22 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale, errorText } = useI18n()
+const proxyText = useProxyText()
+const proxySelection = ref<string[]>([])
+const proxyTargets = ref<string[]>([])
+function toggleProxySelection(id: string): void {
+  proxySelection.value = proxySelection.value.includes(id)
+    ? proxySelection.value.filter((value) => value !== id)
+    : [...proxySelection.value, id]
+}
+watch(
+  () => props.accounts,
+  (accounts) => {
+    proxySelection.value = proxySelection.value.filter((id) =>
+      accounts.some((account) => account.id === id),
+    )
+  },
+)
 const defaultAccountLocale = 'en-US'
 const defaultAccountTimezone = 'America/Los_Angeles'
 const showEditor = ref(false)
@@ -530,6 +549,15 @@ async function refreshAllAccounts(): Promise<void> {
       </div>
       <div class="ml-auto flex flex-wrap justify-end gap-2">
         <button
+          v-if="consolePasswordSession"
+          class="rounded border border-line bg-raised px-3 py-2 text-sm text-gray-300 disabled:opacity-40"
+          type="button"
+          :disabled="proxySelection.length === 0 || proxySelection.length > 200"
+          @click="proxyTargets = [...proxySelection]"
+        >
+          {{ proxyText('batch') }} ({{ proxySelection.length }})
+        </button>
+        <button
           class="flex items-center gap-2 rounded border border-line bg-raised px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-line disabled:opacity-50"
           type="button"
           :disabled="refreshingAll"
@@ -580,14 +608,34 @@ async function refreshAllAccounts(): Promise<void> {
         {{ t('common.loading') }}
       </div>
       <div
-        v-else-if="accounts.length === 0"
+        v-if="consolePasswordSession && accounts.length && !error && !loading"
+        class="mb-2 flex items-center gap-2 text-xs text-gray-500"
+      >
+        <label
+          ><input
+            type="checkbox"
+            :aria-label="proxyText('select')"
+            :disabled="accounts.length > 200"
+            :checked="proxySelection.length === accounts.length"
+            @change="
+              proxySelection =
+                proxySelection.length === accounts.length
+                  ? []
+                  : accounts.map((account) => account.id)
+            "
+          />
+          {{ proxyText('selectAccounts') }}</label
+        ><span>{{ proxyText('selectLimit') }}</span>
+      </div>
+      <div
+        v-if="!error && !loading && accounts.length === 0"
         class="rounded border border-line bg-panel py-10 text-center text-gray-500"
       >
         <p class="mb-2">{{ t('accounts.empty') }}</p>
         <p class="text-xs">{{ t('accounts.emptyHint') }}</p>
       </div>
       <div
-        v-else
+        v-else-if="!error && !loading"
         class="min-h-0 flex-1 overflow-y-auto rounded-lg border border-line bg-panel max-md:max-h-[70vh]"
       >
         <div
@@ -597,6 +645,14 @@ async function refreshAllAccounts(): Promise<void> {
           :class="{ 'opacity-60': !account.enabled }"
         >
           <div class="flex min-w-0 flex-1 basis-72 items-center gap-3">
+            <input
+              v-if="consolePasswordSession"
+              type="checkbox"
+              :aria-label="`${proxyText('selectAccounts')} ${account.label}`"
+              :checked="proxySelection.includes(account.id)"
+              :disabled="!proxySelection.includes(account.id) && proxySelection.length >= 200"
+              @change="toggleProxySelection(account.id)"
+            />
             <div
               class="h-2.5 w-2.5 shrink-0 rounded-full"
               :class="{
@@ -648,6 +704,15 @@ async function refreshAllAccounts(): Promise<void> {
             </button>
           </div>
           <div class="flex max-w-full flex-wrap justify-end gap-2">
+            <button
+              v-if="consolePasswordSession"
+              class="rounded border border-line bg-raised px-3 py-1 text-xs text-gray-300 disabled:opacity-40"
+              type="button"
+              :disabled="pendingAction !== ''"
+              @click="proxyTargets = [account.id]"
+            >
+              {{ proxyText('switch') }}
+            </button>
             <button
               class="rounded border border-line bg-raised px-3 py-1 text-xs text-gray-300 transition hover:bg-line disabled:opacity-50"
               type="button"
@@ -1300,4 +1365,10 @@ async function refreshAllAccounts(): Promise<void> {
       </Teleport>
     </div>
   </section>
+  <AccountProxyDialog
+    v-if="proxyTargets.length"
+    :ids="proxyTargets"
+    @close="proxyTargets = []"
+    @changed="emit('refresh')"
+  />
 </template>

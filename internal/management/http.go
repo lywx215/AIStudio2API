@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Mag1cFall/AIStudio2API/internal/config"
 	c "github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 )
 
@@ -420,6 +421,13 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 				return nil, 0, invalid()
 			}
 			seen[item.ClientRef] = true
+			if item.Proxy != nil {
+				value := strings.TrimSpace(*item.Proxy)
+				if config.ValidateProxy(value) != nil {
+					return nil, 0, invalid()
+				}
+				item.Proxy = &value
+			}
 			credential, e := credentials(item.Credentials)
 			if e != nil {
 				return nil, 0, e
@@ -428,6 +436,12 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 				return nil, 0, e
 			}
 			in.Credentials = append(in.Credentials, credential)
+			if item.Proxy != nil && in.Proxies == nil {
+				in.Proxies = make([]*string, len(body.Items))
+			}
+			if in.Proxies != nil {
+				in.Proxies[len(in.Credentials)-1] = item.Proxy
+			}
 			items = append(items, c.TaskItem{ClientRef: item.ClientRef, Status: c.TaskQueued, Stage: "queued"})
 		}
 		if in.Verify && !p.Has(c.ScopeAccountsTest) {
@@ -449,6 +463,13 @@ func (h *httpService) dispatch(w http.ResponseWriter, r *http.Request, rt route,
 			in.Verify = body.Verify == nil || *body.Verify
 			in.Channels = body.Channels
 			credentialRaw = body.Credentials
+			if body.Proxy != nil {
+				value := strings.TrimSpace(*body.Proxy)
+				if config.ValidateProxy(value) != nil {
+					return nil, 0, invalid()
+				}
+				in.Proxies = []*string{&value}
+			}
 		}
 		credential, e := credentials(credentialRaw)
 		if e != nil {

@@ -102,6 +102,7 @@ func (CredentialMaterial) GoString() string { return "[credential material redac
 type ImportItem struct {
 	ClientRef   string          `json:"clientRef"`
 	Credentials json.RawMessage `json:"credentials"`
+	Proxy       *string         `json:"proxy,omitempty"`
 }
 type ImportRequest struct {
 	Items    []ImportItem `json:"items"`
@@ -111,6 +112,7 @@ type ImportRequest struct {
 }
 type ReplaceRequest struct {
 	Credentials json.RawMessage `json:"credentials"`
+	Proxy       *string         `json:"proxy,omitempty"`
 	ExpectedVersions
 	Verify   *bool     `json:"verify,omitempty"`
 	Channels []Channel `json:"channels,omitempty"`
@@ -150,7 +152,8 @@ type UploadReceipt struct {
 	AccountID string `json:"accountId"`
 	Index     int64  `json:"index"`
 	Versions
-	CommittedAt Timestamp `json:"committedAt"`
+	CommittedAt  Timestamp `json:"committedAt"`
+	ProxyApplied bool      `json:"proxyApplied,omitempty"`
 }
 type UploadOnlyResult struct {
 	Success bool   `json:"success"`
@@ -168,13 +171,16 @@ type OperationContext struct {
 type ImportCommand struct {
 	Operation   OperationContext
 	Credentials Credentials
+	Proxy       *string // Private input; never part of credential JSON or public metadata.
 }
 type ReplaceCommand struct {
 	Operation   OperationContext
 	AccountID   string
 	Credentials Credentials
+	Proxy       *string
 	Expected    ExpectedVersions
-	// Enable is true for the versioned envelope; false preserves legacy flags.
+	// Enable retains the envelope's prior behavior; proxy-only uploads with
+	// verify:false and legacy requests preserve the current enabled state.
 	Enable bool
 	// Candidate is the verifier-refreshed candidate for verify:true replacement.
 	Candidate *CredentialMaterial

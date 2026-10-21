@@ -1,5 +1,7 @@
 # G0 contract status
 
+2026-10-21 user-requested compatible extension: import items and replacement envelopes accept optional `proxy`; active capabilities declare `accountProxyWrite`; committed upload receipts may include `proxyApplied`. Credential JSON and public account/task projections retain their existing boundaries. See [account proxy writes](account-proxy.md) for submission, versioning, recovery and acceptance scope. No database migration or deployment was performed.
+
 **CONTRACT_FROZEN** — v1.0.0, 2026-10-20 (Asia/Shanghai).
 
 **Current S2 closing state:** dispatcher normal-user `go test -p 2 ./... -count=1`, full vet, Windows CLI build, Linux amd64 CGO-disabled cross-build and canonical fixture build all exit 0. `SourceStable=true`, 322 path+SHA256 inputs unchanged. Maintenance unit package actually PASS 2.792s; its early OS block is historical. G0 source is unchanged; final S2 real HTTP/Manager acceptance is assigned to G6/M4. Evidence: `<shared GOTMPDIR>/s2-closing-result.json` and `s2-all-tests.log`; details in deliveries/G0.md.

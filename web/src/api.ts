@@ -105,7 +105,7 @@ async function responseError(response: Response): Promise<ApiError> {
 }
 
 // requestJSON 执行管理端 JSON 请求并保留服务端错误语义
-async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
+export async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers)
   if (init?.body !== undefined) {
     headers.set('Content-Type', 'application/json')
@@ -122,7 +122,7 @@ async function requestJSON<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 // requestCommand 执行无需响应体的管理写操作
-async function requestCommand(path: string, init: RequestInit): Promise<void> {
+export async function requestCommand(path: string, init: RequestInit): Promise<void> {
   const headers = new Headers(init.headers)
   if (init.body !== undefined) {
     headers.set('Content-Type', 'application/json')
