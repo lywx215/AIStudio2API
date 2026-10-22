@@ -9,7 +9,7 @@ import (
 )
 
 func TestTotpDOMGuards(t *testing.T) {
-	for _, mode := range []string{"valid", "foreign", "http", "wrong_email", "no_email", "sms", "ambiguous", "ambiguous_next", "disabled", "prefilled", "invalid", "captcha", "manual", "origin_changed", "loading", "next_loading", "identity_loading", "input_loading", "selection", "selection_wrong_email", "selection_no_email", "selection_ambiguous", "selection_missing", "selection_disabled"} {
+	for _, mode := range []string{"valid", "foreign", "http", "wrong_email", "no_email", "sms", "ambiguous", "ambiguous_next", "disabled", "prefilled", "invalid", "captcha", "manual", "origin_changed", "loading", "next_loading", "identity_loading", "input_loading", "selection", "selection_wrong_email", "selection_no_email", "selection_ambiguous", "selection_missing", "selection_disabled", "selection_stale_password", "selection_stale_identifier", "totp_stale_password", "totp_stale_identifier"} {
 		t.Run(mode, func(t *testing.T) {
 			vm := goja.New()
 			_ = vm.Set("mode", mode)
@@ -20,6 +20,7 @@ Object.defineProperty(HTMLInputElement.prototype,'value',{set:function(v){this._
 function Event() {}
 const props={getClientRects:()=>[1],getAttribute:()=>null,dispatchEvent:()=>{}};
 const otp=Object.assign(new HTMLInputElement(),props);
+const stale=Object.assign(new HTMLInputElement(),props);
 if(mode==='input_loading')otp.disabled=true;
 if(mode==='prefilled')otp._value='123456';
 if(mode==='invalid')otp.getAttribute=n=>n==='aria-invalid'?'true':null;
@@ -30,6 +31,8 @@ const location={origin:mode==='foreign'?'https://accounts.google.com.evil.test':
 const getComputedStyle=()=>({visibility:'visible'});
 if(mode==='manual')window.__aistudioLoginManual=true;
 const document={body:{innerText:mode==='sms'?'Enter SMS code':'Get a verification code from the Google Authenticator app'},querySelectorAll:s=>{
+ if(s==='input[type="password"]')return mode.endsWith('stale_password')?[stale]:[];
+ if(s.startsWith('input[type="email"]'))return mode.endsWith('stale_identifier')?[stale]:[];
  if(s.startsWith('#profileIdentifier'))return mode==='no_email'||mode==='identity_loading'||mode==='selection_no_email'?[]:[identity];
  if(s.startsWith('#totpPin'))return mode==='loading'||mode.startsWith('selection')?[]:mode==='ambiguous'?[otp,otp]:[otp];
  if(s.includes('#totpNext'))return mode==='ambiguous_next'?[next,next]:[next];
@@ -55,7 +58,7 @@ const document={body:{innerText:mode==='sms'?'Enter SMS code':'Get a verificatio
 				return v.String()
 			}
 			phase := invoke("inspect")
-			if (mode == "loading" || mode == "next_loading" || mode == "identity_loading" || mode == "input_loading") && phase != "totp_loading" {
+			if (mode == "loading" || mode == "next_loading" || mode == "identity_loading" || mode == "input_loading" || mode == "selection_stale_password" || mode == "selection_stale_identifier" || mode == "totp_stale_password" || mode == "totp_stale_identifier") && phase != "totp_loading" {
 				t.Fatalf("transient Google page should wait; got %s", phase)
 			}
 			if mode == "origin_changed" {
@@ -105,6 +108,19 @@ func TestTotpSelectionRequiresSecretAndSubmitsOnce(t *testing.T) {
 		} else if len(actions) != 0 || view.status != "manual" {
 			t.Fatal("Authenticator choice selected without a usable secret")
 		}
+	}
+}
+
+func TestTotpSelectionWaitsForPreviousFormWithoutBlocking(t *testing.T) {
+	session, actions := automationFixture(t, []string{"password", "totp_loading", "totp_select", "totp_loading", "totp", "totp_pending"})
+	view := NewLiveView()
+	automation := newLoginAutomation("user@example.test", "synthetic", view, "JBSWY3DPEHPK3PXP")
+	automation.now = func() time.Time { return time.Unix(30, 0) }
+	for range 6 {
+		automation.step(context.Background(), session)
+	}
+	if automation.blocked || len(actions) != 3 || <-actions != "password" || <-actions != "totp_select" || <-actions != "totp" {
+		t.Fatal("previous credential form prevented the Authenticator login sequence")
 	}
 }
 

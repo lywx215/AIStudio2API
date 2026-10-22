@@ -49,7 +49,7 @@ const loginAutomationFunction = `function(action, value, email) {
     const otpControls = [...document.querySelectorAll('#totpPin,input[name="totpPin"],input[autocomplete="one-time-code"]')].filter(visible);
     const otp = otpControls.length === 1 ? otpControls[0] : null;
     if (/\/challenge\/selection(?:\/|$)/.test(location.pathname)) {
-      if (p || identifier || otpControls.length) return outcome('manual', 'select_controls');
+      if (p || identifier || otpControls.length) return outcome('totp_loading', 'select_controls_loading');
       const shown = identities.length ? identities : ((document.body?.innerText || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig) || []).map(v => v.toLowerCase());
       if (!shown.length) return outcome('totp_loading', 'select_identity_loading');
       if (!shown.includes(email.toLowerCase()) || shown.some(v => v !== email.toLowerCase())) return outcome('manual', 'account');
@@ -69,7 +69,8 @@ const loginAutomationFunction = `function(action, value, email) {
     }
     const authenticator = /\/challenge\/totp(?:\/|$)/.test(location.pathname) || /Google Authenticator|Authenticator app|身份验证器|身分驗證器/i.test(document.body?.innerText || '');
     if (authenticator) {
-      if (otpControls.length > 1 || p || identifier) return outcome('manual', 'totp_controls');
+      if (otpControls.length > 1) return outcome('manual', 'totp_controls');
+      if (p || identifier) return outcome('totp_loading', 'totp_controls_loading');
       // Google renders the challenge, identity and enabled controls in separate
       // updates. An incomplete known TOTP page must not latch manual takeover.
       if (!otp) return outcome('totp_loading', 'totp_input_loading');
@@ -259,7 +260,7 @@ func (session *loginSession) loginAction(ctx context.Context, action, value, ema
 	remote, _ := result["result"].(map[string]any)
 	phase, _ := remote["value"].(string)
 	switch phase {
-	case "diag_origin", "diag_user_input", "diag_captcha", "diag_account", "diag_select_controls",
+	case "diag_origin", "diag_user_input", "diag_captcha", "diag_account", "diag_select_controls_loading", "diag_totp_controls_loading",
 		"diag_select_identity_loading", "diag_select_ambiguous", "diag_select_missing", "diag_select_pending", "diag_select_ready",
 		"diag_totp_controls", "diag_totp_input_loading", "diag_totp_identity_loading", "diag_totp_invalid", "diag_totp_prefilled",
 		"diag_totp_pending", "diag_totp_ambiguous", "diag_totp_next_loading", "diag_totp_ready", "diag_other_challenge",

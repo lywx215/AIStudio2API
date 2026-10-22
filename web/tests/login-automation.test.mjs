@@ -16,7 +16,16 @@ const fixtures = readFileSync(
 const production = source.match(/const loginAutomationFunction = `([\s\S]*?)`/)[1]
 const fixture = fixtures.match(/vm\.RunString\(`([\s\S]*?)`\)/)[1]
 const modes = JSON.parse(`[${fixtures.match(/for _, mode := range \[\]string\{([^}]+)\}/)[1]}]`)
-const loading = new Set(['loading', 'next_loading', 'identity_loading', 'input_loading'])
+const loading = new Set([
+  'loading',
+  'next_loading',
+  'identity_loading',
+  'input_loading',
+  'selection_stale_password',
+  'selection_stale_identifier',
+  'totp_stale_password',
+  'totp_stale_identifier',
+])
 
 function page(mode) {
   const context = vm.createContext({ mode })
@@ -105,6 +114,28 @@ for (const mode of [
     assert.notEqual(action('totp_select'), 'submitted')
     assert.equal(context.clicked, 0)
     assert.equal(context.filled, '')
+  })
+}
+
+for (const mode of [
+  'selection_stale_password',
+  'selection_stale_identifier',
+  'totp_stale_password',
+  'totp_stale_identifier',
+]) {
+  test(`Google waits for the previous credential form to disappear: ${mode}`, () => {
+    const { context, action } = page(mode)
+    const selecting = mode.startsWith('selection')
+    const kind = selecting ? 'totp_select' : 'totp'
+    assert.equal(action('inspect'), 'totp_loading')
+    assert.equal(action(kind), 'totp_loading')
+    assert.equal(context.clicked, 0)
+    assert.equal(context.filled, '')
+    context.mode = selecting ? 'selection' : 'valid'
+    assert.equal(action('inspect'), kind)
+    assert.equal(action(kind), 'submitted')
+    assert.equal(context.clicked, 1)
+    assert.equal(context.filled, selecting ? '' : '005924')
   })
 }
 
