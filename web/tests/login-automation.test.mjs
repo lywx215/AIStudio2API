@@ -70,3 +70,47 @@ test('Google TOTP waits for its submit button without filling prematurely', () =
   assert.equal(action('totp'), 'submitted')
   assert.equal(context.clicked, 1)
 })
+
+test('Google TOTP selects the unique Authenticator method once without sending a code', () => {
+  const { context, action } = page('selection')
+  assert.equal(action('inspect'), 'totp_select')
+  assert.equal(action('totp_select'), 'submitted')
+  assert.equal(context.clicked, 1)
+  assert.equal(context.filled, '')
+  assert.equal(action('inspect'), 'totp_loading')
+  assert.equal(action('totp_select'), 'totp_loading')
+  assert.equal(context.clicked, 1)
+  context.mode = 'valid'
+  vm.runInContext(`location.pathname = '/v3/signin/challenge/totp'`, context)
+  assert.equal(action('inspect'), 'totp')
+  assert.equal(action('totp'), 'submitted')
+  assert.equal(context.clicked, 2)
+})
+
+for (const mode of [
+  'selection_wrong_email',
+  'selection_no_email',
+  'selection_ambiguous',
+  'selection_missing',
+  'selection_disabled',
+]) {
+  test(`Google TOTP refuses unsafe method selection: ${mode}`, () => {
+    const { context, action } = page(mode)
+    assert.notEqual(action('totp_select'), 'submitted')
+    assert.equal(context.clicked, 0)
+    assert.equal(context.filled, '')
+  })
+}
+
+for (const change of [
+  "location.origin = 'https://example.test'",
+  'window.__aistudioLoginManual = true',
+]) {
+  test(`Google TOTP rechecks origin and takeover before choosing a method: ${change}`, () => {
+    const { context, action } = page('selection')
+    assert.equal(action('inspect'), 'totp_select')
+    vm.runInContext(change, context)
+    assert.notEqual(action('totp_select'), 'submitted')
+    assert.equal(context.clicked, 0)
+  })
+}

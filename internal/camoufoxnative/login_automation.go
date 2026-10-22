@@ -45,6 +45,24 @@ const loginAutomationFunction = `function(action, value, email) {
     if (identities.some(v => v !== email.toLowerCase())) return 'manual';
     const otpControls = [...document.querySelectorAll('#totpPin,input[name="totpPin"],input[autocomplete="one-time-code"]')].filter(visible);
     const otp = otpControls.length === 1 ? otpControls[0] : null;
+    if (/\/challenge\/selection(?:\/|$)/.test(location.pathname)) {
+      if (p || identifier || otpControls.length) return 'manual';
+      const shown = identities.length ? identities : ((document.body?.innerText || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig) || []).map(v => v.toLowerCase());
+      if (!shown.length) return 'totp_loading';
+      if (!shown.includes(email.toLowerCase()) || shown.some(v => v !== email.toLowerCase())) return 'manual';
+      const labels = ['Get a verification code from the Google Authenticator app',
+        '从 Google 身份验证器应用获取验证码', '从“Google 身份验证器”应用获取验证码',
+        '透過 Google Authenticator 應用程式取得驗證碼'];
+      const choices = [...document.querySelectorAll('a,button,[role="link"],[role="button"]')]
+        .filter(e => visible(e) && labels.includes((e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim()));
+      if (choices.length > 1) return 'manual';
+      if (!choices.length || choices[0].__aistudioTotpSelected) return 'totp_loading';
+      if (action === 'inspect') return 'totp_select';
+      if (action !== 'totp_select') return 'manual';
+      choices[0].__aistudioTotpSelected = true;
+      choices[0].click();
+      return 'submitted';
+    }
     const authenticator = /\/challenge\/totp(?:\/|$)/.test(location.pathname) || /Google Authenticator|Authenticator app|身份验证器|身分驗證器/i.test(document.body?.innerText || '');
     if (authenticator) {
       if (otpControls.length > 1 || p || identifier) return 'manual';
@@ -153,6 +171,20 @@ func (automation *loginAutomation) step(ctx context.Context, session *loginSessi
 		}
 		return
 	}
+	if phase == "totp_select" && !automation.submitted[phase] {
+		if !logintotp.Valid(automation.totpSecret) {
+			automation.blocked = true
+			automation.view.setStatus("manual")
+			return
+		}
+		automation.submitted[phase] = true
+		automation.view.setStatus("totp_loading")
+		if session.loginAction(ctx, phase, "", automation.email) != "submitted" {
+			automation.blocked = true
+			automation.view.setStatus("manual")
+		}
+		return
+	}
 	if phase == "totp" && !automation.submitted[phase] {
 		if !logintotp.Valid(automation.totpSecret) {
 			automation.blocked = true
@@ -218,7 +250,7 @@ func (session *loginSession) loginAction(ctx context.Context, action, value, ema
 	remote, _ := result["result"].(map[string]any)
 	phase, _ := remote["value"].(string)
 	switch phase {
-	case "email", "password", "totp", "totp_loading", "totp_pending", "later", "unknown", "submitted":
+	case "email", "password", "totp", "totp_select", "totp_loading", "totp_pending", "later", "unknown", "submitted":
 		return phase
 	}
 	return "manual"
