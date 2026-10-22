@@ -47,6 +47,12 @@ for (const mode of modes) {
       assert.equal(context.clicked, 0)
     }
   })
+  test(`Google login diagnostics remain read-only and contain only a reason code: ${mode}`, () => {
+    const { context, action } = page(mode)
+    assert.match(action('diagnose'), /^diag_[a-z_]+$/)
+    assert.equal(context.clicked, 0)
+    assert.equal(context.filled, '')
+  })
 }
 
 test('Google TOTP resumes when a partially rendered challenge becomes ready', () => {

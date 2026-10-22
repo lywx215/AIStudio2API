@@ -36,6 +36,8 @@ func automationFixture(t *testing.T, phases []string) (*loginSession, chan strin
 				} else {
 					phase = "unknown"
 				}
+			} else if action == "diagnose" {
+				phase = "diag_unknown"
 			} else {
 				actions <- action
 			}
