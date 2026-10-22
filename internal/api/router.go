@@ -15,6 +15,7 @@ import (
 
 // Config 定义公开 API 服务配置
 type Config struct {
+	Business         *BusinessAddon
 	APIKey           string
 	Admin            AdminService
 	AdminAuthEnabled bool
@@ -147,7 +148,7 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 			return nil
 		}))
 		// Dispatch before ServeMux path cleaning, authentication and redirects.
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return attachBusiness(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := r.URL.Path
 			switch {
 			case path == managementcontract.Namespace || strings.HasPrefix(path, managementcontract.Namespace+"/"):
@@ -157,9 +158,9 @@ func NewHandler(service aistudio.Service, config Config) http.Handler {
 			default:
 				root.ServeHTTP(w, r)
 			}
-		})
+		}), config, consoleAuth)
 	}
-	return root
+	return attachBusiness(root, config, consoleAuth)
 }
 
 func newID(prefix string) string {

@@ -1,0 +1,320 @@
+{
+  "date": "2026-10-22",
+  "branch": "dev-2",
+  "baseline": "21596862b3805ab15ec184aa0037624c39c07626",
+  "scope": "Local offline integration only; synthetic credentials, mocked upstream and socket-free pinned SDK. No real browser, Google/model call, deployment, commit or push.",
+  "go": {
+    "command": "CGO_ENABLED=0 BUSINESS_GENAI_SDK_PYTHON=<local SDK interpreter> go test -json -mod=readonly -p 1 ./cmd/... ./internal/...",
+    "exit_code": 1,
+    "log": "go-final-20261022.jsonl",
+    "packages": {
+      "github.com/Mag1cFall/AIStudio2API/cmd/aistudio2api": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/browser": {
+        "action": "pass",
+        "seconds": 2.072
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/config": {
+        "action": "pass",
+        "seconds": 1.1320000000000001
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/core": {
+        "action": "pass",
+        "seconds": 1.881
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/dispatch": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi": {
+        "action": "pass",
+        "seconds": 11.62
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/files": {
+        "action": "pass",
+        "seconds": 11.344
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini": {
+        "action": "pass",
+        "seconds": 3.974
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/host": {
+        "action": "pass",
+        "seconds": 3.43
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault": {
+        "action": "pass",
+        "seconds": 1.177
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/aistudio": {
+        "action": "fail",
+        "seconds": 4.422
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/api": {
+        "action": "pass",
+        "seconds": 7.116
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/app": {
+        "action": "fail",
+        "seconds": 9.953
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/camoufoxnative": {
+        "action": "pass",
+        "seconds": 2.8689999999999998
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/chromeauth": {
+        "action": "pass",
+        "seconds": 3.526
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/config": {
+        "action": "pass",
+        "seconds": 1.1400000000000001
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/logintotp": {
+        "action": "pass",
+        "seconds": 1.068
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/management": {
+        "action": "pass",
+        "seconds": 5.531
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/managementcontract": {
+        "action": "pass",
+        "seconds": 1.692
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/managementmaintenance": {
+        "action": "pass",
+        "seconds": 1.2530000000000001
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/managementstore": {
+        "action": "pass",
+        "seconds": 5.037
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/managementverify": {
+        "action": "pass",
+        "seconds": 1.2810000000000001
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/pricing": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/promptdb": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/proxydial": {
+        "action": "pass",
+        "seconds": 1.758
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/proxymanager": {
+        "action": "pass",
+        "seconds": 3.245
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/requestdb": {
+        "action": "fail",
+        "seconds": 5.648
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/setup": {
+        "action": "pass",
+        "seconds": 7.417
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/ast": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/file": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/ftoa": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/ftoa/internal/fast": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/parser": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/token": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/waa/goja/unistring": {
+        "action": "skip",
+        "seconds": 0
+      },
+      "github.com/Mag1cFall/AIStudio2API/internal/webui": {
+        "action": "skip",
+        "seconds": 0
+      }
+    },
+    "business": {
+      "browser": {
+        "action": "pass",
+        "seconds": 2.072,
+        "top_level_tests_passed": 22
+      },
+      "config": {
+        "action": "pass",
+        "seconds": 1.1320000000000001,
+        "top_level_tests_passed": 4
+      },
+      "contract": {
+        "action": "skip",
+        "seconds": 0,
+        "top_level_tests_passed": 0
+      },
+      "core": {
+        "action": "pass",
+        "seconds": 1.881,
+        "top_level_tests_passed": 9
+      },
+      "dispatch": {
+        "action": "skip",
+        "seconds": 0,
+        "top_level_tests_passed": 0
+      },
+      "fileapi": {
+        "action": "pass",
+        "seconds": 11.62,
+        "top_level_tests_passed": 13
+      },
+      "files": {
+        "action": "pass",
+        "seconds": 11.344,
+        "top_level_tests_passed": 11
+      },
+      "gemini": {
+        "action": "pass",
+        "seconds": 3.974,
+        "top_level_tests_passed": 15
+      },
+      "host": {
+        "action": "pass",
+        "seconds": 3.43,
+        "top_level_tests_passed": 15
+      },
+      "vault": {
+        "action": "pass",
+        "seconds": 1.177,
+        "top_level_tests_passed": 2
+      }
+    },
+    "followup": {
+      "command": "go test -json -mod=readonly -p 1 ./internal/addons/business/host ./internal/app",
+      "exit_code": 1,
+      "log": "go-followup-20261022.jsonl",
+      "packages": {
+        "github.com/Mag1cFall/AIStudio2API/internal/addons/business/host": {
+          "action": "fail",
+          "seconds": 3.323
+        },
+        "github.com/Mag1cFall/AIStudio2API/internal/app": {
+          "action": "pass",
+          "seconds": 11.861
+        }
+      },
+      "change": "Preserve read-only closed status after shutdown; app composition test now passes. Host final rerun blocked by system policy."
+    },
+    "environment_blocks": [
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/aistudio",
+        "reason": "Windows Application Control blocked test executable"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/requestdb",
+        "reason": "Windows Application Control blocked test executable"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/host",
+        "reason": "Windows Application Control blocked test executable"
+      }
+    ],
+    "remaining_failed_test_assertions": [],
+    "initial_assertion_failure_fixed": "TestAddonBridgeDoesNotInitializeAIStudioOrCreateStorage: preserve state=closed after shutdown; app followup passed",
+    "skipped_tests": [
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/app",
+        "test": "TestManagementAcceptanceFixtureProcess"
+      }
+    ]
+  },
+  "vet": {
+    "command": "CGO_ENABLED=0 go vet ./cmd/... ./internal/...",
+    "exit_code": 0,
+    "scope": "Final module code before read-only closed-status compatibility adjustment; final build/app test also compile that adjustment"
+  },
+  "race": {
+    "executed": false,
+    "reason": "CGO_ENABLED=0; no gcc/clang/cl available"
+  },
+  "python_sdk": {
+    "version": "2.32.0",
+    "test": "TestGeminiSDKOfflineHarness",
+    "passed": true,
+    "synthetic_generations": 9,
+    "transport": "httpx.MockTransport + pipes; no sockets",
+    "coverage": "Real Gemini and Files handlers; Host/API/core separately use synthetic integration tests; JavaScript SDK not tested"
+  },
+  "web": {
+    "tests_passed": 132,
+    "business_tests_passed": 16,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed",
+    "evidence_source": "Codex frontend child final result",
+    "thread_id": "01a162ec-e676-7842-a512-e05711c9e2d1",
+    "warning": "large chunk build hint"
+  },
+  "boundaries": {
+    "anchors_passed": true,
+    "synthetic_drift_cases_passed": 20,
+    "readme_sha256_preserved": true,
+    "real_candidate_verified": false
+  },
+  "build": {
+    "command": "CGO_ENABLED=0 go build -mod=readonly -o <writable visualization output>/aistudio2api-dev2-check.exe ./cmd/aistudio2api",
+    "exit_code": 0,
+    "launched": false,
+    "warning": "Sandbox Go module stat-cache write permission warning; output successfully produced",
+    "path": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a1618a-96ab-7a03-bda0-73b712058136\\aistudio2api-dev2-check.exe",
+    "bytes": 66768896,
+    "sha256": "7c6e9f0159cb4efc73019e50172494c01a3fb71302735e38d472c5605d3c55ad"
+  },
+  "live_verified": false,
+  "not_completed": [
+    "Real Google login/model/media/advanced parameter validation",
+    "JavaScript SDK",
+    "Remote/headless collection and takeover",
+    "Automatic modelId observation",
+    "Browser generation transport",
+    "Multi-turn/session history recovery",
+    "M08 import preview",
+    "Real upstream update candidate and full release admission"
+  ],
+  "source_sha256": {
+    "internal/addons/business/host/host.go": "fd844147bea39e42077ffb3607ecd950d15b6a35aed825e4fe43c528f841ba65",
+    "internal/addons/business/host/lifecycle.go": "81734fc2f73923d34343607b39ba4719e68729ef1cdea10b45902bc4cf3b658a",
+    "internal/addons/business/core/attachments.go": "86d01cdbc0f2c9924ce72ce8e433017f6668e79cadc31c025d764a231e1bc79e",
+    "internal/addons/business/fileapi/handler.go": "d40dad02990fa60a9b03c9c007bb44c3e59db40d987ef01fffecb1d4279381d5",
+    "internal/addons/business/gemini/request.go": "1e2ecad69660ff34ec3d250277c5903c7cc6e6d37839dbf6bed79440ea042889",
+    "internal/api/addon_business.go": "40a9fdda38668aad3557d336246ea3d2c63b286657defcd33751a5ef25bf27c1"
+  }
+}

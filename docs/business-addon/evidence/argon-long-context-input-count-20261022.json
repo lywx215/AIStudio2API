@@ -1,0 +1,29 @@
+{
+  "file_sha256": "465ed218d891b5734e4346018d277b7452a7d5d81788247f629ff042f9111180",
+  "file_bytes": 370092,
+  "token_count": 153363,
+  "count_source": "widgetAddContextFile.addContextFileResponse.tokenCount",
+  "counting_limitation": "File-ingestion text token count for exact uploaded bytes; not Argon generation or billing usage metadata.",
+  "http_status": {
+    "add_context_file": 200,
+    "authentication": 200,
+    "create_session": 200
+  },
+  "response_keys": [
+    "addContextFileResponse"
+  ],
+  "add_context_file_response_keys": [
+    "byteCount",
+    "fileId",
+    "fileName",
+    "mimeType",
+    "session",
+    "tokenCount"
+  ],
+  "counter_parse_status": "observed_known_token_count",
+  "generation_request_sent": false,
+  "generation_request_intercepted": true,
+  "generation_events": 0,
+  "completed": true,
+  "completed_at": "2026-10-22T11:33:48.0999763Z"
+}

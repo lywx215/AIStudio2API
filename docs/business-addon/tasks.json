@@ -1,0 +1,2153 @@
+{
+  "schema_version": 3,
+  "title": "AIStudio2API Business R3：单应用附加融合与上游同步",
+  "created_at": "2026-10-22",
+  "execution_authorized": true,
+  "scope": "dev-2 R3开发、并行及本地已有Business账号Argon实测已授权。2026-10-22本地应用启动，标准生成、TXT/PDF引用、增量SSE通过；6个高级参数经真实转发被上游HTTP400逐项拒绝。双WAA、部署、外部审核未授权。",
+  "baseline": {
+    "repository": "G:/code/gemini30/AIStudio2API",
+    "head": "21596862b3805ab15ec184aa0037624c39c07626",
+    "references": "C:/Users/lywx2/.codex/visualizations/2026/10/22/01a161af-e6bf-7c31-85f2-6a38d25b9e38/gemini-business-research",
+    "source_manifest": "references/source-manifest.json",
+    "development_package": "C:/Users/lywx2/.codex/visualizations/2026/10/22/01a161af-e6bf-7c31-85f2-6a38d25b9e38/gemini-business-research/development-package-r3"
+  },
+  "child_configuration": {
+    "model": "gpt-6.1-sol",
+    "thinking": "xhigh",
+    "ui_label": "GPT-6.1 Sol / 极高",
+    "role_count": 6,
+    "recommended_simultaneous_developers": 3,
+    "coordinator_count": 1
+  },
+  "waa_decision": {
+    "aistudio": "保留camoufox/go原实现，不为接入Business改WAA；旧runtimeManager启停只影响AIStudio。",
+    "business": "HTTP/Cookie/JWT附加管线，无AIStudio WAA proof。",
+    "login": "Business独立driver及profile，复用已有浏览器库与显式匹配版本的可执行文件；不改旧Login/Worker。",
+    "transport": "http默认；C06证据驱动可选browser，仍在同一应用中。"
+  },
+  "windows": [
+    {
+      "id": "W0",
+      "name": "宿主挂接、合同与集成",
+      "owns": [
+        "internal/app/app.go (仅runServer装配点)",
+        "internal/api/router.go (仅Config可选字段与最终handler挂接)",
+        "web/src/App.vue (仅Business导航与懒加载面板)",
+        "web/src/types.ts (仅TabID新增business)",
+        "internal/app/addon_business.go (新增)",
+        "internal/api/addon_business.go (新增)",
+        "internal/addons/business/contract/**",
+        "internal/addons/business/host/**",
+        "internal/addons/business/config/**",
+        "docs/business-addon/**"
+      ],
+      "purpose": "控制4个既有外围接点与2个新桥文件，保留完整原handler，冻结合同与维护补丁。",
+      "branch": "codex/business-addon-integration",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    },
+    {
+      "id": "W1",
+      "name": "Business上游与调度",
+      "owns": [
+        "internal/addons/business/core/**"
+      ],
+      "purpose": "认证、会话、增量流、模型映射与Business独立租约；不替换旧Service。",
+      "branch": "codex/business-addon-core",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    },
+    {
+      "id": "W2",
+      "name": "Business浏览器采集",
+      "owns": [
+        "internal/addons/business/browser/**"
+      ],
+      "purpose": "新增Camoufox适配与登录采集，不改旧Worker/Login/profile。",
+      "branch": "codex/business-addon-browser",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    },
+    {
+      "id": "W3",
+      "name": "Gemini原生与请求分流",
+      "owns": [
+        "internal/addons/business/gemini/**",
+        "internal/addons/business/dispatch/**"
+      ],
+      "purpose": "按明确模型/选择器/资源归属命中Business；旧请求不解析正文、不重写响应。",
+      "branch": "codex/business-addon-gemini",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    },
+    {
+      "id": "W4",
+      "name": "文件归属与续传",
+      "owns": [
+        "internal/addons/business/files/**",
+        "internal/addons/business/fileapi/**"
+      ],
+      "purpose": "Business文件管理与原生SDK上传；旧默认上传/旧ID保持原实现。",
+      "branch": "codex/business-addon-files",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    },
+    {
+      "id": "W5",
+      "name": "统一控制台Business页面",
+      "owns": [
+        "internal/addons/business/store/**",
+        "internal/addons/business/admin/**",
+        "internal/addons/business/vault/**",
+        "web/src/business/**"
+      ],
+      "purpose": "在原登录和控制台内新增Business账户/模型/文件/配置页，保存附加状态。",
+      "branch": "codex/business-addon-console",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    },
+    {
+      "id": "W6",
+      "name": "旁路、兼容和升级验收",
+      "owns": [
+        "internal/addons/business/acceptance/**",
+        "internal/api/addon_business_test.go (新增)",
+        "internal/app/addon_business_test.go (新增)",
+        "tests/business-addon/**",
+        "scripts/business-addon/**",
+        "web/tests/business-addon*.test.mjs"
+      ],
+      "purpose": "主线零业务修改、旧请求透传、认证/续传/SDK/双WAA及上游同步回归。",
+      "branch": "codex/business-addon-acceptance",
+      "model": "gpt-6.1-sol",
+      "thinking": "xhigh"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T00",
+      "owner": "W0",
+      "phase": 0,
+      "title": "冻结主线、既有fork差异与挂接预算",
+      "status": "completed",
+      "depends_on": [],
+      "kind": "required",
+      "deliverable": "记录当前HEAD、用户未提交内容、既有fork维护补丁及源码/协议行为；限定4个现有外围文件和新增目录。",
+      "acceptance": "不混入README/部署/VPS改动；不创建第二个系统；所有主线保护路径明确。",
+      "verification": [
+        "git status --short",
+        "git rev-parse HEAD",
+        "基线清单人工核对"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/baseline.json"
+        ],
+        "assessment": "基线与用户既有改动已冻结；本轮anchors确认四接点和README摘要。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "T01",
+      "owner": "W0",
+      "phase": 0,
+      "title": "冻结单应用附加融合ADR",
+      "status": "completed",
+      "depends_on": [
+        "T00"
+      ],
+      "kind": "required",
+      "deliverable": "一程序/端口/登录；原handler委托；主线保护；Business默认关闭、自有状态；不做全局ProviderRouter重构。",
+      "acceptance": "旧runtimeManager和WAA保持原定义；Business状态/错误不重载旧生成服务；明确同进程故障边界。",
+      "verification": [
+        "ADR 场景表审阅",
+        "启动状态与依赖图核对"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/README.md"
+        ],
+        "assessment": "单程序/端口/consoleAuth/APIkey，Business独立状态的ADR已记录；同进程极端故障限制明确。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "T02",
+      "owner": "W0",
+      "phase": 0,
+      "title": "冻结最小宿主扩展合同",
+      "status": "completed",
+      "depends_on": [
+        "T01"
+      ],
+      "kind": "required",
+      "deliverable": "新增AddonContract，包含无副作用Match、Business public/upload/admin handler、Host鉴权与会话生命周期；原生DTO仅在附加模块内。",
+      "acceptance": "不修改旧aistudio.Service/managedService/DTO；无import cycle；不造通用插件平台；现有认证包装复用。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/contract",
+        "新增桥与旧api的编译契约检查"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/contract/http.go",
+          "internal/addons/business/contract/generation.go"
+        ],
+        "assessment": "基础HTTP合同历史完成；现有原生Request/Event/FileResolver合同待当前整体验证。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "T03",
+      "owner": "W0",
+      "phase": 0,
+      "title": "冻结 Gemini 能力清单与测试字段表",
+      "status": "in_progress",
+      "depends_on": [
+        "T02"
+      ],
+      "kind": "required",
+      "deliverable": "固定Gemini/SDK版本、Business字段能力、模型命名空间、X-AIStudio-Provider提案、file/upload ID归属；旧默认模型/文件列表保持原样。",
+      "acceptance": "无模型上传有明确选择机制；Business标记不是鉴权；原生JSON不要求插入自定义字段；冲突选择器拒绝而非猜测。",
+      "verification": [
+        "字段清单与官方契约交叉核对",
+        "契约清单无缺失/重复字段检查"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/capabilities.md",
+          "internal/addons/business/gemini/request.go",
+          "scripts/business-addon/requirements-sdk.txt"
+        ],
+        "assessment": "固定google-genai==2.32.0的零socket契约通过；Python覆盖模型分页/生成/流/文件，JavaScript及真实官方高级语义仍未验收。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "T04",
+      "owner": "W0",
+      "phase": 0,
+      "title": "建立同进程挂接骨架与关闭路径",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02"
+      ],
+      "kind": "required",
+      "deliverable": "runServer新桥创建轻量addon，Config传入可选handler扩展；最终包装完整旧apiHandler；后台启动/关闭不占旧runtime。",
+      "acceptance": "初始化Business失败不使监听或AIStudio启动失败；原handler路径/认证顺序不改；host关闭有界；默认无Business网络/浏览器/DB迁移。",
+      "verification": [
+        "go test -mod=readonly ./internal/app ./internal/api -run 'Addon|Business'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/app/addon_business.go",
+          "internal/addons/business/host/host.go"
+        ],
+        "assessment": "缺省关闭无副作用、Host生命周期及四处挂接离线通过；关闭后状态查询兼容修复由app组合测试通过，Host最终单包复跑被系统策略阻止。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "T05",
+      "owner": "W0",
+      "phase": 0,
+      "title": "记录旧主线与现有fork回归基线",
+      "status": "completed",
+      "depends_on": [
+        "T00"
+      ],
+      "kind": "required",
+      "deliverable": "原Go/Web/认证/文件/多协议/双WAA离线测试基线；记录现有managedBy构建与update_managed测试。",
+      "acceptance": "不为了Business修改原测试或宽严策略；缺项明确标识，不访问真实账号。",
+      "verification": [
+        "go test -mod=readonly ./cmd/... ./internal/...",
+        "go vet ./...",
+        "web: node --test tests/*.test.mjs",
+        "web: npm run lint",
+        "web: npm run build"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/validation.md"
+        ],
+        "assessment": "基础阶段历史Go/Web通过记录保留；本轮最终全回归未执行，根vet的既有runtime/review失败单列。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "B01",
+      "owner": "W1",
+      "phase": 1,
+      "title": "Business 账户与服务骨架",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "Business Core、Account/Service和单独租约，使用新contract注入Store/Clock/HTTP/FileMaterializer。",
+      "acceptance": "不进入旧AccountPool/managedService；不依赖旧runtime内部状态；可在AIStudio生成服务停止时独立处理Business请求。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'Account|Service'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/engine.go"
+        ],
+        "assessment": "独立Engine和账号租约的Core/Host/API离线组合通过；不进入旧AIStudio池或WAA。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "B02",
+      "owner": "W1",
+      "phase": 1,
+      "title": "实现 Cookie 到 JWT 的认证缓存",
+      "status": "in_progress",
+      "depends_on": [
+        "B01"
+      ],
+      "kind": "required",
+      "deliverable": "getoxsrf 解析、签名、过期余量、每账号刷新合并、401 强制失效、credential epoch 校验。",
+      "acceptance": "并发请求只进行必要的一次刷新；旧 epoch 不覆盖新凭据；错误与日志不包含秘密。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'Auth|JWT|Epoch'",
+        "支持环境下，go test -race ./internal/addons/business/core"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/engine.go",
+          "internal/addons/business/core/engine_test.go"
+        ],
+        "assessment": "JWT缓存/过期余量/401失效已实现；并发刷新与epoch/凭据更新组合验收待主窗口。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "B03",
+      "owner": "W1",
+      "phase": 1,
+      "title": "实现 HTTP 客户端与会话操作",
+      "status": "in_progress",
+      "depends_on": [
+        "B01"
+      ],
+      "kind": "required",
+      "deliverable": "受控上游、正常 TLS、固定代理/UA、超时/取消、CreateSession、SessionLease。",
+      "acceptance": "只向匹配上游发送凭据；不盲跟跨 origin 跳转；首次未调用模型前不制造生成请求。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'Client|Session|Transport'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/engine.go"
+        ],
+        "assessment": "固定HTTPS上游、禁止跳转、新会话、超时取消存在；代理/UA和Session契约完整验收待补。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "B04",
+      "owner": "W1",
+      "phase": 1,
+      "title": "实现有界增量流解码",
+      "status": "offline_verified",
+      "depends_on": [
+        "B01"
+      ],
+      "kind": "required",
+      "deliverable": "JSON 数组/已验证帧格式的增量解码和规范事件转换；明确结束证据。",
+      "acceptance": "任意分块、跨块 UTF-8、引号/转义、嵌套与断流处理正确；不整段缓冲伪装流式。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'Stream|Decode'",
+        "模糊测试种子与有界内存用例"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/stream.go",
+          "internal/addons/business/core/engine_test.go"
+        ],
+        "assessment": "role:model、成功累计文本前缀去重和严格suggestions inlineData兼容已上线到本地实例；Argon普通与增量SSE真实通过。未知输出媒体仍拒绝。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "continuation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "B05",
+      "owner": "W1",
+      "phase": 1,
+      "title": "实现严格模型与请求构造",
+      "status": "offline_verified",
+      "depends_on": [
+        "B01",
+        "T03"
+      ],
+      "kind": "required",
+      "deliverable": "public alias → selector mode → upstream ID；已验证参数白名单；保留请求字段存在性。",
+      "acceptance": "未知不回退；Auto 才省略 ID；不复制默认开启全部 toolsSpec 行为；拒绝项无上游调用。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'Model|Request|Capability'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/config/config.go",
+          "internal/addons/business/gemini/request.go",
+          "internal/addons/business/core/engine.go"
+        ],
+        "assessment": "modelId=gemini-4-argon真实通过。6个高级字段真实转发后上游400逐项报未知字段，保留门禁，不激活或宣称参数语义支持。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "B06",
+      "owner": "W1",
+      "phase": 2,
+      "title": "实现独立调度、配额与恢复",
+      "status": "in_progress",
+      "depends_on": [
+        "B02",
+        "B03",
+        "B04",
+        "B05"
+      ],
+      "kind": "required",
+      "deliverable": "每账号并发租约、可用性过滤、配额分类、退避、取消释放与请求提交状态。",
+      "acceptance": "无账号返回准确错误；已输出不换号；未输出但提交结果不确定不能无条件重试；不占用 AI Studio WAA 租约。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'Pool|Retry|Quota|Cancel'",
+        "支持环境下，go test -race ./internal/addons/business/core"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/engine.go"
+        ],
+        "assessment": "独立并发、账号scope、冷却、取消和不自动重放存在；故障分类/资源恢复全验收待补。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "B07",
+      "owner": "W1",
+      "phase": 2,
+      "title": "完成 Service 与认证健康分层",
+      "status": "in_progress",
+      "depends_on": [
+        "B06"
+      ],
+      "kind": "required",
+      "deliverable": "Business Models/Generate/CountTokens与认证/模型分层健康；向新增管理页报告，不改旧/health或旧模型默认目录。",
+      "acceptance": "认证有效不等于模型已验证；没有权威 usage 不生成虚假计数；请求取消可完整关闭。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/host/host.go",
+          "internal/addons/business/gemini/handler.go"
+        ],
+        "assessment": "本地账号/模型状态与原生生成接线存在；countTokens明确不支持，认证有效不等于模型live核实。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "B08",
+      "owner": "W1",
+      "phase": 1,
+      "title": "实现上下文文件底层客户端",
+      "status": "in_progress",
+      "depends_on": [
+        "B03"
+      ],
+      "kind": "required",
+      "deliverable": "ContextFileClient 的上传、元信息、授权下载与上游错误映射，供 FileBroker 注入。",
+      "acceptance": "上传绑定指定 account/config/session；fileId 不跨账号复用；文件类型限制以能力登记为准。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/core -run 'ContextFile|Media'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/attachments.go",
+          "internal/addons/business/core/attachments_test.go"
+        ],
+        "assessment": "widgetAddContextFile已接入并经假上游测试：新session上传、当前fileIds、失败不生成；上游文件元数据/输出媒体下载客户端仍未实现。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "C01",
+      "owner": "W2",
+      "phase": 1,
+      "title": "新增Business专用浏览器适配",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "附加模块内Driver/Launcher/BiDi；复用现有依赖版本，显式引用兼容二进制；不抽取旧LoginTarget。",
+      "acceptance": "不调用旧camoufoxnative.Start/Login，不触发AIStudio bootstrap或Drive授权；主线文件无改动。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/browser -run 'Driver|Launcher|Profile'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/browser/launcher.go",
+          "internal/addons/business/browser/launcher_test.go"
+        ],
+        "assessment": "独立driver/Manager的22项fake测试及vet通过；严格Firefox152、取消/清理/连接并发契约；未实际执行OS浏览器进程。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "C02",
+      "owner": "W2",
+      "phase": 1,
+      "title": "Business 元数据观察器",
+      "status": "in_progress",
+      "depends_on": [
+        "C01"
+      ],
+      "kind": "required",
+      "deliverable": "Business Cookie/csesidx/config/model元数据采集，保留来源；验证BiDi请求体能力，不猜ID或自动生成探测。",
+      "acceptance": "HttpOnly 通过存储 API；不假定 BiDi 自带请求体；不能从随机数字猜字段或自动发送模型探测。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/browser -run 'Capture|Cookie|BiDi'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/browser/collect.go",
+          "internal/addons/business/browser/collect_test.go"
+        ],
+        "assessment": "storage Cookie及明确URL的config/csesidx观察存在；自动modelId观察和BiDi请求体捕获无完成证据。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "C03",
+      "owner": "W2",
+      "phase": 1,
+      "title": "Business 登录状态机与人工接管",
+      "status": "in_progress",
+      "depends_on": [
+        "C02"
+      ],
+      "kind": "required",
+      "deliverable": "同控制台中的Business登录任务、可见浏览器/远程接管、缺失字段、取消；复用宿主登录权限与会话取消通知。",
+      "acceptance": "无需二次控制台登录；管理会话退出/过期按合同取消敏感交互；不导航旧WAA页面。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/browser -run 'BusinessLogin|Takeover'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/browser/manager.go",
+          "internal/addons/business/host/collect.go",
+          "web/src/business/BusinessAccounts.vue"
+        ],
+        "assessment": "用户主动本地可见采集的UI/Host/fake driver组合通过，采集后默认禁用；远程/无头接管未实现，真实登录未测。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "C04",
+      "owner": "W2",
+      "phase": 2,
+      "title": "凭据快照与刷新生命周期",
+      "status": "in_progress",
+      "depends_on": [
+        "C03",
+        "T02"
+      ],
+      "kind": "required",
+      "deliverable": "Business凭据CAS/epoch与按需刷新；用户控制台session只用于权限，不复制成Google凭据。",
+      "acceptance": "同一快照的 Cookie/csesidx/config 归属一致；旧采集不能覆盖新登录；不输出 Cookie 明文。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/browser -run 'BusinessSnapshot|Epoch'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/browser/collect.go",
+          "internal/addons/business/host/collect.go",
+          "internal/addons/business/vault/vault.go"
+        ],
+        "assessment": "保存前确认清理、全局revision CAS、关闭等待提交及取消离线通过；真实Cookie刷新/布局及自动观察尚无证据。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "C05",
+      "owner": "W2",
+      "phase": 2,
+      "title": "隔离附加浏览器资源与清理范围",
+      "status": "implemented_awaiting_verification",
+      "depends_on": [
+        "C04",
+        "T04"
+      ],
+      "kind": "required",
+      "deliverable": "Business profile/锁/可写缓存/清理和登录并发独立；匹配版本的浏览器程序可只读复用。",
+      "acceptance": "不扫描/清理旧profile根；HTTP生成不拉起浏览器；同进程新任务取消不触发旧worker关闭。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/browser",
+        "新增浏览器任务取消与旧WAA边界测试"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/browser/process_windows.go",
+          "internal/addons/business/browser/process_other.go",
+          "internal/addons/business/browser/manager_test.go"
+        ],
+        "assessment": "Business进程/profile清理和取消资源边界源码存在；旧WAA共存与故障场景待执行。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "C06",
+      "owner": "W2",
+      "phase": 4,
+      "title": "按实测需要增加 Business 浏览器传输",
+      "status": "not_started",
+      "depends_on": [
+        "C05",
+        "B07",
+        "Q07"
+      ],
+      "kind": "conditional",
+      "deliverable": "BUSINESS_TRANSPORT=browser 的独立 page fetch transport，默认关闭；有界流和取消。",
+      "acceptance": "仅当真实证据证明有价值且明确排入下一阶段才实现；不能复用 AI Studio proof 或与 WAA_BACKEND 联动。",
+      "verification": [
+        "HTTP/browser transport 共同契约测试",
+        "授权的真实账号对照测试"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [],
+        "assessment": "条件任务；尚无HTTP与browser真实对照证据，不实现或宣称可选browser generation transport。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "G01",
+      "owner": "W3",
+      "phase": 1,
+      "title": "原生参数存在性与未知字段检测",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T03",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "新增Gemini解析器保留Presence/opaque JSON；仅在分流命中Business后解析；不改原gemini.go。",
+      "acceptance": "区分未传/0/false/null；用户键名和 JSON 数值不被破坏；未知字段明确处理。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/gemini -run 'Gemini.*Presence|Gemini.*Unknown|Gemini.*Opaque'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/gemini/request.go",
+          "internal/addons/business/gemini/gemini_test.go"
+        ],
+        "assessment": "字段存在性、重复/别名冲突、0/false/大整数/schema原始键名、未知字段门禁经Go及固定SDK通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "G02",
+      "owner": "W3",
+      "phase": 1,
+      "title": "显式分流与Business能力预检",
+      "status": "offline_verified",
+      "depends_on": [
+        "G01",
+        "T04"
+      ],
+      "kind": "required",
+      "deliverable": "优先识别Gemini路径中已保留business-模型命名空间、明确provider选择器与已签发资源；未命中直接next。",
+      "acceptance": "旧请求不读取/缓存/重写body，不做Business能力检查或账号查询；Business错误不回退AIStudio；严格校验仅Business。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/gemini -run 'Gemini.*Capability|Gemini.*Rejected'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/dispatch/match.go",
+          "internal/addons/business/gemini/handler.go"
+        ],
+        "assessment": "原handler同对象一次委托、旧别名/管理/上传优先、显式Business路由及预检在账号租用前均离线通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "G03",
+      "owner": "W3",
+      "phase": 1,
+      "title": "原生响应、流与错误完整性",
+      "status": "offline_verified",
+      "depends_on": [
+        "G01"
+      ],
+      "kind": "required",
+      "deliverable": "Business独立原生encoder/SSE/错误，直接写响应；旧分支不包缓冲器、不捕获/转换规范事件。",
+      "acceptance": "Business无OpenAI形状；旧流flush/cancel/headers及非Gemini协议保留；不改旧writer实现。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/gemini -run 'Gemini.*Output|Gemini.*Stream|Gemini.*Error'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/gemini/handler.go",
+          "internal/addons/business/gemini/output_test.go"
+        ],
+        "assessment": "本地原生JSON及SSE真实通过：26个事件/24文本块，首事件6.765秒、文本分批跨度10.157秒、STOP；不制造usage/modelVersion。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "continuation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "G04",
+      "owner": "W3",
+      "phase": 2,
+      "title": "工具、结构化输出与思考语义",
+      "status": "in_progress",
+      "depends_on": [
+        "G02",
+        "G03"
+      ],
+      "kind": "required",
+      "deliverable": "新合同保留函数/工具/schema/思考签名并设门禁；只影响Business的原生字段语义。",
+      "acceptance": "函数调用往返和签名归属不丢失；未支持功能拒绝；显式模拟标记与原生能力分开。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/gemini -run 'Gemini.*Tool|Gemini.*Schema|Gemini.*Thought'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/gemini/request.go",
+          "internal/addons/business/gemini/output_test.go"
+        ],
+        "assessment": "工具/system/多轮明确拒绝，schema/thinking需映射；没有原生tools或真实结构化输出效果证据。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "G05",
+      "owner": "W3",
+      "phase": 2,
+      "title": "同入口下显式目录与计数分流",
+      "status": "in_progress",
+      "depends_on": [
+        "G02",
+        "B07"
+      ],
+      "kind": "required",
+      "deliverable": "默认模型list/get保持旧目录；显式Business选择器取Business目录；business-路径支持原生模型action和CountTokens。",
+      "acceptance": "同一base URL可调用Business；旧model列表/分页不变；未知Business绑定终止并报错，无旧上游调用。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/gemini -run 'Gemini.*Model|Gemini.*Count'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/gemini/handler.go"
+        ],
+        "assessment": "显式Business模型list/get与分页存在；countTokens返回未实现，不伪造usage。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "G06",
+      "owner": "W3",
+      "phase": 4,
+      "title": "逐项激活真实上游高级参数",
+      "status": "live_pending",
+      "depends_on": [
+        "G04",
+        "Q07"
+      ],
+      "kind": "conditional",
+      "deliverable": "按真实证据逐项更新能力表、白名单映射与契约测试；未确认项继续拒绝。",
+      "acceptance": "采样/预算/工具效果均有证据；不是一次 HTTP 200 就标已验证；无证据项不得批量启用。",
+      "verification": [
+        "授权的逐参数矩阵验证",
+        "对应 fixture/SDK 契约测试"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/config/config.go"
+        ],
+        "assessment": "上游实测明确拒绝temperature/topP/topK/maxOutputTokens/responseMimeType/thinkingConfig；本地4项预检均精确400。高级参数语义无成功证据。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "F01",
+      "owner": "W4",
+      "phase": 1,
+      "title": "Business文件记录与独立存储",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "Business专属FileBroker/元信息/owner/hash/TTL和有辨识的publicID；同一控制台中查看，保持旧文件存储不变。",
+      "acceptance": "不选模型即可按明确Business用途暂存；不接管默认上传、不转换旧fileId。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/files -run 'Store|Owner|TTL'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/files/store.go",
+          "internal/addons/business/files/store_test.go"
+        ],
+        "assessment": "独立broker的11项存储测试通过，HTTP包13项通过；含重启、owner/TTL/配额/不可变快照和取消后不提交。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "F02",
+      "owner": "W4",
+      "phase": 2,
+      "title": "按账号会话物化文件",
+      "status": "offline_verified",
+      "depends_on": [
+        "F01",
+        "B08"
+      ],
+      "kind": "required",
+      "deliverable": "FileMaterializer，按 provider/account/config/session/epoch/hash 缓存与上传。",
+      "acceptance": "不同账号/会话不复用 fileId；并发重复物化合并；失败无残留错误映射。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/files -run 'Materialize|Epoch|Concurrent'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/attachments.go",
+          "internal/addons/business/core/attachments_test.go",
+          "internal/addons/business/contract/generation.go"
+        ],
+        "assessment": "原生Files上传→TXT/PDF fileData引用→新session上游上传→真实Argon读取隐藏标记与求和均通过；本地删除后GET404。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "F03",
+      "owner": "W4",
+      "phase": 2,
+      "title": "同入口原生上传选择与续传分流",
+      "status": "offline_verified",
+      "depends_on": [
+        "F01",
+        "T04"
+      ],
+      "kind": "required",
+      "deliverable": "新上传需显式X-AIStudio-Provider: business（拟定）；后续使用返回的Business upload_id和文件ID识别归属；桥接在旧upload_id截获器之前。",
+      "acceptance": "无选择器的新上传沿用旧实现；旧upload_id/旧文件操作原样委托；Business续传凭实际会话能力验证，前缀不等于授权；支持SDK分片/查询/取消/finalize。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/fileapi",
+        "go test -mod=readonly ./internal/api -run 'Addon.*Upload|Business.*Upload'",
+        "固定SDK的provider header和resumable URL往返测试"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/fileapi/handler.go",
+          "internal/addons/business/files/store.go",
+          "internal/addons/business/host/host.go"
+        ],
+        "assessment": "SDK2.32.0真实续传/multipart与别名/offset/query/cancel/finalize通过；API桥验证匿名能力、伪造前缀及旧上传优先。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "F04",
+      "owner": "W4",
+      "phase": 2,
+      "title": "故障换号与历史附件恢复",
+      "status": "in_progress",
+      "depends_on": [
+        "F02",
+        "B06"
+      ],
+      "kind": "required",
+      "deliverable": "文件恢复决策、原始内容重传、只读历史引用校验和不可恢复错误。",
+      "acceptance": "文件过期/缺失时明确失败；不携旧 session/fileId 切账号；不重复注入历史附件。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/files -run 'Rebind|Replay|History'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/attachments.go",
+          "internal/addons/business/core/attachments_test.go"
+        ],
+        "assessment": "每请求不可变快照重传、删除在途安全与不重放已提交生成已离线验证；多轮历史与恢复未支持。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "F05",
+      "owner": "W4",
+      "phase": 2,
+      "title": "URI 解析与媒体下载边界",
+      "status": "offline_verified",
+      "depends_on": [
+        "F03"
+      ],
+      "kind": "required",
+      "deliverable": "区分旧AIStudio URI、已签发Business URI和外部媒体；同应用资源按归属处理，保持旧URL命名不变。",
+      "acceptance": "不暗用旧账号下载/搬运文件；归属不符明确报错；Business下载凭据不随重定向泄漏；取消生效。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/files -run 'URI|Download|Redirect|Cancel'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/fileapi/handler.go",
+          "internal/addons/business/gemini/files_test.go"
+        ],
+        "assessment": "本origin/owner/MIME验证、外域和旧URI拒绝、本地download与共享2槽/取消deadline测试通过；不抓取任意URL。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "F06",
+      "owner": "W4",
+      "phase": 2,
+      "title": "删除、过期与重启恢复",
+      "status": "offline_verified",
+      "depends_on": [
+        "F02",
+        "F03",
+        "F04",
+        "F05"
+      ],
+      "kind": "required",
+      "deliverable": "清理任务、物化映射清理、重启恢复、上游删除能力状态。",
+      "acceptance": "不会把本地删除谎称上游已删除；清理有界且不影响在途合法读取。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/files",
+        "支持环境下，go test -race ./internal/addons/business/files"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/files/store.go",
+          "internal/addons/business/files/store_test.go"
+        ],
+        "assessment": "文件删除/TTL/重启恢复及上传取消、原子元数据、崩溃尾部恢复与有界清理离线通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M01",
+      "owner": "W5",
+      "phase": 1,
+      "title": "附加数据表/数据库与Vault",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "runtime/business专属配置/DB/Vault，复用现有SQLite依赖；不迁移旧账号DB和旧文件schema。",
+      "acceptance": "同一应用管理但Google凭据/会话归属分离；CAS正确；禁用不删除数据，开启前不运行迁移。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/store ./internal/addons/business/vault"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/vault/vault.go",
+          "internal/addons/business/vault/principal.go",
+          "internal/addons/business/vault/vault_test.go"
+        ],
+        "assessment": "AES-GCM/DPAPI、revision CAS/篡改拒绝、持久HMAC主体及重启Key隔离离线通过；无秘密输出。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M02",
+      "owner": "W5",
+      "phase": 1,
+      "title": "复用控制台认证的Business管理接口",
+      "status": "offline_verified",
+      "depends_on": [
+        "M01"
+      ],
+      "kind": "required",
+      "deliverable": "/api/addons/business/*在原consoleAuth同一实例的wrapper内执行；保持同源、会话、body limit及本机限制策略。",
+      "acceptance": "一次登录可管理两类账号；模型Key不能管理；不复制cookie/会话库，不修改admin_auth.go；无鉴权的旁路不得挂载。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/admin -run 'Auth|Account|Redact'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/api/addon_business.go",
+          "internal/addons/business/host/host.go",
+          "internal/addons/business/host/collect.go"
+        ],
+        "assessment": "沿用同consoleAuth会话、模型Key不能管理、跨站/登出取消与回环限制的API测试通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M03",
+      "owner": "W5",
+      "phase": 1,
+      "title": "模型映射和能力管理接口",
+      "status": "offline_verified",
+      "depends_on": [
+        "M01",
+        "T03"
+      ],
+      "kind": "required",
+      "deliverable": "public/upstream ID、auto/unresolved、作用域、能力证据与 revision 的增改查。",
+      "acceptance": "未验证项默认禁用；预览不触发生成；并发修改采用版本检查。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/admin -run 'Model|Capability|Revision'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/config/config.go",
+          "web/src/business/BusinessPanel.vue"
+        ],
+        "assessment": "映射/参数配置CAS及能力清单的本地验证通过，管理员verified不自动改变live_verified。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M04",
+      "owner": "W5",
+      "phase": 2,
+      "title": "在原控制台增加Business面板",
+      "status": "offline_verified",
+      "depends_on": [
+        "M02",
+        "C03"
+      ],
+      "kind": "required",
+      "deliverable": "web/src/business懒加载页：账号、登录、模型、文件、状态；W0在App.vue增加导航和面板，TabID加一项。",
+      "acceptance": "同端口/原登录/原主题；没有第二套前端构建或账户登录；加载失败不阻塞旧面板。",
+      "verification": [
+        "web: npm run typecheck",
+        "web: node --test tests/business-addon-management*.test.mjs",
+        "登录状态浏览器交互验收"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "web/src/business/BusinessPanel.vue",
+          "web/src/business/BusinessAccounts.vue"
+        ],
+        "assessment": "Business面板及导航/懒加载在前端132项测试、typecheck/lint/build通过；旧Playground未改。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M05",
+      "owner": "W5",
+      "phase": 2,
+      "title": "新增面板内的能力与原生试用",
+      "status": "offline_verified",
+      "depends_on": [
+        "M03",
+        "G02"
+      ],
+      "kind": "required",
+      "deliverable": "在Business面板提供模型绑定、字段能力和原生试用；不改旧Playground/catalog/RunSettings。",
+      "acceptance": "用户在同一个控制台使用；新界面不会默默发送不支持字段；旧试用页行为不变。",
+      "verification": [
+        "web: npm run typecheck",
+        "web: node --test tests/business-addon-management*.test.mjs",
+        "参数组合交互验收"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "web/src/business/BusinessTry.vue",
+          "internal/addons/business/host/host.go"
+        ],
+        "assessment": "主动采集入口与独立原生JSON试用已接Host；16项Business前端测试及假Core试用通过，不自动发起模型调用。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M06",
+      "owner": "W5",
+      "phase": 2,
+      "title": "附加配置和运行状态独立启停",
+      "status": "offline_verified",
+      "depends_on": [
+        "M02",
+        "T01"
+      ],
+      "kind": "required",
+      "deliverable": "Business启用/停用/并发/HTTP设置在附加JSON与管理页保存；原.env和原ServiceConfig不扩展。",
+      "acceptance": "原StartService/StopService仍只控制AIStudio；Business启停不触发旧runtime重载；整体退出关闭两者。",
+      "verification": [
+        "管理设置 DTO/回读测试",
+        "web: npm run lint"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/host/host.go",
+          "internal/addons/business/host/accounts.go"
+        ],
+        "assessment": "独立enabled、reload取消、关闭等待整操作与无缺省建库通过；关闭状态兼容由app最终测试覆盖。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "M07",
+      "owner": "W5",
+      "phase": 2,
+      "title": "诊断、日志和非生成健康检查",
+      "status": "in_progress",
+      "depends_on": [
+        "M02",
+        "B07"
+      ],
+      "kind": "required",
+      "deliverable": "Business页诊断与脱敏日志，可通过宿主已有日志回调汇报；不改旧账本schema，不编造token或将Business失败计为AIStudio失败。",
+      "acceptance": "同一控制台可见Business健康；原/health和AIStudio状态语义保持；健康检查不发生成。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/admin -run 'Health|Diagnostics|Audit'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/host/host.go"
+        ],
+        "assessment": "非生成状态/账号就绪信息存在；完整诊断/日志脱敏和权限验收待补。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "M08",
+      "owner": "W5",
+      "phase": 2,
+      "title": "参考配置导入预览与Business内恢复",
+      "status": "not_started",
+      "depends_on": [
+        "M01",
+        "M03"
+      ],
+      "kind": "required",
+      "deliverable": "参考Business格式导入/dry-run/撤销只作用附加store；复用控制台权限，不读取或迁移AIStudio原凭据。",
+      "acceptance": "合成数据测试；预览不写；用户后续真实导入只作用新DB；AIStudio库不被访问。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/store ./internal/addons/business/admin -run 'Import|Migration|Rollback'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [],
+        "assessment": "已有账号手工录入不等于第三方配置导入预览/恢复；未实现此任务完整合同。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "Q01",
+      "owner": "W6",
+      "phase": 1,
+      "title": "搭建离线假上游与验收夹具",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T03",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "fake Business、fake browser、native-handler spy、不可读body/特殊writer/续传夹具；无需真实账号或第二个服务。",
+      "acceptance": "没有真实 Cookie、外网模型请求或固定生产端口；注入网络失败可复现。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/acceptance -run 'Fixture|Synthetic'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/engine_test.go",
+          "internal/addons/business/host/generation_test.go",
+          "internal/addons/business/gemini/sdk_test.go"
+        ],
+        "assessment": "合成RoundTripper/Driver、Host/API原生文件与持久owner组合、SDK管道夹具均执行通过；不访问真实Google。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "I01",
+      "owner": "W0",
+      "phase": 3,
+      "title": "集成同应用附加模块与四处挂接",
+      "status": "offline_verified",
+      "depends_on": [
+        "T04",
+        "T05",
+        "B07",
+        "B08",
+        "C05",
+        "G04",
+        "G05",
+        "F06",
+        "M04",
+        "M05",
+        "M06",
+        "M07",
+        "M08",
+        "T06"
+      ],
+      "kind": "required",
+      "deliverable": "新目录和宿主桥接集成；四个既有文件只保留小挂接；一程序/端口/原登录可使用Business。",
+      "acceptance": "无第二进程/module/UI工程；旧runtime/WAA/parser/file/auth实现不变；入口未命中真正委托原handler。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/... ./internal/app ./internal/api",
+        "web: npm run typecheck",
+        "web: npm run build"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/app/addon_business.go",
+          "internal/api/addon_business.go"
+        ],
+        "assessment": "同Go应用/端口/consoleAuth/APIKey的四外围挂接及新桥已接通，四接点边界门禁通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "Q02",
+      "owner": "W6",
+      "phase": 3,
+      "title": "Gemini SDK 与 REST 契约验收",
+      "status": "in_progress",
+      "depends_on": [
+        "I01",
+        "Q01"
+      ],
+      "kind": "required",
+      "deliverable": "同一base URL固定GenAI SDK验收：business-模型路径、显式Business目录/上传选择器、文件续传/原生流和错误。",
+      "acceptance": "无需新增JSON provider字段或第二个登录；旧客户端未配置新选择器行为不变；Business参数拒绝无上游调用。",
+      "verification": [
+        "tests/business-addon/sdk 中锁定版本的 Python/JS 测试命令",
+        "go test -mod=readonly ./internal/addons/business/acceptance -run 'Gemini|SDK|Contract'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/gemini/sdk_test.go",
+          "scripts/business-addon/sdk_contract.py",
+          "scripts/business-addon/requirements-sdk.txt"
+        ],
+        "assessment": "固定Python SDK2.32.0：11次零socket合成生成通过；本地真实Argon标准生成、文件引用、SSE通过。JavaScript未验收。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "continuation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "Q03",
+      "owner": "W6",
+      "phase": 3,
+      "title": "开启/关闭附加模块的旧主线回归",
+      "status": "in_progress",
+      "depends_on": [
+        "I01",
+        "Q01"
+      ],
+      "kind": "required",
+      "deliverable": "在addon关闭、开启、错误三态比较旧API/文件/管理/登录/OpenAI/Responses/Anthropic及双WAA原有测试。",
+      "acceptance": "原runtime/worker/参数/模型默认值不被重定义；不命中旧请求正好调用原handler一次，body/writer不转换。",
+      "verification": [
+        "原Go/Web回归命令",
+        "go test -mod=readonly ./internal/addons/business/acceptance -run 'Legacy|WAA|PassThrough'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/api/addon_business_test.go",
+          "internal/app/addon_business_test.go"
+        ],
+        "assessment": "API/app当前组合通过；全cmd/internal回归的aistudio和requestdb测试EXE受Windows策略阻止，不能宣称全通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "Q04",
+      "owner": "W6",
+      "phase": 3,
+      "title": "会话文件与并发故障验收",
+      "status": "in_progress",
+      "depends_on": [
+        "I01",
+        "Q01"
+      ],
+      "kind": "required",
+      "deliverable": "多调用方同提示、历史分叉、文件重传、JWT 风暴、迟到 epoch、取消、限流和中断测试。",
+      "acceptance": "无串会话、错误文件归属、凭据覆盖、无界重试或资源泄漏。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/acceptance -run 'Isolation|File|Concurrency|Retry|Cancel'",
+        "支持环境下，go test -race ./internal/addons/business/core/... ./internal/addons/business/files/... ./internal/addons/business/store/... ./internal/addons/business/acceptance/..."
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/files/store_test.go",
+          "internal/addons/business/core/engine_test.go"
+        ],
+        "assessment": "本轮当前用户环境Business全部包+API+app组合通过，Host完整通过；真实双WAA和历史恢复未验证。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "continuation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json"
+      }
+    },
+    {
+      "id": "Q05",
+      "owner": "W6",
+      "phase": 3,
+      "title": "一次登录和管理权限隔离验收",
+      "status": "offline_verified",
+      "depends_on": [
+        "I01",
+        "Q01"
+      ],
+      "kind": "required",
+      "deliverable": "同控制台Business页面、session退出/过期、同源限制、认证关闭本机模式、model/admin凭据边界。",
+      "acceptance": "复用既有session而非克隆认证；新增页不破坏旧页；Business账号和Google Cookie不混为AIStudio凭据。",
+      "verification": [
+        "web: node --test tests/business-addon*.test.mjs",
+        "web: npm run lint",
+        "go test -mod=readonly ./internal/api -run 'Addon.*Auth|Business.*Session'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/api/addon_business_test.go",
+          "internal/addons/business/host/collect.go"
+        ],
+        "assessment": "同控制台会话、管理/模型Key隔离、跨站与登出取消，以及API文件Key归属隔离离线通过。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "Q06",
+      "owner": "W6",
+      "phase": 3,
+      "title": "原构建流水线与新增模块回归",
+      "status": "in_progress",
+      "depends_on": [
+        "I01"
+      ],
+      "kind": "required",
+      "deliverable": "根Go模块和同一web项目原构建覆盖新增包；优先现有依赖，无独立构建系统；保留managedBy构建标记。",
+      "acceptance": "原CI通过，新增验收命令明确；无无关依赖升级；环境缺项如实列出。",
+      "verification": [
+        "go test -mod=readonly ./cmd/... ./internal/...",
+        "go vet ./...",
+        "go build -mod=readonly -o <临时输出路径> ./cmd/aistudio2api",
+        "web: node --test tests/*.test.mjs",
+        "web: npm run lint",
+        "web: npm run build"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/validation.md"
+        ],
+        "assessment": "Web132/typecheck/lint/build、Go构建和cmd/internal vet通过；全量Go仍有Windows策略环境阻断，race无CGO编译器。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "Q07",
+      "owner": "W6",
+      "phase": 4,
+      "title": "授权的真实 Business 验收",
+      "status": "live_pending",
+      "depends_on": [
+        "I02"
+      ],
+      "kind": "live_authorization_required",
+      "deliverable": "实际登录、字段采集、Auto/已确认模型、单轮/SSE、文件；逐项记录上游请求与效果的脱敏证据。",
+      "acceptance": "须收到真实账号测试授权；无映射不猜模型；本任务完成才可标 Business live_verified。",
+      "verification": [
+        "管理页受控登录采集",
+        "授权数量内的模型与文件验证"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [],
+        "assessment": "用户授权本地已有账号Argon实测完成：4次应用生成成功（普通、TXT、PDF、SSE）。其他模型/Auto/真实登录采集不在本次范围，项目整体live认证仍未完成。 追加单次长上下文SSE通过：输入153363/输出6816（Google文件摄取计数，非Argon计费），5处随机检查点正确，257文本块/STOP。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window",
+        "continuation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json",
+        "long_context_evidence": "docs/business-addon/evidence/argon-long-context-20261022.json"
+      }
+    },
+    {
+      "id": "Q08",
+      "owner": "W6",
+      "phase": 4,
+      "title": "授权的双WAA与附加模块共存验证",
+      "status": "live_pending",
+      "depends_on": [
+        "I02"
+      ],
+      "kind": "live_authorization_required",
+      "deliverable": "原AIStudio camoufox/go分别在Business关闭/启用/有请求时受控测试，记录取消/文件/会话/延迟。",
+      "acceptance": "只在后续授权范围内调用模型；新旧过程同进程，不能用mock宣称真实隔离通过。",
+      "verification": [
+        "经授权的两种 WAA 实际请求验收"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [],
+        "assessment": "双WAA与Business同进程live验收未授权且未执行；mock不算live。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "Q09",
+      "owner": "W6",
+      "phase": 3,
+      "title": "高级参数拒绝与语义验收",
+      "status": "in_progress",
+      "depends_on": [
+        "I01",
+        "Q01"
+      ],
+      "kind": "required",
+      "deliverable": "所有字段的 native/emulated/unsupported/unverified 分支；schema/工具/签名完整性。",
+      "acceptance": "不能以静默忽略实现兼容；模拟模式明确启用；不伪造签名、模型版本或 token。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/acceptance -run 'Parameter|Tool|Schema|Thought|Usage'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/gemini/gemini_test.go",
+          "internal/addons/business/gemini/output_test.go"
+        ],
+        "assessment": "字段保真及未知参数门禁离线通过；真实core探测完整发送6字段并取得上游逐项未知字段400，不把被拒绝记为高级语义支持。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "I02",
+      "owner": "W0",
+      "phase": 3,
+      "title": "归并缺陷修复与离线里程碑验收",
+      "status": "in_progress",
+      "depends_on": [
+        "Q02",
+        "Q03",
+        "Q04",
+        "Q05",
+        "Q06",
+        "Q09",
+        "S01",
+        "S02",
+        "U01"
+      ],
+      "kind": "required",
+      "deliverable": "离线集成与主线保护报告，包含挂接/上传/认证/双WAA回归和上游同步演练状态。",
+      "acceptance": "同一应用可用；保护路径无Business功能改动；旧handler委托与授权边界证据完整；未验证项保留。",
+      "verification": [
+        "完整离线回归结果核对",
+        "变更路径和合同版本审核"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/validation.md"
+        ],
+        "assessment": "本轮目标本地Argon验收完成，应用保持运行；Business/API/app226项离线通过。58项完整R3发布计划仍有其他未实现/未验证项目。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks",
+        "continuation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json",
+        "scoped_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json"
+      }
+    },
+    {
+      "id": "I03",
+      "owner": "W0",
+      "phase": 4,
+      "title": "附加开关、fork同步与回退手册",
+      "status": "implemented_awaiting_verification",
+      "depends_on": [
+        "I02"
+      ],
+      "kind": "required",
+      "deliverable": "Business开关/配置/命名空间/SDK上传选择器、4个挂接说明、fork更新和回退操作文档。",
+      "acceptance": "关闭Business不回滚旧DB或改旧WAA；禁用后Business请求明确错误且不落旧池；恢复原入口的补丁可审查。",
+      "verification": [
+        "配置示例解析测试",
+        "本地假上游下关闭/重启/回退演练"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/maintenance.md"
+        ],
+        "assessment": "开关、数据保留、版本回退与候选同步手册已写；运行时关闭/回退行为最终验证待补。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "I04",
+      "owner": "W0",
+      "phase": 4,
+      "title": "融合版本的真实准入",
+      "status": "live_pending",
+      "depends_on": [
+        "I03",
+        "Q07",
+        "Q08",
+        "E01"
+      ],
+      "kind": "required",
+      "deliverable": "同进程融合的已验证模型/参数/SDK/旧主线共存范围；形成fork构建发布建议。",
+      "acceptance": "通过离线与授权live门槛，主线保持原语义；不自动部署/发布；同进程极端故障限制明确。",
+      "verification": [
+        "发布准入清单与证据审阅"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [],
+        "assessment": "离线整合及另授权live门槛均未全部完成；不自动发布部署。",
+        "executed_checks": [],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "S01",
+      "owner": "W6",
+      "phase": 3,
+      "title": "主流程保护与四处挂接差异门禁",
+      "status": "offline_verified",
+      "depends_on": [
+        "T00",
+        "T05",
+        "I01"
+      ],
+      "kind": "required",
+      "deliverable": "检查保护路径零功能修改、既有改动仅4锚点、2新桥文件、新目录及测试；记录语义挂接范围而非只数行。",
+      "acceptance": "不改旧runtime/WAA/gemini/files/auth/middleware；依赖与其他既有文件变更需重评并记录，不静默扩散。",
+      "verification": [
+        "功能基线到交付的git diff和新文件清单",
+        "保护路径/锚点语义检查",
+        "无重复root服务或nested go.mod检查"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "scripts/business-addon/check_anchors.py",
+          "scripts/business-addon/check_drift.py"
+        ],
+        "assessment": "本轮已执行精确四接点恢复、其他既有文件/新增路径门禁和20例合成漂移；README哈希保持指定值。",
+        "executed_checks": [
+          {
+            "command": "python -B -X utf8 scripts/business-addon/check_anchors.py",
+            "result": "passed",
+            "scope": "offline boundary"
+          },
+          {
+            "command": "python -B -X utf8 scripts/business-addon/check_drift.py",
+            "result": "passed: 20/20 expected outcomes",
+            "scope": "synthetic only"
+          }
+        ],
+        "current_final_regression": "pending_main_window"
+      }
+    },
+    {
+      "id": "S02",
+      "owner": "W6",
+      "phase": 3,
+      "title": "同进程附加模块故障与资源边界",
+      "status": "in_progress",
+      "depends_on": [
+        "T05",
+        "I01",
+        "Q01"
+      ],
+      "kind": "required",
+      "deliverable": "Business初始化/DB/上游/浏览器失败、满队列、受限缓冲/上传、任务panic及关闭测试；旧请求继续使用原链路。",
+      "acceptance": "可恢复Business错误不致宿主退出或重启旧runtime；goroutine入口防护与有界资源；不承诺隔离OOM/整个进程崩溃。",
+      "verification": [
+        "go test -mod=readonly ./internal/addons/business/acceptance -run 'Isolation|Resource|Fault|Shutdown'",
+        "固定合成负载下旧请求延迟/错误率对照；真实生成留Q08"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/addons/business/core/engine.go",
+          "internal/addons/business/browser/manager.go",
+          "internal/addons/business/files/store.go"
+        ],
+        "assessment": "预读体共享生成槽、上传/下载限时、共享下载槽、Host关闭提交屏障离线通过；同进程OOM/真实OS进程与完整异常组合未证明。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "E01",
+      "owner": "W0",
+      "phase": 4,
+      "title": "维护上游同步与受管更新策略",
+      "status": "offline_verified",
+      "depends_on": [
+        "I02"
+      ],
+      "kind": "required",
+      "deliverable": "复用当前managedBy构建/测试；分开新模块提交与小挂接补丁；定义在临时工作树验证上游候选版本的流程。",
+      "acceptance": "无需改update.go；既有fork保护不被覆盖；自动冲突复用只能辅助，必须重跑挂接与旧功能测试。",
+      "verification": [
+        "现有update_managed_test与构建ldflags核对",
+        "维护补丁清单与同步操作说明审阅"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "docs/business-addon/maintenance.md",
+          ".github/workflows/build.yml",
+          "scripts/build-custom.ps1",
+          "internal/app/update_managed_test.go"
+        ],
+        "assessment": "保留managedBy=lywx215原机制；app原更新测试随最终app回归通过，未运行实际更新器、发布或部署。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "T06",
+      "owner": "W6",
+      "phase": 0,
+      "title": "先证明外围挂接可保留原handler",
+      "status": "offline_verified",
+      "depends_on": [
+        "T02",
+        "T04",
+        "T05"
+      ],
+      "kind": "required",
+      "deliverable": "只接fake Business，证明同session认证、4个接点、旧body不被读、旧handler一次委托及上传续传优先级。",
+      "acceptance": "失败先调整挂接设计，不进入业务铺开；主线无需改managedService/runtime/gemini/files/auth。",
+      "verification": [
+        "go test -mod=readonly ./internal/api ./internal/app -run 'Addon.*Bridge|Addon.*PassThrough|Addon.*Upload'"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "internal/api/addon_business_test.go",
+          "internal/app/addon_business_test.go"
+        ],
+        "assessment": "当前API回归验证原Request/Body/Writer一次委托、共享认证和上传优先级，边界门禁确认旧链未扩改。",
+        "executed_checks": [
+          {
+            "evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+            "scope": "See per-package results, follow-up policy blocks and explicit unperformed tests; not a live pass"
+          }
+        ],
+        "current_final_regression": "offline_evidenced_with_documented_environment_blocks"
+      }
+    },
+    {
+      "id": "U01",
+      "owner": "W6",
+      "phase": 3,
+      "title": "上游更新与挂接漂移验收",
+      "status": "in_progress",
+      "depends_on": [
+        "I01",
+        "S01",
+        "Q03"
+      ],
+      "kind": "required",
+      "deliverable": "冻结宿主接点函数/认证顺序/上传优先级/TabID契约，记录上游基线；在临时副本/工作树验证可用候选版本或合成漂移测试。",
+      "acceptance": "上游改动造成不兼容时明确失败；不能把旧语义静默覆盖成Business实现；无真实候选时报告未实测的升级范围。",
+      "verification": [
+        "新增挂接契约测试和漂移fixture",
+        "可用真实候选版本的补丁应用/冲突记录/原测试；若未执行明确标注"
+      ],
+      "live_verified": false,
+      "verification_evidence": {
+        "date": "2026-10-22",
+        "source_paths": [
+          "scripts/business-addon/check_drift.py",
+          "scripts/business-addon/fixtures/drift.json",
+          "docs/business-addon/maintenance.md"
+        ],
+        "assessment": "20合成漂移已执行；真实upstream候选SHA/补丁应用/冲突/候选原测试均未执行。",
+        "executed_checks": [
+          {
+            "command": "python -B -X utf8 scripts/business-addon/check_drift.py",
+            "result": "passed: 20/20 expected outcomes",
+            "scope": "synthetic only; real candidate untested"
+          }
+        ],
+        "current_final_regression": "pending_main_window"
+      }
+    }
+  ],
+  "states": [
+    "not_started",
+    "ready",
+    "in_progress",
+    "implemented_awaiting_verification",
+    "offline_verified",
+    "completed",
+    "in_review",
+    "merged_offline_verified",
+    "live_pending",
+    "live_verified",
+    "blocked"
+  ],
+  "delivery_rule": "分离四接点、新桥和附加模块；按实际源码与执行记录更新58任务。最终Go/Web和集成回归由主窗口补证据；不得批量勾完成。",
+  "revision": "R3-additive-integration",
+  "supersedes": "采用R3同应用外围挂接；R1共享主链路重构和R2独立系统不作为实施方案。任务进度见本地逐项记录，固定R3包的not_started仅代表原始计划。",
+  "architecture": {
+    "application": "一个Go二进制/进程/监听端口/控制台，复用现有模型API认证和控制台登录",
+    "integration": "现有api handler外围的附加分流；Business命中才走新管线，未命中直接委托原handler",
+    "legacy_mainline": "不替换managedService，不改runtime/WAA/原Gemini解析/原文件实现/原账号池",
+    "source_layout": "主Go模块内新增internal/addons/business与web/src/business；2个新增宿主桥文件",
+    "anchor_budget": [
+      "internal/app/app.go",
+      "internal/api/router.go",
+      "web/src/App.vue",
+      "web/src/types.ts"
+    ],
+    "state": "Business自有账号/会话/文件/配置/凭据；共享入口与控制台不意味着共用Google Cookie",
+    "maintenance": "分离附加实现与四个挂接补丁；同步upstream后重验接入契约，保留现有managedBy受管更新"
+  },
+  "protected_paths": [
+    "internal/app/runtime.go",
+    "internal/app/lifecycle.go",
+    "internal/app/waa_backend.go",
+    "internal/aistudio/**",
+    "internal/waa/**",
+    "internal/camoufoxnative/**",
+    "internal/api/gemini.go",
+    "internal/api/gemini_files.go",
+    "internal/api/files.go",
+    "internal/api/admin_auth.go",
+    "internal/api/middleware.go",
+    "internal/managementcontract/**",
+    "internal/requestdb/**",
+    "web/src/playground/**"
+  ],
+  "active_branch": "dev-2",
+  "implementation_stage": "local_argon_acceptance_complete",
+  "implementation_notes": {
+    "T00": "基线与用户既有改动已冻结；本轮anchors确认四接点和README摘要。",
+    "T01": "单程序/端口/consoleAuth/APIkey，Business独立状态的ADR已记录；同进程极端故障限制明确。",
+    "T02": "基础HTTP合同历史完成；现有原生Request/Event/FileResolver合同待当前整体验证。",
+    "T03": "固定google-genai==2.32.0的零socket契约通过；Python覆盖模型分页/生成/流/文件，JavaScript及真实官方高级语义仍未验收。",
+    "T04": "缺省关闭无副作用、Host生命周期及四处挂接离线通过；关闭后状态查询兼容修复由app组合测试通过，Host最终单包复跑被系统策略阻止。",
+    "T05": "基础阶段历史Go/Web通过记录保留；本轮最终全回归未执行，根vet的既有runtime/review失败单列。",
+    "B01": "独立Engine和账号租约的Core/Host/API离线组合通过；不进入旧AIStudio池或WAA。",
+    "B02": "JWT缓存/过期余量/401失效已实现；并发刷新与epoch/凭据更新组合验收待主窗口。",
+    "B03": "固定HTTPS上游、禁止跳转、新会话、超时取消存在；代理/UA和Session契约完整验收待补。",
+    "B04": "role:model、成功累计文本前缀去重和严格suggestions inlineData兼容已上线到本地实例；Argon普通与增量SSE真实通过。未知输出媒体仍拒绝。",
+    "B05": "modelId=gemini-4-argon真实通过。6个高级字段真实转发后上游400逐项报未知字段，保留门禁，不激活或宣称参数语义支持。",
+    "B06": "独立并发、账号scope、冷却、取消和不自动重放存在；故障分类/资源恢复全验收待补。",
+    "B07": "本地账号/模型状态与原生生成接线存在；countTokens明确不支持，认证有效不等于模型live核实。",
+    "B08": "widgetAddContextFile已接入并经假上游测试：新session上传、当前fileIds、失败不生成；上游文件元数据/输出媒体下载客户端仍未实现。",
+    "C01": "独立driver/Manager的22项fake测试及vet通过；严格Firefox152、取消/清理/连接并发契约；未实际执行OS浏览器进程。",
+    "C02": "storage Cookie及明确URL的config/csesidx观察存在；自动modelId观察和BiDi请求体捕获无完成证据。",
+    "C03": "用户主动本地可见采集的UI/Host/fake driver组合通过，采集后默认禁用；远程/无头接管未实现，真实登录未测。",
+    "C04": "保存前确认清理、全局revision CAS、关闭等待提交及取消离线通过；真实Cookie刷新/布局及自动观察尚无证据。",
+    "C05": "Business进程/profile清理和取消资源边界源码存在；旧WAA共存与故障场景待执行。",
+    "C06": "条件任务；尚无HTTP与browser真实对照证据，不实现或宣称可选browser generation transport。",
+    "G01": "字段存在性、重复/别名冲突、0/false/大整数/schema原始键名、未知字段门禁经Go及固定SDK通过。",
+    "G02": "原handler同对象一次委托、旧别名/管理/上传优先、显式Business路由及预检在账号租用前均离线通过。",
+    "G03": "本地原生JSON及SSE真实通过：26个事件/24文本块，首事件6.765秒、文本分批跨度10.157秒、STOP；不制造usage/modelVersion。",
+    "G04": "工具/system/多轮明确拒绝，schema/thinking需映射；没有原生tools或真实结构化输出效果证据。",
+    "G05": "显式Business模型list/get与分页存在；countTokens返回未实现，不伪造usage。",
+    "G06": "上游实测明确拒绝temperature/topP/topK/maxOutputTokens/responseMimeType/thinkingConfig；本地4项预检均精确400。高级参数语义无成功证据。",
+    "F01": "独立broker的11项存储测试通过，HTTP包13项通过；含重启、owner/TTL/配额/不可变快照和取消后不提交。",
+    "F02": "原生Files上传→TXT/PDF fileData引用→新session上游上传→真实Argon读取隐藏标记与求和均通过；本地删除后GET404。",
+    "F03": "SDK2.32.0真实续传/multipart与别名/offset/query/cancel/finalize通过；API桥验证匿名能力、伪造前缀及旧上传优先。",
+    "F04": "每请求不可变快照重传、删除在途安全与不重放已提交生成已离线验证；多轮历史与恢复未支持。",
+    "F05": "本origin/owner/MIME验证、外域和旧URI拒绝、本地download与共享2槽/取消deadline测试通过；不抓取任意URL。",
+    "F06": "文件删除/TTL/重启恢复及上传取消、原子元数据、崩溃尾部恢复与有界清理离线通过。",
+    "M01": "AES-GCM/DPAPI、revision CAS/篡改拒绝、持久HMAC主体及重启Key隔离离线通过；无秘密输出。",
+    "M02": "沿用同consoleAuth会话、模型Key不能管理、跨站/登出取消与回环限制的API测试通过。",
+    "M03": "映射/参数配置CAS及能力清单的本地验证通过，管理员verified不自动改变live_verified。",
+    "M04": "Business面板及导航/懒加载在前端132项测试、typecheck/lint/build通过；旧Playground未改。",
+    "M05": "主动采集入口与独立原生JSON试用已接Host；16项Business前端测试及假Core试用通过，不自动发起模型调用。",
+    "M06": "独立enabled、reload取消、关闭等待整操作与无缺省建库通过；关闭状态兼容由app最终测试覆盖。",
+    "M07": "非生成状态/账号就绪信息存在；完整诊断/日志脱敏和权限验收待补。",
+    "M08": "已有账号手工录入不等于第三方配置导入预览/恢复；未实现此任务完整合同。",
+    "Q01": "合成RoundTripper/Driver、Host/API原生文件与持久owner组合、SDK管道夹具均执行通过；不访问真实Google。",
+    "I01": "同Go应用/端口/consoleAuth/APIKey的四外围挂接及新桥已接通，四接点边界门禁通过。",
+    "Q02": "固定Python SDK2.32.0：11次零socket合成生成通过；本地真实Argon标准生成、文件引用、SSE通过。JavaScript未验收。",
+    "Q03": "API/app当前组合通过；全cmd/internal回归的aistudio和requestdb测试EXE受Windows策略阻止，不能宣称全通过。",
+    "Q04": "本轮当前用户环境Business全部包+API+app组合通过，Host完整通过；真实双WAA和历史恢复未验证。",
+    "Q05": "同控制台会话、管理/模型Key隔离、跨站与登出取消，以及API文件Key归属隔离离线通过。",
+    "Q06": "Web132/typecheck/lint/build、Go构建和cmd/internal vet通过；全量Go仍有Windows策略环境阻断，race无CGO编译器。",
+    "Q07": "用户授权本地已有账号Argon实测完成：4次应用生成成功（普通、TXT、PDF、SSE）。其他模型/Auto/真实登录采集不在本次范围，项目整体live认证仍未完成。 追加单次长上下文SSE通过：输入153363/输出6816（Google文件摄取计数，非Argon计费），5处随机检查点正确，257文本块/STOP。",
+    "Q08": "双WAA与Business同进程live验收未授权且未执行；mock不算live。",
+    "Q09": "字段保真及未知参数门禁离线通过；真实core探测完整发送6字段并取得上游逐项未知字段400，不把被拒绝记为高级语义支持。",
+    "I02": "本轮目标本地Argon验收完成，应用保持运行；Business/API/app226项离线通过。58项完整R3发布计划仍有其他未实现/未验证项目。",
+    "I03": "开关、数据保留、版本回退与候选同步手册已写；运行时关闭/回退行为最终验证待补。",
+    "I04": "离线整合及另授权live门槛均未全部完成；不自动发布部署。",
+    "S01": "本轮已执行精确四接点恢复、其他既有文件/新增路径门禁和20例合成漂移；README哈希保持指定值。",
+    "S02": "预读体共享生成槽、上传/下载限时、共享下载槽、Host关闭提交屏障离线通过；同进程OOM/真实OS进程与完整异常组合未证明。",
+    "E01": "保留managedBy=lywx215原机制；app原更新测试随最终app回归通过，未运行实际更新器、发布或部署。",
+    "T06": "当前API回归验证原Request/Body/Writer一次委托、共享认证和上传优先级，边界门禁确认旧链未扩改。",
+    "U01": "20合成漂移已执行；真实upstream候选SHA/补丁应用/冲突/候选原测试均未执行。"
+  },
+  "live_verified": false,
+  "authorization": {
+    "development": true,
+    "parallel_codex_windows": true,
+    "real_google_login": false,
+    "real_model_calls": true,
+    "dual_waa_live": false,
+    "deployment": false,
+    "external_review": false,
+    "reuse_existing_business_account": true,
+    "local_application_start": true
+  },
+  "evidence_policy": "verification 字段是计划命令，不代表已执行；只有 verification_evidence.executed_checks 记录本轮实际结果。基础阶段历史通过不覆盖后续代码；implemented_awaiting_verification 不能视为完成或上线。",
+  "integration_evidence": "docs/business-addon/evidence/integration-summary-20261022.json",
+  "local_preparation_evidence": "docs/business-addon/evidence/local-preparation-20261022.json",
+  "local_argon_live_evidence": "docs/business-addon/evidence/local-argon-live-20261022.json",
+  "live_acceptance": {
+    "model": "business-gemini-4-argon",
+    "native_generation": true,
+    "txt_pdf_references": true,
+    "incremental_sse": true,
+    "parameter_forwarding_observed": true,
+    "advanced_parameter_semantics": false,
+    "scope_complete": true,
+    "long_context": {
+      "input_tokens_file_counter": 153363,
+      "output_tokens_file_counter": 6816,
+      "counting_limitation": "File-ingestion counter; no native Argon billing usage",
+      "checkpoints_correct": 5,
+      "sse_text_chunks": 257,
+      "passed": true,
+      "evidence": "docs/business-addon/evidence/argon-long-context-20261022.json"
+    }
+  },
+  "phase1_hot_update": {
+    "implementation_complete": true,
+    "global_live_verified": false,
+    "evidence": "docs/business-addon/evidence/phase1-summary-20261022.json",
+    "validation_limits": "Final API/app/token-count and latest added core test blocked by Windows Application Control; race unavailable."
+  }
+}

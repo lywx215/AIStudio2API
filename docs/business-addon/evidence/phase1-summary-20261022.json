@@ -1,0 +1,123 @@
+{
+  "stage": "phase1_H1_H5",
+  "date": "2026-10-22",
+  "implementation_complete": true,
+  "global_live_verified": false,
+  "local_origin": "http://127.0.0.1:2048",
+  "process_id": 26576,
+  "executable_sha256": "3a1b9e66f7686863770d364850aaee540eb43f6d41480cc16e84e5be12a98f67",
+  "go_regression": {
+    "initial": {
+      "package_results": {
+        "internal/addons/business/contract": "skip",
+        "internal/addons/business/browser": "pass",
+        "internal/addons/business/dispatch": "skip",
+        "internal/addons/business/files": "pass",
+        "internal/addons/business/fileapi": "pass",
+        "internal/addons/business/gemini": "pass",
+        "internal/addons/business/vault": "pass",
+        "internal/addons/business/config": "pass",
+        "internal/addons/business/core": "pass",
+        "internal/addons/business/host": "pass",
+        "scripts/business-addon/parameter-probe": "pass",
+        "scripts/business-addon/token-count": "pass",
+        "internal/api": "pass",
+        "internal/app": "pass"
+      },
+      "passed_top_level_tests": {
+        "internal/addons/business/browser": 22,
+        "internal/addons/business/fileapi": 13,
+        "internal/addons/business/files": 11,
+        "internal/addons/business/gemini": 16,
+        "internal/addons/business/vault": 2,
+        "internal/addons/business/config": 6,
+        "internal/addons/business/core": 23,
+        "internal/addons/business/host": 29,
+        "scripts/business-addon/parameter-probe": 1,
+        "scripts/business-addon/token-count": 5,
+        "internal/app": 74,
+        "internal/api": 54
+      },
+      "total_passed_top_level": 256,
+      "system_blocks": [],
+      "raw_log_sha256": "64622e85beb1e0883a8c2eda576c3859850f1c446292752c823489b64297c081"
+    },
+    "final": {
+      "package_results": {
+        "internal/addons/business/contract": "skip",
+        "internal/addons/business/config": "pass",
+        "internal/addons/business/browser": "pass",
+        "internal/addons/business/dispatch": "skip",
+        "internal/addons/business/files": "pass",
+        "internal/addons/business/fileapi": "pass",
+        "internal/addons/business/gemini": "pass",
+        "internal/addons/business/vault": "pass",
+        "scripts/business-addon/parameter-probe": "pass",
+        "internal/addons/business/core": "pass",
+        "scripts/business-addon/token-count": "fail",
+        "internal/addons/business/host": "pass",
+        "internal/api": "fail",
+        "internal/app": "fail"
+      },
+      "passed_top_level_tests": {
+        "internal/addons/business/browser": 22,
+        "internal/addons/business/config": 6,
+        "internal/addons/business/fileapi": 13,
+        "internal/addons/business/files": 11,
+        "internal/addons/business/gemini": 16,
+        "internal/addons/business/vault": 2,
+        "scripts/business-addon/parameter-probe": 1,
+        "internal/addons/business/core": 26,
+        "internal/addons/business/host": 30
+      },
+      "total_passed_top_level": 127,
+      "system_blocks": [
+        {
+          "package": "scripts/business-addon/token-count",
+          "reason": "Windows Application Control blocked test executable"
+        },
+        {
+          "package": "internal/api",
+          "reason": "Windows Application Control blocked test executable"
+        },
+        {
+          "package": "internal/app",
+          "reason": "Windows Application Control blocked test executable"
+        }
+      ],
+      "raw_log_sha256": "bc129aa0ac7f9a626d6c9303ecb53fa847005d99a6fa913be8a293a2f9922626"
+    }
+  },
+  "go_vet": "passed: ./cmd/... ./internal/... and parameter-probe/token-count",
+  "web": {
+    "test_passed": 141,
+    "test_skipped": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "build": "passed; existing large chunk warning",
+    "source": "Business UI subagent validation"
+  },
+  "concurrency_repetition": {
+    "runs": 20,
+    "result": "passed",
+    "source": "core subagent validation before final added auth-refresh test"
+  },
+  "latest_added_core_test": {
+    "name": "TestReconcileDuringAuthenticationCannotCommitAnOldVersionJWT",
+    "result": "not executed; Windows Application Control blocked the newly compiled core test executable"
+  },
+  "race": "not executed; CGO_ENABLED=0 and no C compiler",
+  "live": {
+    "generation_calls": 3,
+    "stream_hot_update": "passed; 61 events, 59 text events, STOP, 8 checks; settings restored",
+    "files": "passed; TXT marker/sum 42, PDF marker/sum 47, delete/get 404",
+    "parameter_preflight": "passed; four unverified fields rejected locally with 400, no upstream generation"
+  },
+  "boundaries": "four original anchors and root README hash preserved; no remote deployment, no new browser login, no credentials in evidence",
+  "notes": [
+    "Initial 12 tested packages passed (256 top-level tests) before final Suspend additions.",
+    "Final command passed Business packages and parameter-probe (127 top-level tests); API/app/token-count executables were blocked, not test assertion failures.",
+    "The latest core test was added after the final combined log; do not label all final tests as passed.",
+    "Advanced generationConfig remains unverified and blocked; this stage does not expand parameter capabilities."
+  ]
+}

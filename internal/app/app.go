@@ -202,8 +202,11 @@ func runServer(ctx context.Context, cfg config.Config, manager *runtimeManager, 
 		proxyErrorCode = "PROXY_STORAGE_UNAVAILABLE"
 		manager.requests.log("proxy", "ERROR", proxyErrorCode)
 	}
+	business, closeBusiness := newBusinessAddon(manager)
+	defer closeBusiness()
 	apiHandler := api.NewHandler(manager, api.Config{
-		APIKey: cfg.ProxyAPIKey, Admin: manager, Ledger: manager.ledger, Prompts: manager.prompts, Updates: updater,
+		Business: business,
+		APIKey:   cfg.ProxyAPIKey, Admin: manager, Ledger: manager.ledger, Prompts: manager.prompts, Updates: updater,
 		AdminAuthEnabled: cfg.AdminAuthEnabled, AdminUsername: cfg.AdminUsername, AdminPassword: cfg.AdminPassword,
 		Management:       manager.management.HTTP,
 		ProxyAdmin:       manager.proxyManagement,

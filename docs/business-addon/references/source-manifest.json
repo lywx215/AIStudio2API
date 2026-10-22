@@ -1,0 +1,98 @@
+[
+  {
+    "repo": "ddcat666/business-gemini-pool",
+    "branch": "main",
+    "sha": "03acfcf15ae8af0619a9ce73b79d41610d14cf2a",
+    "date": "2026-01-17T16:47:43Z",
+    "license": null,
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\ddcat666--business-gemini-pool",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\ddcat666--business-gemini-pool-03acfcf15ae8.zip",
+    "archive_sha256": "d5c1deafa734f343a21bcc69afdbdff8f683e198a72a3c68ba6e5469a2f712f7",
+    "file_count": 10,
+    "downloaded_bytes": 62683
+  },
+  {
+    "repo": "XxxXTeam/business2api",
+    "branch": "master",
+    "sha": "4218208432a1fda409a0bedfecf7f0b264343c85",
+    "date": "2026-04-28T17:20:38Z",
+    "license": null,
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\XxxXTeam--business2api",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\XxxXTeam--business2api-4218208432a1.zip",
+    "archive_sha256": "3b966168d873f3fc401a2b7b221d2c5ddaab5297a00ca1f5cd43bdc6e3399215",
+    "file_count": 27,
+    "downloaded_bytes": 153851
+  },
+  {
+    "repo": "yukkcat/gemini-business2api",
+    "branch": "main",
+    "sha": "e716b8a6c3162eb8debbb8673320eb3d0fa1257a",
+    "date": "2026-05-21T17:29:06Z",
+    "license": "NOASSERTION",
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\yukkcat--gemini-business2api",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\yukkcat--gemini-business2api-e716b8a6c316.zip",
+    "archive_sha256": "e33709448358dc824aaaf369dde33fcb4fc6745f728bf834409b63fa4d7cb802",
+    "file_count": 150,
+    "downloaded_bytes": 4835455
+  },
+  {
+    "repo": "qxd-ljy/Gemini-Link-System",
+    "branch": "main",
+    "sha": "5bce659aedc29fb3f31fa0f710fdb0421427d12e",
+    "date": "2026-01-28T14:33:43Z",
+    "license": null,
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\qxd-ljy--Gemini-Link-System",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\qxd-ljy--Gemini-Link-System-5bce659aedc2.zip",
+    "archive_sha256": "1c1d9ada0e7cd6d5e22afca17e88dd031fe75363d721ceaa9e1a77fdeb767b7e",
+    "file_count": 55,
+    "downloaded_bytes": 342849
+  },
+  {
+    "repo": "xxoo-qx/business-gemini",
+    "branch": "main",
+    "sha": "1bf221bf4293d1ac8a9e5b413d9588e88058f668",
+    "date": "2025-12-04T02:11:42Z",
+    "license": "MIT",
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\xxoo-qx--business-gemini",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\xxoo-qx--business-gemini-1bf221bf4293.zip",
+    "archive_sha256": "798be01a62ee8ae48a584003a7958aba770c11581d40b8edc6d932faf878b42d",
+    "file_count": 45,
+    "downloaded_bytes": 226822
+  },
+  {
+    "repo": "lib647553-ux/business-gemini-2api",
+    "branch": "main",
+    "sha": "026d22302b61015f364a901376d0c3f29f7306d0",
+    "date": "2025-12-06T14:32:17Z",
+    "license": null,
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\lib647553-ux--business-gemini-2api",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\lib647553-ux--business-gemini-2api-026d22302b61.zip",
+    "archive_sha256": "68a230be90223e90938e964075ed43ee29d21341505d06726ce3fbb6c6803bf3",
+    "file_count": 9,
+    "downloaded_bytes": 60467
+  },
+  {
+    "repo": "lulistart/business-gemini-2api",
+    "branch": "main",
+    "sha": "71a1b9f3f3355ab869f7e8ad2d8d502cc81bc1ee",
+    "date": "2026-01-17T14:43:01Z",
+    "license": null,
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\lulistart--business-gemini-2api",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\lulistart--business-gemini-2api-71a1b9f3f335.zip",
+    "archive_sha256": "b66765dbfe4fbd5724fe33c7ef74bedd6100be1d22c171f87c97c6a2b2c56654",
+    "file_count": 61,
+    "downloaded_bytes": 2138430
+  },
+  {
+    "repo": "wdufrin/Gemini-Enterprise-Manager",
+    "branch": "main",
+    "sha": "560ffcbdec555b7b43be19da91de910beb23e646",
+    "date": "2026-10-20T17:39:51Z",
+    "license": null,
+    "directory": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\sources\\wdufrin--Gemini-Enterprise-Manager",
+    "archive": "C:\\Users\\lywx2\\.codex\\visualizations\\2026\\10\\22\\01a161af-e6bf-7c31-85f2-6a38d25b9e38\\gemini-business-research\\archives\\wdufrin--Gemini-Enterprise-Manager-560ffcbdec55.zip",
+    "archive_sha256": "0740818964ac6ecd39e33060e439272d601d45018b795fafa238586891b10fdd",
+    "file_count": 554,
+    "downloaded_bytes": 10937413
+  }
+]

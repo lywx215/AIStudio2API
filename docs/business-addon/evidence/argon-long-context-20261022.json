@@ -1,0 +1,93 @@
+{
+  "started_at": "2026-10-22T11:33:39.068070+00:00",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "generation_endpoint": "http://127.0.0.1:2048/v1beta/models/business-gemini-4-argon:streamGenerateContent?alt=sse",
+  "generation_attempts": 1,
+  "stage": "complete",
+  "passed": true,
+  "counting_method": "Google widgetAddContextFile tokenCount for exact input/output UTF-8 text",
+  "counting_limitation": "File ingestion counts are not native Argon generation billing usage metadata or Gemini countTokens.",
+  "minimum_input_tokens_exclusive": 100000,
+  "minimum_output_tokens_exclusive": 3000,
+  "input_bytes": 370092,
+  "input_characters": 370092,
+  "request_bytes": 372164,
+  "input_sha256": "465ed218d891b5734e4346018d277b7452a7d5d81788247f629ff042f9111180",
+  "request_sha256": "97919548ccc0a4617e5195b2d74a461a5c5178ffae14dc32b9a46262f4a20fd5",
+  "elapsed_seconds": 118.25,
+  "input_tokens_file_counter": 153363,
+  "server_timeout_seconds": 300,
+  "upstream_model_id": "gemini-4-argon",
+  "http_status": 200,
+  "content_type": "text/event-stream",
+  "response_headers_seconds": 11.422,
+  "seconds": 104.047,
+  "events": 259,
+  "text_chunks": 257,
+  "output_chars": 24532,
+  "generation_elapsed_seconds": 104.047,
+  "sse_events": 259,
+  "auxiliary_inline_parts": 1,
+  "first_text_seconds": 11.422,
+  "last_text_seconds": 102.094,
+  "text_arrival_span_seconds": 90.672,
+  "received_sse_bytes": 47200,
+  "finish_events": [
+    {
+      "reason": "STOP",
+      "seconds": 104.047,
+      "event": 259
+    }
+  ],
+  "stream_error_events": [],
+  "output_characters": 24532,
+  "output_bytes": 24554,
+  "output_words": 3452,
+  "output_sha256": "636c58cf3a9813956116b16cf20e64eaddc55adedc7d9b37cd25c3c1b8b8485a",
+  "markers_found": {
+    "START": true,
+    "QUARTER": true,
+    "MIDDLE": true,
+    "THREE_QUARTER": true,
+    "END": true
+  },
+  "record_tags_found": {
+    "START": true,
+    "QUARTER": true,
+    "MIDDLE": true,
+    "THREE_QUARTER": true,
+    "END": true
+  },
+  "checkpoint_pairs_in_table": {
+    "START": true,
+    "QUARTER": true,
+    "MIDDLE": true,
+    "THREE_QUARTER": true,
+    "END": true
+  },
+  "completion_sentinel_found": true,
+  "incremental_streaming_verified": true,
+  "generation_usage_metadata_present": false,
+  "generation_usage_metadata": [],
+  "output_artifact_matches_stream": true,
+  "output_tokens_file_counter": 6816,
+  "completed_at": "2026-10-22T11:35:37.317991+00:00",
+  "marker_comparison": "CommonMark punctuation escapes decoded for comparison only; raw output unchanged",
+  "raw_markers_found": {
+    "START": true,
+    "QUARTER": true,
+    "MIDDLE": true,
+    "THREE_QUARTER": true,
+    "END": true
+  },
+  "checkpoint_rows_exact": {
+    "START": true,
+    "QUARTER": true,
+    "MIDDLE": true,
+    "THREE_QUARTER": true,
+    "END": true
+  },
+  "saved_stream_reverified": true,
+  "validation_note": "Recomputed from saved SSE, exact request text and counter hashes; decoded CommonMark escapes for checkpoint comparison. No generation retry or additional counter request."
+}

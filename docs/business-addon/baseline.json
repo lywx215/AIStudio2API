@@ -1,0 +1,19 @@
+{
+  "commit": "21596862b3805ab15ec184aa0037624c39c07626",
+  "development_branch": "dev-2",
+  "existing_anchors": [
+    "internal/app/app.go",
+    "internal/api/router.go",
+    "web/src/App.vue",
+    "web/src/types.ts"
+  ],
+  "preexisting_tracked_changes": {
+    "README.md": "fa1a7d1a86885e2157fefb04a8332083e94f47eb6120b8ea9df0858b3d8c2f4b"
+  },
+  "preexisting_untracked_paths": [
+    "docs/deployment/",
+    "scripts/__pycache__/",
+    "scripts/test_vps_deploy.py",
+    "scripts/vps_deploy.py"
+  ]
+}

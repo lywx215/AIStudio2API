@@ -1,0 +1,222 @@
+{
+  "date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "scope": "Authorized existing-account Argon native API, text/PDF file references, parameter forwarding/rejection and incremental SSE on local AIStudio2API",
+  "origin": "http://127.0.0.1:2048",
+  "public_model": "business-gemini-4-argon",
+  "upstream_model_id": "gemini-4-argon",
+  "scope_acceptance_complete": true,
+  "global_feature_certification": false,
+  "sdk": "google-genai==2.32.0",
+  "build_sha256": "3e955e4afeef0a4d1f48c005eccf68871526fb45eafef12c55fd7229c9451270",
+  "startup": {
+    "running": true,
+    "pid": 48152,
+    "bind": "127.0.0.1:2048",
+    "existing_browser_reused": true,
+    "existing_accounts_imported": 1,
+    "credential_storage": "AES-GCM with Windows current-user DPAPI wrapped root key",
+    "old_aistudio_auto_start": false
+  },
+  "unary": {
+    "passed": true,
+    "elapsed_seconds": 10.047,
+    "text": "{\"probe\":\"ARGON-NATIVE-20261022\",\"sum\":42}\n\n",
+    "text_bytes": 44,
+    "finish_reason": "STOP",
+    "usage_present": false,
+    "supported_actions": [
+      "generateContent",
+      "streamGenerateContent"
+    ]
+  },
+  "files": {
+    "passed": true,
+    "elapsed_seconds": 30.578,
+    "checks": [
+      {
+        "text": "{\"reference_token\": \"ARGON-TXT-7Q4M9C\", \"total_units\": 42}",
+        "text_bytes": 58,
+        "finish_reason": "STOP",
+        "usage_present": false,
+        "mime_type": "text/plain",
+        "input_bytes": 118,
+        "input_sha256": "464ff9817f7831278d6191379c8245355c888b17dc3cec2f14b50a49573ef891",
+        "expected": {
+          "reference_token": "ARGON-TXT-7Q4M9C",
+          "total_units": 42
+        },
+        "passed": true,
+        "deleted_http_status": 404
+      },
+      {
+        "text": "{\"reference_token\": \"ARGON-PDF-8V2K6R\", \"total_units\": 47}",
+        "text_bytes": 58,
+        "finish_reason": "STOP",
+        "usage_present": false,
+        "mime_type": "application/pdf",
+        "input_bytes": 1766,
+        "input_sha256": "611b45882cd7caee48abe3efe5f097a2cad2306428bc631a3172c8e1d28f9e6c",
+        "expected": {
+          "reference_token": "ARGON-PDF-8V2K6R",
+          "total_units": 47
+        },
+        "passed": true,
+        "deleted_http_status": 404
+      }
+    ]
+  },
+  "stream": {
+    "passed": true,
+    "chunks": 26,
+    "text_chunks": 24,
+    "first_event_seconds": 6.765,
+    "last_event_seconds": 17.609,
+    "event_times_seconds": [
+      6.765,
+      7.062,
+      7.359,
+      7.797,
+      8.125,
+      8.562,
+      9.203,
+      9.859,
+      10.343,
+      10.828,
+      11.125,
+      11.687,
+      12.031,
+      12.797,
+      13.531,
+      14.015,
+      14.531,
+      15.078,
+      15.375,
+      15.797,
+      16.328,
+      16.703,
+      16.922,
+      16.922,
+      17.078,
+      17.609
+    ],
+    "text_arrival_span_seconds": 10.157,
+    "incremental_arrival_observed": true,
+    "finish_reason": "STOP",
+    "text_bytes": 3188,
+    "text_sha256": "9e54de258b7a12203a546ea4898f1e7370ec906cf3f899ed5a2eb6baa8192861"
+  },
+  "local_parameter_preflight": {
+    "passed": true,
+    "checks": [
+      {
+        "field": "temperature",
+        "http_status": 400,
+        "body": {
+          "error": {
+            "code": 400,
+            "message": "Business does not have a verified mapping for generationConfig.temperature",
+            "status": "INVALID_ARGUMENT"
+          }
+        },
+        "passed": true
+      },
+      {
+        "field": "maxOutputTokens",
+        "http_status": 400,
+        "body": {
+          "error": {
+            "code": 400,
+            "message": "Business does not have a verified mapping for generationConfig.maxOutputTokens",
+            "status": "INVALID_ARGUMENT"
+          }
+        },
+        "passed": true
+      },
+      {
+        "field": "topP",
+        "http_status": 400,
+        "body": {
+          "error": {
+            "code": 400,
+            "message": "Business does not have a verified mapping for generationConfig.topP",
+            "status": "INVALID_ARGUMENT"
+          }
+        },
+        "passed": true
+      },
+      {
+        "field": "thinkingConfig",
+        "http_status": 400,
+        "body": {
+          "error": {
+            "code": 400,
+            "message": "Business does not have a verified mapping for generationConfig.thinkingConfig",
+            "status": "INVALID_ARGUMENT"
+          }
+        },
+        "passed": true
+      }
+    ]
+  },
+  "upstream_parameter_probe": {
+    "configuration_changed": false,
+    "diagnostic_completed": true,
+    "error_json_decoded": true,
+    "events": 0,
+    "forwarded_generation": {
+      "maxOutputTokens": 64,
+      "modelId": "gemini-4-argon",
+      "responseMimeType": "application/json",
+      "temperature": 0,
+      "thinkingConfig": {
+        "includeThoughts": false
+      },
+      "topK": 1,
+      "topP": 0.5
+    },
+    "generation_completed": false,
+    "parameter_semantics_verified": false,
+    "public_status": "UNAVAILABLE",
+    "upstream_http_status": 400,
+    "upstream_unknown_fields": [
+      "maxOutputTokens",
+      "responseMimeType",
+      "temperature",
+      "thinkingConfig",
+      "topK",
+      "topP"
+    ]
+  },
+  "request_counts": {
+    "successful_app_generations": 4,
+    "upstream_rejected_parameter_probes": 2,
+    "local_rejected_parameter_requests": 4
+  },
+  "probe_history": "First HTTP400 response was not attributed because diagnostic parser expected an object; after adding JSON-array error-envelope parsing and passing a synthetic unit test, a second bounded probe attributed all six unknown fields. No generation was completed by either probe.",
+  "not_verified": [
+    "Other models",
+    "Advanced parameter semantics (fields rejected)",
+    "Long-context stress on this Go instance",
+    "Multiturn/tools/thinking",
+    "Other attachment MIME types",
+    "Full output media",
+    "JavaScript SDK",
+    "Authoritative token usage"
+  ],
+  "final_status": {
+    "state": "ready",
+    "generation_ready": true,
+    "config_revision": 2,
+    "advanced_parameter_mappings_enabled": false
+  },
+  "raw_reports": [
+    "runtime/business-local/live-bootstrap.json",
+    "runtime/business-local/live-unary.json",
+    "runtime/business-local/live-files.json",
+    "runtime/business-local/live-sse.json",
+    "runtime/business-local/live-preflight.json",
+    "runtime/business-local/live-parameter-probe.json",
+    "runtime/business-local/live-parameter-probe-envelope.json"
+  ]
+}

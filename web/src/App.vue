@@ -41,6 +41,7 @@ import RequestsPanel from '@/components/RequestsPanel.vue'
 import SettingsPanel from '@/components/SettingsPanel.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import UiIcon from '@/components/UiIcon.vue'
+import BusinessNavItem from '@/business/BusinessNavItem.vue'
 import { readPreference, writePreference } from '@/preference'
 import { useTabParam } from '@/url'
 import { useRouter } from 'vue-router'
@@ -66,6 +67,7 @@ const UsagePanel = lazyPanel(() => import('@/components/UsagePanel.vue'))
 const VersionPanel = lazyPanel(() => import('@/components/VersionPanel.vue'))
 const ManagementKeysPanel = lazyPanel(() => import('@/components/ManagementKeysPanel.vue'))
 const ProxiesPanel = lazyPanel(() => import('@/components/ProxiesPanel.vue'))
+const BusinessPanel = lazyPanel(() => import('@/business/BusinessPanel.vue'))
 const validTabs: TabID[] = [
   'logs',
   'accounts',
@@ -77,6 +79,7 @@ const validTabs: TabID[] = [
   'management-keys',
   'playground',
   'version',
+  'business',
 ]
 const { tab: currentTab, select: selectTab } = useTabParam(validTabs, 'logs')
 const router = useRouter()
@@ -601,6 +604,7 @@ onUnmounted(() => {
             :title="t('version.available').replace('{version}', update.latest ?? '')"
           />
         </button>
+        <BusinessNavItem :active="currentTab === 'business'" @select="openTab('business')" />
       </nav>
 
       <div
@@ -686,6 +690,7 @@ onUnmounted(() => {
       <Transition name="page">
         <KeepAlive include="SettingsPanel,VersionPanel">
           <LogsPanel v-if="currentTab === 'logs'" :logs="logs" @clear="clearLogs" />
+          <BusinessPanel v-else-if="currentTab === 'business'" />
           <AccountsPanel
             v-else-if="currentTab === 'accounts'"
             :accounts="visibleAccounts"

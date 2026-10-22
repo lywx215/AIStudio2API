@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "description": "Synthetic only. Mutations run in memory against frozen Git source and current attachments; no candidate merge or live test.",
+  "cases": [
+    {"id": "reviewed-attachments", "kind": "anchors", "expect_pass": true},
+    {"id": "windows-line-endings", "kind": "anchors", "crlf": true, "expect_pass": true},
+    {"id": "missing-close", "kind": "anchors", "path": "internal/app/app.go", "find": "\tdefer closeBusiness()\n", "replace": "", "expect_pass": false},
+    {"id": "changed-legacy-config", "kind": "anchors", "path": "internal/app/app.go", "find": "AdminAuthEnabled: cfg.AdminAuthEnabled", "replace": "AdminAuthEnabled: false", "expect_pass": false},
+    {"id": "duplicate-start", "kind": "anchors", "path": "internal/app/app.go", "find": "\tbusiness, closeBusiness := newBusinessAddon(manager)\n", "replace": "\tbusiness, closeBusiness := newBusinessAddon(manager)\n\tbusiness, closeBusiness := newBusinessAddon(manager)\n", "expect_pass": false},
+    {"id": "management-priority-drift", "kind": "anchors", "path": "internal/api/router.go", "find": "case path == managementcontract.Namespace ||", "replace": "case path == \"/changed-management\" ||", "expect_pass": false},
+    {"id": "unwrapped-root", "kind": "anchors", "path": "internal/api/router.go", "find": "return attachBusiness(root, config, consoleAuth)", "replace": "return root", "expect_pass": false},
+    {"id": "wrong-auth-instance", "kind": "anchors", "path": "internal/api/router.go", "find": "}), config, consoleAuth)", "replace": "}), config, nil)", "expect_pass": false},
+    {"id": "legacy-default-tab-drift", "kind": "anchors", "path": "web/src/App.vue", "find": "useTabParam(validTabs, 'logs')", "replace": "useTabParam(validTabs, 'business')", "expect_pass": false},
+    {"id": "lazy-loader-drift", "kind": "anchors", "path": "web/src/App.vue", "find": "const BusinessPanel = lazyPanel(", "replace": "const BusinessPanel = eagerPanel(", "expect_pass": false},
+    {"id": "legacy-tab-removed", "kind": "anchors", "path": "web/src/types.ts", "find": "  | 'proxies'\n", "replace": "", "expect_pass": false},
+    {"id": "candidate-baseline-moved", "kind": "candidate", "path": "internal/api/router.go", "find": "return root", "replace": "return changedRoot", "expect_pass": false},
+    {"id": "allowed-new-module", "kind": "paths", "tracked": [], "changed": [], "untracked": ["internal/addons/business/new.go"], "expect_pass": true},
+    {"id": "protected-runtime-edited", "kind": "paths", "tracked": ["internal/app/runtime.go"], "changed": ["internal/app/runtime.go"], "untracked": [], "expect_pass": false},
+    {"id": "old-test-edited", "kind": "paths", "tracked": ["internal/api/gemini_test.go"], "changed": ["internal/api/gemini_test.go"], "untracked": [], "expect_pass": false},
+    {"id": "new-file-outside-budget", "kind": "paths", "tracked": [], "changed": [], "untracked": ["internal/api/replacement.go"], "expect_pass": false},
+    {"id": "prefix-lookalike", "kind": "paths", "tracked": [], "changed": [], "untracked": ["internal/addons/business-extra/new.go"], "expect_pass": false},
+    {"id": "baseline-cannot-expand-budget", "kind": "baseline", "field": "existing_anchors", "value": ["internal/app/app.go", "internal/api/router.go", "web/src/App.vue", "web/src/types.ts", "internal/api/middleware.go"], "expect_pass": false},
+    {"id": "baseline-cannot-replace-readme-hash", "kind": "baseline", "field": "preexisting_tracked_changes", "value": {"README.md": "0000000000000000000000000000000000000000000000000000000000000000"}, "expect_pass": false},
+    {"id": "baseline-cannot-hide-new-root", "kind": "baseline", "field": "preexisting_untracked_paths", "value": ["internal/"], "expect_pass": false}
+  ]
+}

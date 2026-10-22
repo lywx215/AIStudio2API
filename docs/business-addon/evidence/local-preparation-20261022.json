@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-22",
+  "scope": "Local Business Argon preparation; live execution blocked by Windows application control",
+  "live_authorized": true,
+  "live_verified": false,
+  "live_calls_executed": 0,
+  "go_command": "go test -mod=readonly -json ./internal/addons/business/... ./internal/api ./internal/app",
+  "go_exit_code": 0,
+  "packages": [
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/config",
+      "result": "pass",
+      "seconds": 0.003,
+      "cached": true,
+      "top_level_passed_tests": 4
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract",
+      "result": "skip",
+      "seconds": 0,
+      "cached": false,
+      "top_level_passed_tests": 0
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/browser",
+      "result": "pass",
+      "seconds": 0.003,
+      "cached": true,
+      "top_level_passed_tests": 22
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/dispatch",
+      "result": "skip",
+      "seconds": 0,
+      "cached": false,
+      "top_level_passed_tests": 0
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/files",
+      "result": "pass",
+      "seconds": 0.001,
+      "cached": true,
+      "top_level_passed_tests": 11
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault",
+      "result": "pass",
+      "seconds": 0.001,
+      "cached": true,
+      "top_level_passed_tests": 2
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/core",
+      "result": "pass",
+      "seconds": 3.762,
+      "cached": false,
+      "top_level_passed_tests": 15
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi",
+      "result": "pass",
+      "seconds": 3.7,
+      "cached": false,
+      "top_level_passed_tests": 13
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/host",
+      "result": "pass",
+      "seconds": 5.889,
+      "cached": false,
+      "top_level_passed_tests": 15
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini",
+      "result": "pass",
+      "seconds": 7.209,
+      "cached": false,
+      "top_level_passed_tests": 16
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/api",
+      "result": "pass",
+      "seconds": 5.789,
+      "cached": false,
+      "top_level_passed_tests": 54
+    },
+    {
+      "package": "github.com/Mag1cFall/AIStudio2API/internal/app",
+      "result": "pass",
+      "seconds": 9.776,
+      "cached": false,
+      "top_level_passed_tests": 74
+    }
+  ],
+  "sdk": {
+    "version": "2.32.0",
+    "synthetic_generations": 11,
+    "network_sockets": false,
+    "passed": true
+  },
+  "initial_sandbox_run": {
+    "exit_code": 1,
+    "reason": "Atomic replacement and persistence/DPAPI unavailable in sandbox; normal current-user rerun passed"
+  },
+  "build": {
+    "exit_code": 0,
+    "bytes": 66788352,
+    "sha256": "3e955e4afeef0a4d1f48c005eccf68871526fb45eafef12c55fd7229c9451270"
+  },
+  "launch": {
+    "success": false,
+    "windows_events": [
+      3077,
+      3033
+    ],
+    "reason": "Enterprise signing level or code integrity policy",
+    "policy_id": "0283ac0f-fff1-49ae-ada1-8a933130cad6",
+    "user_action": "User will notify after approved allow/signing process"
+  },
+  "parameter_semantics_verified": false,
+  "vet": "passed Business packages and parameter probe",
+  "anchors_passed": true,
+  "synthetic_drift_cases_passed": 20,
+  "raw_logs": [
+    "runtime/business-local/offline-tests.jsonl",
+    "runtime/business-local/offline-tests-user.jsonl"
+  ]
+}

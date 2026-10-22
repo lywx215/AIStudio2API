@@ -1,0 +1,2 @@
+# Offline wire-contract fixture; this is not a live-upstream certification.
+google-genai==2.32.0

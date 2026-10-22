@@ -1,0 +1,212 @@
+{
+  "date": "2026-10-22",
+  "captured_at": "2026-10-22T17:34:43+08:00",
+  "branch": "dev-2",
+  "scope": "documentation, frozen edit boundaries, synthetic in-memory drift only",
+  "passed": true,
+  "commands": [
+    {
+      "command": "python -B -X utf8 scripts/business-addon/check_anchors.py",
+      "exit_code": 0,
+      "result": {
+        "branch": "dev-2",
+        "base": "21596862b3805ab15ec184aa0037624c39c07626",
+        "modified_existing_anchors": [
+          "internal/api/router.go",
+          "internal/app/app.go",
+          "web/src/App.vue",
+          "web/src/types.ts"
+        ],
+        "readme_sha256_preserved": true,
+        "anchor_violations": [],
+        "unexpected_existing_edits": [],
+        "unexpected_new_files": [],
+        "passed": true,
+        "scope": "offline edit boundary only; no Go/Web/runtime/live verification"
+      },
+      "stderr": ""
+    },
+    {
+      "command": "python -B -X utf8 scripts/business-addon/check_drift.py",
+      "exit_code": 0,
+      "result": {
+        "passed": true,
+        "fixtures": 20,
+        "results": [
+          {
+            "id": "reviewed-attachments",
+            "expected_pass": true,
+            "actual_pass": true,
+            "matched_expectation": true
+          },
+          {
+            "id": "windows-line-endings",
+            "expected_pass": true,
+            "actual_pass": true,
+            "matched_expectation": true
+          },
+          {
+            "id": "missing-close",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "changed-legacy-config",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "duplicate-start",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "management-priority-drift",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "unwrapped-root",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "wrong-auth-instance",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "legacy-default-tab-drift",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "lazy-loader-drift",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "legacy-tab-removed",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "candidate-baseline-moved",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "allowed-new-module",
+            "expected_pass": true,
+            "actual_pass": true,
+            "matched_expectation": true
+          },
+          {
+            "id": "protected-runtime-edited",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "old-test-edited",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "new-file-outside-budget",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "prefix-lookalike",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "baseline-cannot-expand-budget",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "baseline-cannot-replace-readme-hash",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          },
+          {
+            "id": "baseline-cannot-hide-new-root",
+            "expected_pass": false,
+            "actual_pass": false,
+            "matched_expectation": true
+          }
+        ],
+        "documentation_errors": [],
+        "real_candidate_verified": false,
+        "live_verified": false,
+        "scope": "synthetic in-memory drift only; no checkout, Go/Web test, browser or network"
+      },
+      "stderr": ""
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "",
+      "stderr": ""
+    }
+  ],
+  "python_ast_checked": [
+    "scripts/business-addon/check_anchors.py",
+    "scripts/business-addon/check_drift.py"
+  ],
+  "owned_file_trailing_whitespace": [],
+  "tasks": {
+    "count": 58,
+    "status_counts": {
+      "completed": 5,
+      "in_progress": 23,
+      "implemented_awaiting_verification": 23,
+      "not_started": 2,
+      "live_pending": 4,
+      "offline_verified": 1
+    },
+    "all_live_verified_false": true
+  },
+  "source_sha256": {
+    "docs/business-addon/README.md": "d74c3e37f514f1b2221f6b6876a49e357645e5b7019add2cc18796577b7052f5",
+    "docs/business-addon/validation.md": "9b919e16753b732c83866d46d5bf1cbfb64764acd1e2da9055aee28fb27aaf0b",
+    "docs/business-addon/maintenance.md": "ba9a809c73356796fb8b69df377c30e8a383fa5f9c9e6b2395a99893e4ea97c4",
+    "docs/business-addon/capabilities.md": "95a2c17f3c0688314ece553062f9b34aa7d89466e46b63041be26454dfdb8373",
+    "docs/business-addon/tasks.json": "f4d15c000f68353b45a468bae445bd54a77f699f60720da6fd2d735082fafc8b",
+    "scripts/business-addon/check_anchors.py": "2cbf00a15fa3dc3b6ed2dd1787e5d7689bc624489e055951eba96b6a5fc5e4a4",
+    "scripts/business-addon/check_drift.py": "1a9ce644d4900beacb258721f0a759996a1fb0509b5e78cba327b32dc65c8a00",
+    "scripts/business-addon/fixtures/drift.json": "7974828b299a7ae9c68b27f6f077fb8738c559a6023a404db031cd84bb0c8ca0"
+  },
+  "readme_sha256": "fa1a7d1a86885e2157fefb04a8332083e94f47eb6120b8ea9df0858b3d8c2f4b",
+  "real_candidate_verified": false,
+  "live_verified": false,
+  "not_executed": [
+    "Go tests/vet/build for final integration",
+    "Web tests/typecheck/lint/build",
+    "pinned SDK harness",
+    "real browser or Google login",
+    "real model or dual WAA live",
+    "real upstream candidate merge/test",
+    "deployment",
+    "external review",
+    "commit/push"
+  ]
+}
