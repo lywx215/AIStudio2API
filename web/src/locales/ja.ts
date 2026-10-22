@@ -147,6 +147,7 @@ export const messages: Record<TranslationKey, string> = {
   'accounts.totpSet': '2FA キー同期済み',
   'accounts.totpMissing': '2FA キー未同期',
   'accounts.liveTotpWaiting': '新しい 2FA コードを待機中',
+  'accounts.liveTotpLoading': '2FA ページの準備を待機中',
   'accounts.liveTotpFilling': '2FA コードを入力中',
   'accounts.passwordSet': 'Login password synced',
   'accounts.passwordMissing': 'Login password not synced',

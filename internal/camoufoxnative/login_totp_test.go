@@ -9,7 +9,7 @@ import (
 )
 
 func TestTotpDOMGuards(t *testing.T) {
-	for _, mode := range []string{"valid", "foreign", "http", "wrong_email", "no_email", "sms", "ambiguous", "disabled", "prefilled", "invalid", "captcha", "manual", "origin_changed"} {
+	for _, mode := range []string{"valid", "foreign", "http", "wrong_email", "no_email", "sms", "ambiguous", "ambiguous_next", "disabled", "prefilled", "invalid", "captcha", "manual", "origin_changed", "loading", "next_loading", "identity_loading", "input_loading"} {
 		t.Run(mode, func(t *testing.T) {
 			vm := goja.New()
 			_ = vm.Set("mode", mode)
@@ -20,17 +20,18 @@ Object.defineProperty(HTMLInputElement.prototype,'value',{set:function(v){this._
 function Event() {}
 const props={getClientRects:()=>[1],getAttribute:()=>null,dispatchEvent:()=>{}};
 const otp=Object.assign(new HTMLInputElement(),props);
+if(mode==='input_loading')otp.disabled=true;
 if(mode==='prefilled')otp._value='123456';
 if(mode==='invalid')otp.getAttribute=n=>n==='aria-invalid'?'true':null;
-const next=Object.assign({click:()=>{clicked++},disabled:mode==='disabled'},props);
+const next=Object.assign({click:()=>{clicked++},disabled:mode==='disabled'||mode==='next_loading'},props);
 const identity=Object.assign({textContent:mode==='wrong_email'?'other@example.test':'user@example.test'},props);
 const location={origin:mode==='foreign'?'https://accounts.google.com.evil.test':mode==='http'?'http://accounts.google.com':'https://accounts.google.com',pathname:mode==='sms'?'/signin/challenge/sms':'/v3/signin/challenge/totp'};
 const getComputedStyle=()=>({visibility:'visible'});
 if(mode==='manual')window.__aistudioLoginManual=true;
 const document={body:{innerText:mode==='sms'?'Enter SMS code':'Get a verification code from the Google Authenticator app'},querySelectorAll:s=>{
- if(s.startsWith('#profileIdentifier'))return mode==='no_email'?[]:[identity];
- if(s.startsWith('#totpPin'))return mode==='ambiguous'?[otp,otp]:[otp];
- if(s==='#totpNext')return [next];
+ if(s.startsWith('#profileIdentifier'))return mode==='no_email'||mode==='identity_loading'?[]:[identity];
+ if(s.startsWith('#totpPin'))return mode==='loading'?[]:mode==='ambiguous'?[otp,otp]:[otp];
+ if(s.includes('#totpNext'))return mode==='ambiguous_next'?[next,next]:[next];
  if(s.startsWith('input[name="ca"]'))return mode==='captcha'?[otp]:[];
  if(s.startsWith('input[type="tel"]'))return [otp];
  return [];
@@ -52,6 +53,9 @@ const document={body:{innerText:mode==='sms'?'Enter SMS code':'Get a verificatio
 				return v.String()
 			}
 			phase := invoke("inspect")
+			if (mode == "loading" || mode == "next_loading" || mode == "identity_loading" || mode == "input_loading") && phase != "totp_loading" {
+				t.Fatalf("transient Google page should wait; got %s", phase)
+			}
 			if mode == "origin_changed" {
 				if phase != "totp" {
 					t.Fatal("fixture not ready")
@@ -70,6 +74,41 @@ const document={body:{innerText:mode==='sms'?'Enter SMS code':'Get a verificatio
 				t.Fatal("unsafe challenge submitted")
 			}
 		})
+	}
+}
+
+func TestTotpLoadingDoesNotPermanentlyBlockAutofill(t *testing.T) {
+	session, actions := automationFixture(t, []string{"totp_loading", "totp_loading", "totp", "totp_pending"})
+	view := NewLiveView()
+	automation := newLoginAutomation("user@example.test", "synthetic", view, "JBSWY3DPEHPK3PXP")
+	automation.now = func() time.Time { return time.Unix(30, 0) }
+	for range 4 {
+		automation.step(context.Background(), session)
+	}
+	if automation.blocked || len(actions) != 1 || <-actions != "totp" {
+		t.Fatal("partially loaded TOTP page permanently disabled autofill")
+	}
+}
+
+func TestTotpLoadingStillTimesOutAndAllowsTakeover(t *testing.T) {
+	for _, takeover := range []bool{false, true} {
+		session, actions := automationFixture(t, []string{"totp_loading", "totp_loading", "totp"})
+		view := NewLiveView()
+		automation := newLoginAutomation("user@example.test", "synthetic", view, "JBSWY3DPEHPK3PXP")
+		automation.step(context.Background(), session)
+		if view.status != "totp_loading" {
+			t.Fatal("loading status not exposed")
+		}
+		if takeover {
+			view.takeOver()
+		} else {
+			automation.phaseSince = time.Now().Add(-11 * time.Second)
+		}
+		automation.step(context.Background(), session)
+		automation.step(context.Background(), session)
+		if len(actions) != 0 || view.status != "manual" {
+			t.Fatal("loading wait ignored timeout or takeover")
+		}
 	}
 }
 

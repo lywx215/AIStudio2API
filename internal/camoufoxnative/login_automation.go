@@ -43,14 +43,22 @@ const loginAutomationFunction = `function(action, value, email) {
     const identities = [...document.querySelectorAll('#profileIdentifier,[data-email],[data-identifier]')].filter(visible)
       .map(e => (e.getAttribute('data-email') || e.getAttribute('data-identifier') || e.textContent || '').trim().toLowerCase()).filter(v => v.includes('@'));
     if (identities.some(v => v !== email.toLowerCase())) return 'manual';
-    const otp = unique('#totpPin,input[name="totpPin"],input[autocomplete="one-time-code"]');
+    const otpControls = [...document.querySelectorAll('#totpPin,input[name="totpPin"],input[autocomplete="one-time-code"]')].filter(visible);
+    const otp = otpControls.length === 1 ? otpControls[0] : null;
     const authenticator = /\/challenge\/totp(?:\/|$)/.test(location.pathname) || /Google Authenticator|Authenticator app|身份验证器|身分驗證器/i.test(document.body?.innerText || '');
-    if (otp && authenticator) {
+    if (authenticator) {
+      if (otpControls.length > 1 || p || identifier) return 'manual';
+      // Google renders the challenge, identity and enabled controls in separate
+      // updates. An incomplete known TOTP page must not latch manual takeover.
+      if (!otp) return 'totp_loading';
       const shown = identities.length ? identities : ((document.body?.innerText || '').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig) || []).map(v => v.toLowerCase());
+      if (shown.length === 0) return 'totp_loading';
       if (!shown.includes(email.toLowerCase()) || shown.some(v => v !== email.toLowerCase()) || otp.getAttribute('aria-invalid') === 'true') return 'manual';
       if (otp.value) return action === 'inspect' && otp.__aistudioTotpSubmitted ? 'totp_pending' : 'manual';
-      const next = unique('#totpNext');
-      if (!next || p || identifier) return 'manual';
+      const nextControls = [...document.querySelectorAll('button#totpNext,#totpNext button,#totpNext[role="button"]')].filter(visible);
+      if (nextControls.length > 1) return 'manual';
+      const next = nextControls[0];
+      if (!next) return 'totp_loading';
       if (action === 'inspect') return 'totp';
       if (action !== 'totp' || !/^\d{6}$/.test(value)) return 'manual';
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(otp, value);
@@ -136,6 +144,15 @@ func (automation *loginAutomation) step(ctx context.Context, session *loginSessi
 	if automation.blocked {
 		return
 	}
+	if phase == "totp_loading" {
+		if time.Since(automation.phaseSince) > 10*time.Second {
+			automation.blocked = true
+			automation.view.setStatus("manual")
+		} else {
+			automation.view.setStatus("totp_loading")
+		}
+		return
+	}
 	if phase == "totp" && !automation.submitted[phase] {
 		if !logintotp.Valid(automation.totpSecret) {
 			automation.blocked = true
@@ -201,7 +218,7 @@ func (session *loginSession) loginAction(ctx context.Context, action, value, ema
 	remote, _ := result["result"].(map[string]any)
 	phase, _ := remote["value"].(string)
 	switch phase {
-	case "email", "password", "totp", "totp_pending", "later", "unknown", "submitted":
+	case "email", "password", "totp", "totp_loading", "totp_pending", "later", "unknown", "submitted":
 		return phase
 	}
 	return "manual"

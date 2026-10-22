@@ -148,6 +148,7 @@ export const messages: Record<TranslationKey, string> = {
   'accounts.totpSet': 'Clé 2FA synchronisée',
   'accounts.totpMissing': 'Clé 2FA non synchronisée',
   'accounts.liveTotpWaiting': 'En attente du prochain code 2FA',
+  'accounts.liveTotpLoading': 'En attente de la page de validation 2FA',
   'accounts.liveTotpFilling': 'Saisie du code 2FA',
   'accounts.passwordSet': 'Login password synced',
   'accounts.passwordMissing': 'Login password not synced',

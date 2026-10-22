@@ -133,6 +133,7 @@ export const messages = {
   'accounts.totpSet': '2FA 密钥已同步',
   'accounts.totpMissing': '2FA 密钥未同步',
   'accounts.liveTotpWaiting': '等待下一组有效 2FA 验证码',
+  'accounts.liveTotpLoading': '等待 2FA 验证页面就绪',
   'accounts.liveTotpFilling': '正在填写 2FA 验证码',
   'accounts.passwordSet': '登录密码已同步',
   'accounts.passwordMissing': '登录密码未同步',

@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import test from 'node:test'
+import vm from 'node:vm'
+
+// Run the production browser function and the same fake DOM used by Goja.
+// No browser, server credentials or real Google requests are involved.
+const source = readFileSync(
+  new URL('../../internal/camoufoxnative/login_automation.go', import.meta.url),
+  'utf8',
+)
+const fixtures = readFileSync(
+  new URL('../../internal/camoufoxnative/login_totp_test.go', import.meta.url),
+  'utf8',
+)
+const production = source.match(/const loginAutomationFunction = `([\s\S]*?)`/)[1]
+const fixture = fixtures.match(/vm\.RunString\(`([\s\S]*?)`\)/)[1]
+const modes = JSON.parse(`[${fixtures.match(/for _, mode := range \[\]string\{([^}]+)\}/)[1]}]`)
+const loading = new Set(['loading', 'next_loading', 'identity_loading', 'input_loading'])
+
+function page(mode) {
+  const context = vm.createContext({ mode })
+  vm.runInContext(fixture, context)
+  const action = vm.runInContext(`(${production})`, context)
+  return { context, action: (kind) => action(kind, '005924', 'user@example.test') }
+}
+
+for (const mode of modes) {
+  test(`Google TOTP DOM: ${mode}`, () => {
+    const { context, action } = page(mode)
+    const phase = action('inspect')
+    if (loading.has(mode)) assert.equal(phase, 'totp_loading')
+    if (mode === 'origin_changed') {
+      assert.equal(phase, 'totp')
+      vm.runInContext(`location.origin = 'https://example.test'`, context)
+    }
+    const result = action('totp')
+    if (mode === 'valid') {
+      assert.equal(phase, 'totp')
+      assert.equal(result, 'submitted')
+      assert.equal(context.filled, '005924')
+      assert.equal(context.clicked, 1)
+      assert.equal(action('inspect'), 'totp_pending')
+    } else {
+      assert.notEqual(result, 'submitted')
+      assert.equal(context.filled, '')
+      assert.equal(context.clicked, 0)
+    }
+  })
+}
+
+test('Google TOTP resumes when a partially rendered challenge becomes ready', () => {
+  const { context, action } = page('loading')
+  assert.equal(action('inspect'), 'totp_loading')
+  assert.equal(action('totp'), 'totp_loading')
+  assert.equal(context.clicked, 0)
+  context.mode = 'valid'
+  assert.equal(action('inspect'), 'totp')
+  assert.equal(action('totp'), 'submitted')
+  assert.equal(context.clicked, 1)
+  assert.equal(action('inspect'), 'totp_pending')
+})
+
+test('Google TOTP waits for its submit button without filling prematurely', () => {
+  const { context, action } = page('next_loading')
+  assert.equal(action('inspect'), 'totp_loading')
+  assert.equal(action('totp'), 'totp_loading')
+  assert.equal(context.filled, '')
+  vm.runInContext(`next.disabled = false; mode = 'valid'`, context)
+  assert.equal(action('totp'), 'submitted')
+  assert.equal(context.clicked, 1)
+})

@@ -143,6 +143,7 @@ export const messages: Record<TranslationKey, string> = {
   'accounts.totpSet': '2FA 키 동기화됨',
   'accounts.totpMissing': '2FA 키 동기화 안 됨',
   'accounts.liveTotpWaiting': '새 2FA 코드 대기 중',
+  'accounts.liveTotpLoading': '2FA 페이지 준비 대기 중',
   'accounts.liveTotpFilling': '2FA 코드 입력 중',
   'accounts.passwordSet': 'Login password synced',
   'accounts.passwordMissing': 'Login password not synced',

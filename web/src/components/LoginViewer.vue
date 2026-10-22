@@ -78,6 +78,7 @@ const host = computed(() => pageURL.value?.hostname ?? '')
 const secure = computed(() => pageURL.value?.protocol === 'https:')
 const busy = computed(() => status.value === 'starting' || status.value === 'saving')
 const statusText = computed(() => {
+  if (status.value === 'totp_loading') return t('accounts.liveTotpLoading')
   if (status.value === 'totp_waiting') return t('accounts.liveTotpWaiting')
   if (status.value === 'totp_filling') return t('accounts.liveTotpFilling')
   if (status.value === 'autofilling') return t('accounts.liveAutofilling')

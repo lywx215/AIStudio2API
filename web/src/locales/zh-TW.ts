@@ -135,6 +135,7 @@ export const messages: Record<TranslationKey, string> = {
   'accounts.totpSet': '2FA 金鑰已同步',
   'accounts.totpMissing': '2FA 金鑰未同步',
   'accounts.liveTotpWaiting': '等待下一組有效 2FA 驗證碼',
+  'accounts.liveTotpLoading': '等待 2FA 驗證頁面就緒',
   'accounts.liveTotpFilling': '正在填寫 2FA 驗證碼',
   'accounts.passwordSet': '登入密碼已同步',
   'accounts.passwordMissing': '登入密碼未同步',
