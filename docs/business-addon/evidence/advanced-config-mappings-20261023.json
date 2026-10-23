@@ -1,0 +1,11 @@
+{
+  "revision": 8,
+  "enabled_bindings": [
+    {
+      "public_id": "business-gemini-4-argon",
+      "selector_mode": "exact",
+      "parameter_mapping_keys": [],
+      "verified_mapping_keys": []
+    }
+  ]
+}

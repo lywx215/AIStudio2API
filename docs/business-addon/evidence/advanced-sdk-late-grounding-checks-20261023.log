@@ -1,0 +1,15 @@
+test_collection_measures_distinct_text_frames (__main__.AdvancedRunnerTests.test_collection_measures_distinct_text_frames) ... ok
+test_grounding_validates_utf8_offsets_and_official_source (__main__.AdvancedRunnerTests.test_grounding_validates_utf8_offsets_and_official_source) ... ok
+test_guard_rejects_other_origins_and_status_credentials (__main__.AdvancedRunnerTests.test_guard_rejects_other_origins_and_status_credentials) ... ok
+test_late_grounding_and_terminal_media_survive_sdk_chat (__main__.AdvancedRunnerTests.test_late_grounding_and_terminal_media_survive_sdk_chat) ... ok
+test_late_grounding_duplicate_metadata_is_rejected (__main__.AdvancedRunnerTests.test_late_grounding_duplicate_metadata_is_rejected) ... ok
+test_late_grounding_early_metadata_is_invalid (__main__.AdvancedRunnerTests.test_late_grounding_early_metadata_is_invalid) ... ok
+test_late_grounding_frames_after_stop_are_rejected (__main__.AdvancedRunnerTests.test_late_grounding_frames_after_stop_are_rejected) ... ok
+test_late_grounding_utf8_split_is_invalid (__main__.AdvancedRunnerTests.test_late_grounding_utf8_split_is_invalid) ... ok
+test_late_grounding_wrong_part_index_is_invalid (__main__.AdvancedRunnerTests.test_late_grounding_wrong_part_index_is_invalid) ... ok
+test_pinned_sdk_serialization_and_request_bounds (__main__.AdvancedRunnerTests.test_pinned_sdk_serialization_and_request_bounds) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.748s
+
+OK

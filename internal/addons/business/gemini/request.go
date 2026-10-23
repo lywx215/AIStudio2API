@@ -5,9 +5,7 @@ package gemini
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,47 +18,20 @@ import (
 
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/config"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources"
 )
 
 // object preserves raw values (including 0/false/null and opaque schemas), and
 // rejects duplicate keys before typed decoding can collapse their meaning.
 func object(data []byte) (map[string]json.RawMessage, error) {
-	d := json.NewDecoder(bytes.NewReader(data))
-	tok, err := d.Token()
-	if err != nil || tok != json.Delim('{') {
-		return nil, invalid("expected a JSON object")
-	}
-	m := map[string]json.RawMessage{}
-	for d.More() {
-		key, err := d.Token()
-		if err != nil {
-			return nil, invalid("invalid JSON")
-		}
-		name, ok := key.(string)
-		if !ok {
-			return nil, invalid("invalid JSON key")
-		}
-		if _, ok := m[name]; ok {
-			return nil, invalid("duplicate JSON field")
-		}
-		var v json.RawMessage
-		if d.Decode(&v) != nil {
-			return nil, invalid("invalid JSON value")
-		}
-		m[name] = v
-	}
-	if _, err = d.Token(); err != nil {
-		return nil, invalid("invalid JSON")
-	}
-	if d.Decode(new(any)) != io.EOF {
-		return nil, invalid("expected one JSON object")
-	}
-	return m, nil
+	return rawObject(data)
 }
 func invalid(message string) error { return contract.Fail(400, "INVALID_ARGUMENT", message) }
 func unsupported(field string) error {
 	return invalid("Business does not have a verified mapping for " + field)
 }
+
+var errUnsupportedParameter = errors.New("unsupported optional generation parameter")
 
 func Parse(r io.Reader, binding config.Binding) (contract.Request, error) {
 	return ParseWithFiles(context.Background(), r, binding, nil)
@@ -69,132 +40,65 @@ func Parse(r io.Reader, binding config.Binding) (contract.Request, error) {
 // ParseWithFiles keeps request validation ahead of account selection. Resolvers
 // are supplied by the Business host; no legacy AI Studio file pool is consulted.
 func ParseWithFiles(ctx context.Context, r io.Reader, binding config.Binding, resolver contract.FileResolver) (contract.Request, error) {
-	data, err := io.ReadAll(io.LimitReader(r, maxRequestBytes+1))
+	data, err := resources.ReadAll(ctx, r, maxRequestBytes)
 	if err != nil {
+		var failure *contract.Failure
+		if errors.As(err, &failure) {
+			return contract.Request{}, failure
+		}
 		return contract.Request{}, invalid("cannot read request body")
 	}
 	if len(data) > maxRequestBytes {
 		return contract.Request{}, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business request exceeds 68 MiB")
 	}
-	root, err := object(data)
+	root, err := objectContext(ctx, data)
 	if err != nil {
 		return contract.Request{}, err
 	}
 	request := contract.Request{Raw: root, Generation: map[string]json.RawMessage{}}
-	for field := range root {
-		if field != "contents" && field != "generationConfig" && field != "generation_config" {
-			return request, unsupported(field)
-		}
-	}
+	// Unimplemented optional fields (for example safetySettings and function declarations) are
+	// intentionally ignored. Raw retains the wire input for inspection only;
+	// the upstream request consumes QueryParts, Generation and Attachments.
 	generation, hasGeneration, err := alias(root, "generationConfig", "generation_config")
 	if err != nil {
 		return request, err
 	}
-	var contents []json.RawMessage
-	if json.Unmarshal(root["contents"], &contents) != nil || len(contents) == 0 {
-		return request, invalid("contents must contain a user message")
-	}
-	// Replay of model history is deliberately not converted into prompt text.
-	// Enable multi-turn only after session-prefix fidelity is implemented.
-	if len(contents) != 1 {
-		return request, unsupported("multi-turn contents")
-	}
-	content, err := object(contents[0])
+	request.GoogleSearch, err = parseGoogleSearch(ctx, root["tools"])
 	if err != nil {
 		return request, err
 	}
-	for key := range content {
-		if key != "parts" && key != "role" {
-			return request, unsupported("contents." + key)
-		}
-	}
-	if raw, ok := content["role"]; ok {
-		var role string
-		if json.Unmarshal(raw, &role) != nil || role != "user" {
-			return request, invalid("contents[0].role must be user")
-		}
-	}
-	var parts []json.RawMessage
-	if json.Unmarshal(content["parts"], &parts) != nil || len(parts) == 0 || len(parts) > 256 {
-		return request, invalid("contents[0].parts must contain 1 to 256 parts")
-	}
-	type pendingAttachment struct {
-		inline *contract.Attachment
-		uri    string
-		mime   string
-	}
-	var pending []pendingAttachment
-	// Context files are global to a fresh Business session. A single contiguous
-	// group at either edge has an explicit mapping; interleaving does not.
-	groups, previousKind, textBytes := 0, "", 0
-	for _, raw := range parts {
-		part, err := object(raw)
+	if request.GoogleSearch {
+		request.GoogleSearch, err = googleSearchToolConfigAllows(ctx, root)
 		if err != nil {
 			return request, err
 		}
-		inline, hasInline, err := alias(part, "inlineData", "inline_data")
-		if err != nil {
-			return request, err
-		}
-		file, hasFile, err := alias(part, "fileData", "file_data")
-		if err != nil {
-			return request, err
-		}
-		if len(part) != 1 {
-			return request, unsupported("mixed or annotated content parts")
-		}
-		kind := "attachment"
-		if text, ok := part["text"]; ok {
-			kind = "text"
-			var value string
-			if bytes.Equal(bytes.TrimSpace(text), []byte("null")) || json.Unmarshal(text, &value) != nil {
-				return request, invalid("part.text must be a string")
-			}
-			textBytes += len(value)
-			if textBytes > maxTextBytes {
-				return request, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business text exceeds 1 MiB")
-			}
-			request.QueryParts = append(request.QueryParts, map[string]string{"text": value})
-		} else if hasInline {
-			a, err := parseInline(inline, len(pending)+1)
-			if err != nil {
-				return request, err
-			}
-			pending = append(pending, pendingAttachment{inline: &a})
-		} else if hasFile {
-			uri, mimeType, err := parseFile(file)
-			if err != nil {
-				return request, err
-			}
-			pending = append(pending, pendingAttachment{uri: uri, mime: mimeType})
-		} else {
-			return request, unsupported("content part")
-		}
-		if kind != previousKind {
-			groups++
-			previousKind = kind
-		}
-		if groups > 2 {
-			return request, unsupported("interleaved text and file parts")
-		}
-		if len(pending) > maxAttachments {
-			return request, invalid("Business requests allow at most 32 attachments")
-		}
 	}
-	if len(pending) == 0 && len(data) > maxTextBytes {
+	plan, err := planHistory(ctx, root["contents"])
+	if err != nil {
+		return request, err
+	}
+	if len(plan.pending) == 0 && len(data) > maxTextBytes {
 		return request, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business text request exceeds 1 MiB")
 	}
 	if hasGeneration {
 		if len(generation) > maxTextBytes {
 			return request, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business generationConfig exceeds 1 MiB")
 		}
-		parameters, err := object(generation)
+		parameters, err := objectContext(ctx, generation)
 		if err != nil {
-			return request, invalid("generationConfig must be an object")
+			return request, err
 		}
 		parameters, err = parameterAliases(parameters)
 		if err != nil {
 			return request, err
+		}
+		// Filter before checking combinations: an ignored schema or sampling
+		// option must not conflict with a supported option that will be sent.
+		for field := range parameters {
+			mapping, ok := binding.GenerationParameters[field]
+			if !ok || !mapping.Verified || strings.TrimSpace(mapping.Evidence) == "" {
+				delete(parameters, field)
+			}
 		}
 		if _, first := parameters["responseSchema"]; first {
 			if _, second := parameters["responseJsonSchema"]; second {
@@ -202,14 +106,14 @@ func ParseWithFiles(ctx context.Context, r io.Reader, binding config.Binding, re
 			}
 		}
 		for field, value := range parameters {
-			mapping, ok := binding.GenerationParameters[field]
-			if !ok || !mapping.Verified || strings.TrimSpace(mapping.Evidence) == "" {
-				return request, unsupported("generationConfig." + field)
-			}
+			mapping := binding.GenerationParameters[field]
 			if source, target := parameterKind(field), parameterKind(mapping.UpstreamField); source != "" && target != "" && source != target {
 				return request, invalid("generation parameter mapping has incompatible value types")
 			}
 			if err := validateParameter(field, value); err != nil {
+				if errors.Is(err, errUnsupportedParameter) {
+					continue
+				}
 				return request, err
 			}
 			if field == "thinkingConfig" {
@@ -221,45 +125,14 @@ func ParseWithFiles(ctx context.Context, r io.Reader, binding config.Binding, re
 			request.Generation[mapping.UpstreamField] = append(json.RawMessage(nil), value...)
 		}
 	}
-	// Resolve only after every native field and attachment position passed
-	// preflight. The resolver owns same-origin, owner and file-generation checks.
-	total := 0
-	for _, p := range pending {
-		if ctx.Err() != nil {
-			return request, contract.Fail(499, "CANCELLED", "Business request cancelled")
-		}
-		var a contract.Attachment
-		if p.inline != nil {
-			a = *p.inline
-		} else {
-			if resolver == nil {
-				return request, unsupported("fileData without a Business file resolver")
-			}
-			a, err = resolver(ctx, p.uri, p.mime)
-			if err != nil {
-				var failure *contract.Failure
-				if errors.As(err, &failure) {
-					return request, failure
-				}
-				return request, invalid("Business file reference could not be resolved")
-			}
-			resolvedMIME, err := supportedMIME(a.MIMEType)
-			if err != nil || resolvedMIME != p.mime {
-				return request, invalid("fileData MIME type does not match the Business file")
-			}
-			a.MIMEType = resolvedMIME
-		}
-		total += len(a.Data)
-		if len(a.Data) == 0 {
-			return request, invalid("attachment data must not be empty")
-		}
-		if total > maxAttachmentBytes {
-			return request, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business attachments exceed 50 MiB")
-		}
-		a.Data = append([]byte(nil), a.Data...)
-		hash := sha256.Sum256(a.Data)
-		a.Hash = hex.EncodeToString(hash[:])
-		request.Attachments = append(request.Attachments, a)
+	request.OptionsHash, err = historyOptionsHash(ctx, root, binding, request.Generation)
+	if err != nil {
+		return request, err
+	}
+	// All content roles, parts and optional generation fields are checked before
+	// resolving any local file. Only the final user turn becomes an upstream query.
+	if err = plan.resolve(ctx, resolver, &request); err != nil {
+		return request, err
 	}
 	return request, nil
 }
@@ -270,6 +143,8 @@ const (
 	maxAttachmentBytes = 50 << 20
 	maxAttachments     = 32
 )
+
+const MaxRequestBytes = maxRequestBytes
 
 func alias(m map[string]json.RawMessage, camel, snake string) (json.RawMessage, bool, error) {
 	first, hasFirst := m[camel]
@@ -307,29 +182,58 @@ func supportedMIME(value string) (string, error) {
 	return mediaType, nil
 }
 
-func parseInline(raw json.RawMessage, index int) (contract.Attachment, error) {
+func inlineFields(ctx context.Context, raw json.RawMessage) (map[string]json.RawMessage, string, error) {
 	var a contract.Attachment
-	blob, err := object(raw)
+	blob, err := objectContext(ctx, raw)
 	if err != nil {
-		return a, invalid("inlineData must be an object")
+		return nil, "", err
 	}
 	for key := range blob {
 		if key != "data" && key != "mimeType" && key != "mime_type" {
-			return a, unsupported("inlineData." + key)
+			return nil, "", unsupported("inlineData." + key)
 		}
 	}
 	mimeRaw, _, err := alias(blob, "mimeType", "mime_type")
 	if err != nil {
-		return a, err
+		return nil, "", err
+	}
+	if len(mimeRaw) > 1024 {
+		return nil, "", invalid("inlineData.mimeType is too long")
 	}
 	mimeType, err := requiredString(mimeRaw, "inlineData.mimeType")
 	if err != nil {
-		return a, err
+		return nil, "", err
 	}
 	a.MIMEType, err = supportedMIME(mimeType)
 	if err != nil {
+		return nil, "", err
+	}
+	value := bytes.TrimSpace(blob["data"])
+	if len(value) < 3 || value[0] != '"' {
+		return nil, "", invalid("inlineData.data must be a nonempty base64 string")
+	}
+	return blob, a.MIMEType, nil
+}
+
+func parseInline(ctx context.Context, raw json.RawMessage, index int, remaining int64) (contract.Attachment, error) {
+	var a contract.Attachment
+	blob, mimeType, err := inlineFields(ctx, raw)
+	if err != nil {
 		return a, err
 	}
+	a.MIMEType = mimeType
+	encodedSize, err := jsonStringSize(blob["data"])
+	if err != nil {
+		return a, err
+	}
+	if encodedSize/4*3-2 > remaining {
+		return a, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business attachments exceed 50 MiB")
+	}
+	releaseString, err := resources.Reserve(ctx, encodedSize)
+	if err != nil {
+		return a, err
+	}
+	defer releaseString()
 	encoded, err := requiredString(blob["data"], "inlineData.data")
 	if err != nil {
 		return a, err
@@ -339,12 +243,32 @@ func parseInline(raw json.RawMessage, index int) (contract.Attachment, error) {
 	if strings.ContainsAny(encoded, " \t\r\n") {
 		return a, invalid("inlineData.data must be valid base64")
 	}
-	for _, encoding := range []*base64.Encoding{base64.StdEncoding.Strict(), base64.URLEncoding.Strict(), base64.RawStdEncoding.Strict(), base64.RawURLEncoding.Strict()} {
-		a.Data, err = encoding.DecodeString(encoded)
-		if err == nil {
-			break
-		}
+	urlAlphabet := strings.ContainsAny(encoded, "-_")
+	if urlAlphabet && strings.ContainsAny(encoded, "+/") {
+		return a, invalid("inlineData.data must be valid base64")
 	}
+	encoding := base64.StdEncoding.Strict()
+	if urlAlphabet {
+		encoding = base64.URLEncoding.Strict()
+	}
+	padding := len(encoded) - len(strings.TrimRight(encoded, "="))
+	if padding == 0 {
+		encoding = encoding.WithPadding(base64.NoPadding)
+	}
+	decodedBytes := int64(encoding.DecodedLen(len(encoded)))
+	if padding > 0 {
+		decodedBytes -= int64(padding)
+	}
+	if padding > 2 || decodedBytes < 1 {
+		return a, invalid("inlineData.data must be nonempty valid base64")
+	}
+	if decodedBytes > remaining {
+		return a, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business attachments exceed 50 MiB")
+	}
+	if _, err := resources.Reserve(ctx, int64(encoding.DecodedLen(len(encoded)))); err != nil {
+		return a, err
+	}
+	a.Data, err = encoding.DecodeString(encoded)
 	if err != nil || len(a.Data) == 0 {
 		return a, invalid("inlineData.data must be nonempty valid base64")
 	}
@@ -375,10 +299,10 @@ func parseInline(raw json.RawMessage, index int) (contract.Attachment, error) {
 	return a, nil
 }
 
-func parseFile(raw json.RawMessage) (string, string, error) {
-	file, err := object(raw)
+func parseFile(ctx context.Context, raw json.RawMessage) (string, string, error) {
+	file, err := objectContext(ctx, raw)
 	if err != nil {
-		return "", "", invalid("fileData must be an object")
+		return "", "", err
 	}
 	for key := range file {
 		if key != "fileUri" && key != "file_uri" && key != "mimeType" && key != "mime_type" {
@@ -391,6 +315,16 @@ func parseFile(raw json.RawMessage) (string, string, error) {
 	}
 	mimeRaw, _, err := alias(file, "mimeType", "mime_type")
 	if err != nil {
+		return "", "", err
+	}
+	if len(mimeRaw) > 1024 {
+		return "", "", invalid("fileData.mimeType is too long")
+	}
+	uriSize, err := jsonStringSize(uriRaw)
+	if err != nil {
+		return "", "", err
+	}
+	if _, err := resources.Reserve(ctx, uriSize); err != nil {
 		return "", "", err
 	}
 	uri, err := requiredString(uriRaw, "fileData.fileUri")
@@ -436,7 +370,7 @@ func validateParameter(field string, value json.RawMessage) error {
 			return invalid("generation parameter requires an integer")
 		}
 		if field == "candidateCount" && number != 1 {
-			return unsupported("candidateCount other than 1")
+			return errUnsupportedParameter
 		}
 		if (field == "temperature" || field == "topK" || field == "topP") && number < 0 {
 			return invalid("generation parameter cannot be negative")
@@ -453,7 +387,7 @@ func validateParameter(field string, value json.RawMessage) error {
 			return invalid("invalid list generation parameter")
 		}
 		if field == "responseModalities" && (len(values) != 1 || values[0] != "TEXT") {
-			return unsupported("non-text responseModalities")
+			return errUnsupportedParameter
 		}
 	case "responseMimeType", "mediaResolution":
 		var text string
@@ -472,6 +406,13 @@ func validateParameter(field string, value json.RawMessage) error {
 		for _, names := range [][2]string{{"includeThoughts", "include_thoughts"}, {"thinkingBudget", "thinking_budget"}, {"thinkingLevel", "thinking_level"}} {
 			if _, _, err := alias(parameters, names[0], names[1]); err != nil {
 				return err
+			}
+		}
+		for key := range parameters {
+			switch key {
+			case "includeThoughts", "include_thoughts", "thinkingBudget", "thinking_budget", "thinkingLevel", "thinking_level":
+			default:
+				return errUnsupportedParameter
 			}
 		}
 		for key, raw := range parameters {
@@ -494,12 +435,10 @@ func validateParameter(field string, value json.RawMessage) error {
 				if json.Unmarshal(raw, &value) != nil || (value != "MINIMAL" && value != "LOW" && value != "MEDIUM" && value != "HIGH") {
 					return invalid("unsupported thinkingConfig.thinkingLevel")
 				}
-			default:
-				return unsupported("thinkingConfig." + key)
 			}
 		}
 	default:
-		return invalid(fmt.Sprintf("unknown generation parameter %s", field))
+		return errUnsupportedParameter
 	}
 	return nil
 }

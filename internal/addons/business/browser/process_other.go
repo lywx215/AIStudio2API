@@ -10,6 +10,7 @@ import (
 )
 
 func configureProcess(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} }
+func configureHeadless(*exec.Cmd)    {}
 func bindProcess(cmd *exec.Cmd) (func() error, error) {
 	return func() error {
 		err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)

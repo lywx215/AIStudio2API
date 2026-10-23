@@ -1,0 +1,58 @@
+{
+  "action": "preflight",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "started_at": "2026-10-22T12:22:04Z",
+  "checks": [
+    {
+      "field": "temperature",
+      "http_status": 400,
+      "body": {
+        "error": {
+          "code": 400,
+          "message": "Business does not have a verified mapping for generationConfig.temperature",
+          "status": "INVALID_ARGUMENT"
+        }
+      },
+      "passed": true
+    },
+    {
+      "field": "maxOutputTokens",
+      "http_status": 400,
+      "body": {
+        "error": {
+          "code": 400,
+          "message": "Business does not have a verified mapping for generationConfig.maxOutputTokens",
+          "status": "INVALID_ARGUMENT"
+        }
+      },
+      "passed": true
+    },
+    {
+      "field": "topP",
+      "http_status": 400,
+      "body": {
+        "error": {
+          "code": 400,
+          "message": "Business does not have a verified mapping for generationConfig.topP",
+          "status": "INVALID_ARGUMENT"
+        }
+      },
+      "passed": true
+    },
+    {
+      "field": "thinkingConfig",
+      "http_status": 400,
+      "body": {
+        "error": {
+          "code": 400,
+          "message": "Business does not have a verified mapping for generationConfig.thinkingConfig",
+          "status": "INVALID_ARGUMENT"
+        }
+      },
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "elapsed_seconds": 0.203
+}

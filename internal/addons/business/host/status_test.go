@@ -38,8 +38,19 @@ func TestStatusReadinessDoesNotInventAuthOrModelEvidence(t *testing.T) {
 	if !reflect.DeepEqual(m.EligibleAccountIDs, []string{statusAccountA}) {
 		t.Fatal(m.EligibleAccountIDs)
 	}
-	if s.Capabilities["multi_turn"] != "unsupported" || s.Capabilities["tools"] != "unsupported" || s.Capabilities["generationConfig"] != "requires_verified_mapping" {
+	if s.Capabilities["multi_turn"] != "completed_prefix_only" || s.Capabilities["tools"] != "google_search_empty_config_provider_gated_others_ignored" || s.Capabilities["generationConfig"] != "mapped_fields_forwarded_others_ignored" {
 		t.Fatal("capabilities were broadened", s.Capabilities)
+	}
+	for key, want := range map[string]string{
+		"countTokens":      "unsupported_no_native_upstream_contract",
+		"usageMetadata":    "unavailable_not_estimated",
+		"google_search":    "provider_checked_empty_config_only",
+		"function_calling": "unsupported_ignored",
+		"code_execution":   "request_control_unverified_output_passthrough",
+	} {
+		if s.Capabilities[key] != want {
+			t.Fatalf("capability %s = %q", key, s.Capabilities[key])
+		}
 	}
 }
 

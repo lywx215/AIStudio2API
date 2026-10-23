@@ -1,0 +1,9 @@
+{
+  "rolled_back": true,
+  "ready": true,
+  "pid": 79692,
+  "origin": "http://127.0.0.1:2048",
+  "executable_sha256": "93C8CE4F48476453EBBC83C297DD06029A31B87B950EDEC819BBD9FF9738DF91",
+  "new_thought_fix_in_running_build": false,
+  "config_revision": 8
+}

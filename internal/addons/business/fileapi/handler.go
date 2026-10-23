@@ -23,6 +23,7 @@ import (
 
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/files"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources"
 )
 
 type Handler struct {
@@ -141,9 +142,16 @@ type metadata struct {
 	}
 }
 
-func readMetadata(reader io.Reader) (metadata, error) {
+func readMetadata(ctx context.Context, reader io.Reader) (metadata, error) {
 	var result metadata
-	raw, err := io.ReadAll(io.LimitReader(reader, (64<<10)+1))
+	// The wire metadata is small, but unknown JSON fields can have substantial
+	// decoder/map overhead. Admit that bounded work before reading any body.
+	release, err := resources.Reserve(ctx, 4<<20)
+	if err != nil {
+		return result, err
+	}
+	defer release()
+	raw, err := resources.ReadAll(ctx, reader, 64<<10)
 	if err != nil {
 		return result, err
 	}
@@ -229,7 +237,7 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request) {
 		writeError(w, files.ErrSize)
 		return
 	}
-	meta, err := readMetadata(r.Body)
+	meta, err := readMetadata(r.Context(), r.Body)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -267,7 +275,7 @@ func (h *Handler) multipart(w http.ResponseWriter, r *http.Request) {
 	meta := metadata{}
 	partType, _, _ := mime.ParseMediaType(part.Header.Get("Content-Type"))
 	if partType == "application/json" {
-		meta, err = readMetadata(part)
+		meta, err = readMetadata(r.Context(), part)
 		_ = part.Close()
 		if err != nil {
 			writeError(w, err)
@@ -502,6 +510,19 @@ func (h *Handler) Resolver(r *http.Request) contract.FileResolver {
 		if err != nil {
 			return contract.Attachment{}, failure(err)
 		}
+		metadata, err := h.store.Get(ctx, contract.Principal(ctx), id)
+		if err != nil {
+			return contract.Attachment{}, failure(err)
+		}
+		if allowance, ok := resources.AttachmentAllowance(ctx); ok && metadata.Size > allowance {
+			return contract.Attachment{}, &contract.Failure{Code: 413, Status: "RESOURCE_EXHAUSTED", Message: "Business attachments exceed 50 MiB"}
+		}
+		if mimeType != "" {
+			mediaType, _, parseErr := mime.ParseMediaType(mimeType)
+			if parseErr != nil || mediaType != metadata.MIMEType {
+				return contract.Attachment{}, failure(files.ErrInvalid)
+			}
+		}
 		snapshot, err := h.store.Snapshot(ctx, contract.Principal(ctx), id)
 		if err != nil {
 			return contract.Attachment{}, failure(err)
@@ -687,6 +708,10 @@ func methodError(w http.ResponseWriter, allow string) {
 }
 
 func failure(err error) *contract.Failure {
+	var explicit *contract.Failure
+	if errors.As(err, &explicit) {
+		return explicit
+	}
 	code, status, message := http.StatusInternalServerError, "INTERNAL", "Business file storage is unavailable"
 	switch {
 	case errors.Is(err, files.ErrOwner):

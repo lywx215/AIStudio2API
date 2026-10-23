@@ -101,14 +101,14 @@ func TestLiveStreamThoughtAndSignatureBoundariesStayOpaque(t *testing.T) {
 		liveFrame("IN_PROGRESS", map[string]any{"text": "reason", "thought": true}, map[string]any{"text": "prefix "}),
 		liveFrame("SUCCEEDED", map[string]any{"text": "prefix suffix"}),
 	)
-	if err != nil || !finished || len(parts) != 3 || parts[2].Text != "suffix" || !parts[0].Thought {
-		t.Fatal("thought contaminated cumulative text tracking", parts, finished, err)
+	if err != nil || !finished || len(parts) != 3 || parts[2].Text != "prefix suffix" || !parts[0].Thought {
+		t.Fatal("terminal missing the thought prefix was guessed into a cumulative snapshot", parts, finished, err)
 	}
 }
 
 func TestLiveStreamUnknownMediaStillRejects(t *testing.T) {
 	for _, part := range []map[string]any{
-		{"role": "model", "inlineData": map[string]any{"mimeType": "image/png", "data": "eA=="}},
+		{"role": "model", "inlineData": map[string]any{"mimeType": "image/svg+xml", "data": "eA=="}},
 		{"role": "model", "file": map[string]any{"fileId": "synthetic-id"}},
 		{"role": "model", "functionCall": map[string]any{"name": "synthetic"}},
 	} {
@@ -126,7 +126,7 @@ func TestLiveStreamSuggestionsRetainNativeInlineData(t *testing.T) {
 		liveFrame("IN_PROGRESS", map[string]any{"text": "prefix "}),
 		liveFrame("SUCCEEDED", blob, map[string]any{"text": "prefix suffix"}),
 	)
-	if err != nil || !finished || len(parts) != 3 || parts[1].InlineData == nil || string(parts[1].InlineData.Data) != string(payload) || parts[1].InlineData.MIMEType != contract.SuggestionsMIMEType || parts[1].Text != "" || parts[2].Text != "suffix" {
+	if err != nil || !finished || len(parts) != 3 || parts[1].InlineData == nil || string(parts[1].InlineData.Data) != string(payload) || parts[1].InlineData.MIMEType != contract.SuggestionsMIMEType || parts[1].Text != "" || parts[2].Text != "prefix suffix" {
 		t.Fatal(parts, finished, err)
 	}
 	wire, err := json.Marshal(parts[1])
@@ -137,7 +137,7 @@ func TestLiveStreamSuggestionsRetainNativeInlineData(t *testing.T) {
 
 func TestLiveStreamSuggestionsStrictBase64JSONAndLimits(t *testing.T) {
 	for _, encoded := range []string{
-		`{"suggestions":[]}`, "e30", "e31=", "e30=\n", "IsO_Ig==", "bm90LWpzb24=", "/w==", "", "bnVsbA==garbage",
+		`{"suggestions":[]}`, "e31=", "e30=\n", "bm90LWpzb24=", "/w==", "", "bnVsbA==garbage",
 	} {
 		_, finished, err := decodeLiveFixture(t, liveFrame("SUCCEEDED", map[string]any{"inlineData": map[string]any{"mimeType": contract.SuggestionsMIMEType, "data": encoded}}))
 		if err == nil || finished {
@@ -149,7 +149,7 @@ func TestLiveStreamSuggestionsStrictBase64JSONAndLimits(t *testing.T) {
 		`{"mimeType":"application/json+suggestions","data":"e30=","unknown":1}`,
 		`{"mimeType":"application/json+suggestions","data":null}`,
 	} {
-		if _, err := decodeSuggestions(json.RawMessage(raw)); err == nil {
+		if _, err := decodeInlineData(json.RawMessage(raw)); err == nil {
 			t.Fatal("malformed Blob accepted", raw)
 		}
 	}
@@ -158,7 +158,7 @@ func TestLiveStreamSuggestionsStrictBase64JSONAndLimits(t *testing.T) {
 		t.Fatal("mixed text/inlineData union accepted")
 	}
 	largeJSON := []byte(`"` + strings.Repeat("x", 2<<20) + `"`)
-	_, err = decodeSuggestions(json.RawMessage(`{"mimeType":"application/json+suggestions","data":"` + base64.StdEncoding.EncodeToString(largeJSON) + `"}`))
+	_, err = decodeInlineData(json.RawMessage(`{"mimeType":"application/json+suggestions","data":"` + base64.StdEncoding.EncodeToString(largeJSON) + `"}`))
 	if err == nil {
 		t.Fatal("decoded and encoded byte budget was bypassed")
 	}

@@ -6,6 +6,19 @@ import { businessClient } from './client'
 import type { BusinessBinding, BusinessConfig, BusinessModelState, BusinessStatus } from './types'
 import BusinessAccounts from './BusinessAccounts.vue'
 import BusinessTry from './BusinessTry.vue'
+import BusinessCollection from './BusinessCollection.vue'
+import BusinessImport from './BusinessImport.vue'
+
+const importBusy = ref(false)
+const savedConfigJSON = ref('')
+const hasUnsavedChanges = computed(
+  () =>
+    config.value !== null &&
+    (JSON.stringify(config.value) !== savedConfigJSON.value ||
+      Object.keys(parameterDrafts.value).length > 0 ||
+      Number(resourceMiB.value) * mib !==
+        (config.value.max_inflight_bytes ?? defaultInflightBytes)),
+)
 
 const { locale } = useI18n()
 const chinese = computed(() => locale.value.startsWith('zh'))
@@ -15,10 +28,14 @@ const status = ref<BusinessStatus | null>(null)
 const pending = ref(false)
 const error = ref('')
 const notice = ref('')
+const accountVersion = ref(0)
 const mustRefresh = ref(false)
 const parameterDrafts = ref<Record<string, string>>({})
 const savedBindings = ref<BusinessBinding[]>([])
 const savedEnabled = ref(false)
+const mib = 1024 * 1024
+const defaultInflightBytes = 256 * mib
+const resourceMiB = ref(256)
 const modelStates = computed(() => status.value?.model_states ?? [])
 const canSchedule = computed(
   () => status.value?.generation_ready === true && modelStates.value.some(isSchedulable),
@@ -71,6 +88,11 @@ function reason(code?: string): string {
       return text('账号需要重新认证', 'Account authentication required')
     case 'BUSINESS_CAPACITY_FULL':
       return text('并发已满，当前不可调度', 'Concurrency limit reached; cannot schedule now')
+    case 'BUSINESS_RESOURCE_BUDGET_FULL':
+      return text(
+        '处理数据预算不足，当前不可调度',
+        'In-flight data budget insufficient; cannot schedule now',
+      )
     case 'BUSINESS_RUNTIME_SUSPENDED':
       return text('Business 已暂停，当前不可调度', 'Business is suspended; cannot schedule now')
     case 'BUSINESS_RUNTIME_STOPPED':
@@ -87,9 +109,21 @@ function verifiedAt(value?: string): string {
   return new Date(value).toLocaleString(chinese.value ? 'zh-CN' : 'en-US')
 }
 
+function byteLabel(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return text('未提供', 'Not provided')
+  return `${(value / mib).toLocaleString(chinese.value ? 'zh-CN' : 'en-US', { maximumFractionDigits: 2 })} MiB`
+}
+
+function collectionChanged(): void {
+  accountVersion.value++
+  void refreshStatus()
+}
+
 function rememberSaved(value: BusinessConfig): void {
+  savedConfigJSON.value = JSON.stringify(value)
   savedBindings.value = value.bindings.map((binding) => ({ ...binding }))
   savedEnabled.value = value.enabled
+  resourceMiB.value = (value.max_inflight_bytes ?? defaultInflightBytes) / mib
 }
 
 async function refreshStatus(): Promise<void> {
@@ -112,7 +146,7 @@ function resetVerification(binding: BusinessBinding): void {
 }
 
 async function refresh(): Promise<void> {
-  if (!active || pending.value) return
+  if (!active || pending.value || importBusy.value) return
   const run = epoch
   const statusRun = ++statusSequence
   pending.value = true
@@ -141,8 +175,17 @@ async function refresh(): Promise<void> {
 }
 
 async function save(): Promise<void> {
-  if (!active || !config.value || pending.value || mustRefresh.value) return
+  if (!active || !config.value || pending.value || importBusy.value || mustRefresh.value) return
   const run = epoch
+  const resourceBytes = Number(resourceMiB.value) * mib
+  if (!Number.isInteger(resourceMiB.value) || resourceMiB.value < 64 || resourceMiB.value > 4096) {
+    error.value = text(
+      '资源预算必须是 64–4096 之间的整数 MiB。',
+      'The resource budget must be an integer from 64 to 4096 MiB.',
+    )
+    return
+  }
+  config.value.max_inflight_bytes = resourceBytes
   try {
     for (const binding of config.value.bindings) {
       const draft = parameterDrafts.value[binding.public_id]
@@ -169,6 +212,7 @@ async function save(): Promise<void> {
     const saved = await businessClient.save(config.value, controller.signal)
     if (!active || run !== epoch) return
     config.value = saved
+    parameterDrafts.value = {}
     rememberSaved(saved)
     notice.value = text(
       '配置已保存。请分别查看模型调度、认证记录和模型调用记录。',
@@ -282,6 +326,70 @@ onUnmounted(() => {
         >
         <code v-if="status.code" class="text-amber-300">{{ status.code }}</code>
       </div>
+
+      <section
+        v-if="status"
+        class="space-y-2 rounded-lg border border-line p-4 text-sm"
+        aria-label="Business resource budget"
+      >
+        <h2 class="font-medium">{{ text('处理中数据预算', 'In-flight data budget') }}</h2>
+        <dl v-if="status.resources" data-business-resources class="grid gap-3 sm:grid-cols-3">
+          <div>
+            <dt class="text-xs text-gray-400">{{ text('总预算', 'Total budget') }}</dt>
+            <dd>{{ byteLabel(status.resources.limit_bytes) }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">{{ text('已占用', 'In use') }}</dt>
+            <dd>{{ byteLabel(status.resources.in_use_bytes) }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-gray-400">{{ text('可用', 'Available') }}</dt>
+            <dd>{{ byteLabel(status.resources.available_bytes) }}</dd>
+          </div>
+        </dl>
+        <p v-else class="text-gray-400">
+          {{
+            text(
+              '服务端尚未提供资源预算状态，请刷新确认。',
+              'Resource budget status is unavailable. Refresh to check.',
+            )
+          }}
+        </p>
+        <p
+          v-if="status.resources && status.resources.available_bytes < 32 * mib"
+          role="status"
+          class="text-amber-200"
+        >
+          <strong v-if="status.resources.available_bytes === 0">{{
+            text('资源预算已满。', 'The resource budget is full.')
+          }}</strong>
+          {{
+            text(
+              '资源预算不足以预留一次生成所需的 32 MiB，生成请求当前不可立即调度。请等待已有工作释放额度，或减少输入与附件大小。',
+              'Available resources cannot cover the 32 MiB base reservation for generation. Generation requests cannot be scheduled now. Wait for existing work to release capacity, or reduce input and attachment sizes.',
+            )
+          }}
+        </p>
+        <p
+          v-if="status.resources && status.resources.in_use_bytes > status.resources.limit_bytes"
+          class="text-xs text-amber-200"
+        >
+          {{
+            text(
+              '当前占用高于新预算；预算调整不会取消已有工作，额度会在已有工作结束后释放。',
+              'Usage is above the new budget. Changing the budget does not cancel existing work; capacity is released as that work ends.',
+            )
+          }}
+        </p>
+        <p class="text-xs text-gray-400">
+          {{
+            text(
+              '此处显示处理中数据的预留额度，不代表整个进程的内存用量。剩余额度不足以处理本次输入时，服务会拒绝请求；不会后台探测模型或自动重试。',
+              'This is reserved capacity for in-flight data, not total process memory. A request is rejected when its input exceeds available capacity; there are no background model probes or automatic retries.',
+            )
+          }}
+        </p>
+      </section>
 
       <section v-if="status" class="space-y-3 rounded-lg border border-line p-4 text-sm">
         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -397,7 +505,12 @@ onUnmounted(() => {
         </dl>
       </div>
 
-      <BusinessAccounts @changed="refreshStatus" />
+      <BusinessAccounts
+        :key="accountVersion"
+        :states="status?.account_states ?? []"
+        @changed="refreshStatus"
+      />
+      <BusinessCollection @changed="collectionChanged" />
 
       <BusinessTry
         :bindings="savedEnabled ? savedBindings : []"
@@ -406,7 +519,7 @@ onUnmounted(() => {
       />
 
       <form v-if="config" class="space-y-5" @submit.prevent="save">
-        <fieldset class="space-y-5 disabled:opacity-60" :disabled="pending">
+        <fieldset class="space-y-5 disabled:opacity-60" :disabled="pending || importBusy">
           <div class="flex flex-wrap items-center gap-5 rounded-lg border border-line p-4 text-sm">
             <label class="flex items-center gap-2">
               <input v-model="config.enabled" type="checkbox" />
@@ -421,6 +534,19 @@ onUnmounted(() => {
                 max="16"
                 required
                 class="w-20 rounded border border-line bg-canvas px-2 py-1"
+              />
+            </label>
+            <label class="flex items-center gap-2">
+              {{ text('处理数据预算（MiB）', 'In-flight data budget (MiB)') }}
+              <input
+                v-model.number="resourceMiB"
+                data-business-resource-budget
+                type="number"
+                min="64"
+                max="4096"
+                step="1"
+                required
+                class="w-28 rounded border border-line bg-canvas px-2 py-1"
               />
             </label>
             <label class="flex items-center gap-2">
@@ -533,8 +659,8 @@ onUnmounted(() => {
               <p class="my-2 text-xs text-gray-400">
                 {{
                   text(
-                    '仅添加已核实的上游字段。每项需要 upstream_field、verified 和 evidence；未配置的参数明确报错。示例字段：temperature。记录中不要填写凭据。',
-                    'Only map observed upstream fields. Each entry needs upstream_field, verified and evidence. Unmapped parameters are rejected. Example key: temperature. Never include credentials.',
+                    '仅添加已核实的上游字段。每项需要 upstream_field、verified 和 evidence；未映射的可选参数会被忽略，不代表生效。示例字段：temperature。记录中不要填写凭据。',
+                    'Only map observed upstream fields. Each entry needs upstream_field, verified and evidence. Unmapped optional parameters are ignored and have no effect. Example key: temperature. Never include credentials.',
                   )
                 }}
               </p>
@@ -556,7 +682,7 @@ onUnmounted(() => {
         </fieldset>
         <button
           type="submit"
-          :disabled="pending || mustRefresh"
+          :disabled="pending || importBusy || mustRefresh"
           class="rounded bg-blue-600 px-5 py-2 text-sm text-white disabled:opacity-50"
         >
           {{
@@ -566,6 +692,14 @@ onUnmounted(() => {
           }}
         </button>
       </form>
+      <BusinessImport
+        v-if="config"
+        :revision="config.revision"
+        :disabled="pending || mustRefresh || hasUnsavedChanges"
+        :unsaved="hasUnsavedChanges"
+        @busy="importBusy = $event"
+        @changed="refresh"
+      />
     </div>
   </section>
 </template>

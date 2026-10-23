@@ -17,13 +17,16 @@ import (
 var (
 	ErrBrowser      = errors.New("Business browser operation failed")
 	ErrMissing      = errors.New("Business session fields were not observed before timeout")
-	ErrVersion      = errors.New("Business collection requires a compatible Camoufox Firefox 152 browser")
+	ErrVersion      = errors.New("Business collection requires a tested browser release and BiDi capabilities")
 	ErrCleanup      = errors.New("Business browser cleanup failed; its credential snapshot was discarded")
 	ErrLocalDisplay = errors.New("Business visible collection requires a local desktop; remote/headless collection is not implemented")
 )
 
 type Options struct {
 	ExecutablePath string
+	Headless       bool
+	ProxyURL       string
+	UserAgent      string
 	// Directory is an explicit, absolute Business-only disposable profile root.
 	Directory string
 }
@@ -38,7 +41,6 @@ type Driver interface {
 
 type Launcher func(context.Context, Options) (Driver, error)
 
-var firefox152 = regexp.MustCompile(`^152(?:\.[0-9]+)*$`)
 var configToken = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 var indexToken = regexp.MustCompile(`^[0-9]{1,128}$`)
 
@@ -81,7 +83,7 @@ func Collect(ctx context.Context, options Options, launch Launcher) (credential 
 			Version string `json:"browserVersion"`
 		} `json:"capabilities"`
 	}
-	if json.Unmarshal(raw, &session) != nil || session.Capabilities.Name != "firefox" || !firefox152.MatchString(session.Capabilities.Version) {
+	if json.Unmarshal(raw, &session) != nil || !supportedBrowser(session.Capabilities.Name, session.Capabilities.Version) {
 		return vault.Credential{}, ErrVersion
 	}
 	id, _, err := page(ctx, driver, "")

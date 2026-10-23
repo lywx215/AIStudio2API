@@ -1,0 +1,104 @@
+{
+  "checked_at": "2026-10-22T14:51:12.4352246Z",
+  "origin": "http://127.0.0.1:2048",
+  "pid": 56888,
+  "executable_sha256": "B72F2E6DC77E73E71FF494C03848FA4E87E6DA757270385AEF3E0590E733A140",
+  "executable_bytes": 51523072,
+  "started_at": "2026-10-22T14:48:22.7356204Z",
+  "state": "ready",
+  "generation_ready": true,
+  "config_revision": 6,
+  "account_count": 1,
+  "accounts": [
+    {
+      "state": "ready",
+      "auth_verified": true,
+      "consecutive_failures": 0,
+      "last_error_kind": null
+    }
+  ],
+  "model_states": [
+    {
+      "public_id": "business-auto",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-4-argon",
+      "state": "ready",
+      "configuration_valid": true,
+      "schedulable": true,
+      "auth_verified": true,
+      "model_verified": true
+    },
+    {
+      "public_id": "business-gemini-3.8-flash",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.7-flash",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.6-flash",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.5-flash",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.1-pro",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-2.5-pro",
+      "state": "disabled",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false
+    }
+  ],
+  "capacity": {
+    "limit": 1,
+    "active": 0,
+    "available": 1
+  },
+  "resources": {
+    "limit_bytes": 268435456,
+    "in_use_bytes": 0,
+    "available_bytes": 268435456
+  },
+  "conversations": {
+    "retained": 2,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 2,
+    "continuation_attempts": 2
+  },
+  "live_verified": false
+}

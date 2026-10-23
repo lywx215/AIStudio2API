@@ -1,0 +1,29 @@
+{
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "generation_calls": 1,
+  "started_at": "2026-10-22T12:21:24Z",
+  "checks": {
+    "invalid_budget_rejected_without_revision_change": true,
+    "invalid_json_no_account_penalty_or_resource_leak": true,
+    "live_budget_accounting_and_hot_update": true,
+    "incremental_stream_completed_during_hot_update": true,
+    "all_reservations_released_and_account_ready": true,
+    "config_restored": true
+  },
+  "during_resources": {
+    "limit_bytes": 268435456,
+    "in_use_bytes": 33554705,
+    "available_bytes": 234880751
+  },
+  "stream": {
+    "events": 32,
+    "text_events": 30,
+    "finish_reason": "STOP",
+    "first_event_seconds": 8.25,
+    "text_arrival_span_seconds": 12.687,
+    "text_bytes": 3898
+  },
+  "passed": true,
+  "elapsed_seconds": 21.547
+}

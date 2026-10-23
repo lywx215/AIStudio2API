@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "scope": "First completion-stage config import unit-test attempt",
+  "evidence_kind": "exact command, exit code and output copied from the recorded exec_command result; not rerun",
+  "tool_chunk_id": "19d711",
+  "working_directory": "G:\\code\\gemini30\\AIStudio2API",
+  "command": "go test -mod=readonly ./internal/addons/business/config -run '^TestImport' -count=1",
+  "execution_environment": "default exec_command sandbox; no escalation, relocation or executable rename",
+  "exit_code": 1,
+  "output": "fork/exec C:\\Users\\lywx2\\AppData\\Local\\Packages\\sandbox.{a5c0b5f7-84c0-4b1c-985c-df4b726a7053}\\AC\\Temp\\go-build2089925027\\b001\\config.test.exe: An Application Control policy has blocked this file.\nFAIL\tgithub.com/Mag1cFall/AIStudio2API/internal/addons/business/config\t2.428s\nFAIL\n",
+  "classification": "Windows Application Control blocked test executable startup",
+  "assertions_executed": false,
+  "passed": false,
+  "attempts": 1,
+  "rerun_after_block": false,
+  "final_source_state_tested": false,
+  "later_source_changes": "Console identity/lifetime binding, actual indented persisted-size checks including incremented revisions, and additional boundary tests were added after this blocked attempt. No subsequent config test execution occurred.",
+  "host_api_resources_app_tests_executed_by_this_agent": false
+}

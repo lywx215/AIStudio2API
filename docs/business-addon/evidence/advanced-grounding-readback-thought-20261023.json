@@ -1,0 +1,227 @@
+{
+  "model_calls": 0,
+  "raw_responses_saved": false,
+  "redirects_followed": false,
+  "calls": [
+    {
+      "method": "widgetListSessions",
+      "http_status": 200,
+      "response_bytes": 7358
+    },
+    {
+      "method": "widgetGetSession",
+      "http_status": 200,
+      "response_bytes": 19082
+    }
+  ],
+  "matched_synthetic_session": true,
+  "auth_http_status": 200,
+  "listed_count": 2,
+  "turns": [
+    {
+      "turn": 0,
+      "state": "SUCCEEDED",
+      "reply_count": 4,
+      "grounding": [
+        {
+          "metadata_keys": [
+            "references",
+            "searchEntryPoints",
+            "segments"
+          ],
+          "content_keys": [],
+          "text_bytes": 0,
+          "references": 1,
+          "document_metadata_refs": 1,
+          "segments": 3,
+          "segment_keys": [
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ],
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ],
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ]
+          ],
+          "reference_index_lengths": [
+            1,
+            1,
+            1
+          ],
+          "candidate_anchors": [
+            {
+              "reply_index": 0,
+              "thought": true,
+              "all_segment_offsets_text_exact": false,
+              "exact_segment_count": 0,
+              "same_reply_id": true
+            },
+            {
+              "reply_index": 1,
+              "thought": false,
+              "all_segment_offsets_text_exact": true,
+              "exact_segment_count": 3,
+              "same_reply_id": true
+            }
+          ]
+        }
+      ],
+      "reply_shapes": [
+        {
+          "index": 0,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "text",
+            "thought"
+          ],
+          "thought": true,
+          "text_bytes": 177,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "index": 1,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "text"
+          ],
+          "thought": false,
+          "text_bytes": 582,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            0,
+            2,
+            3
+          ]
+        },
+        {
+          "index": 2,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "inlineData"
+          ],
+          "thought": false,
+          "text_bytes": 0,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            0,
+            1,
+            3
+          ]
+        },
+        {
+          "index": 3,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "textGroundingMetadata"
+          ],
+          "content_keys": [],
+          "thought": false,
+          "text_bytes": 0,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "usage_field_paths": []
+    },
+    {
+      "turn": 1,
+      "state": "SUCCEEDED",
+      "reply_count": 2,
+      "grounding": [],
+      "reply_shapes": [
+        {
+          "index": 0,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "text",
+            "thought"
+          ],
+          "thought": true,
+          "text_bytes": 36,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            1
+          ]
+        },
+        {
+          "index": 1,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "text"
+          ],
+          "thought": false,
+          "text_bytes": 61,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            0
+          ]
+        }
+      ],
+      "usage_field_paths": []
+    }
+  ]
+}

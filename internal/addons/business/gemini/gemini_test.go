@@ -26,7 +26,7 @@ func (f generatorFunc) Generate(c context.Context, s contract.Selection, r contr
 	return f(c, s, r, e)
 }
 
-func TestPresenceOpaqueSchemaAndUnsupportedBeforeLease(t *testing.T) {
+func TestPresenceOpaqueSchemaAndInvalidContentBeforeLease(t *testing.T) {
 	r, err := Parse(strings.NewReader(`{"contents":[{"parts":[{"text":"hi"}]}],"generationConfig":{"temperature":0,"thinkingConfig":{"includeThoughts":false,"thinkingBudget":0},"responseJsonSchema":{"type":"object","properties":{"value":{"const":9007199254740993}}}}}`), binding())
 	if err != nil || string(r.Generation["temperature"]) != "0" || !strings.Contains(string(r.Generation["thinkingConfig"]), "false") || !strings.Contains(string(r.Generation["responseJsonSchema"]), "9007199254740993") {
 		t.Fatal(err)
@@ -37,8 +37,7 @@ func TestPresenceOpaqueSchemaAndUnsupportedBeforeLease(t *testing.T) {
 		return nil
 	}))
 	for _, body := range []string{
-		`{"contents":[],"contents":[]}`, `{"contents":[{"parts":[{"text":"hello"}]}],"tools":[]}`,
-		`{"contents":[{"parts":[{"text":"hello"}]}],"generationConfig":{"topP":0}}`,
+		`{"contents":[],"contents":[]}`,
 		`{"contents":[{"parts":[{"text":"hello"}]}],"generationConfig":{"temperature":null}}`,
 		`{"contents":[{"role":"model","parts":[{"text":"old"}]},{"role":"user","parts":[{"text":"new"}]}]}`,
 	} {

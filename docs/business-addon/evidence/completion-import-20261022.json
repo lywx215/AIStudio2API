@@ -1,0 +1,92 @@
+{
+  "scope": "local synthetic disabled model import and undo",
+  "model_calls": 0,
+  "checks": {
+    "preview_no_write": true,
+    "preview_disabled_unverified": true,
+    "source_hash_change_rejected": true,
+    "only_disabled_model_appended": true,
+    "other_settings_unchanged": true,
+    "stale_revision_rejected": true,
+    "undo_restored_settings": true,
+    "replayed_undo_and_account_document_rejected": true,
+    "final_settings_restored": true
+  },
+  "requests": [
+    {
+      "path": "/api/addons/business/status",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config/import/preview",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config/import",
+      "method": "POST",
+      "status": 409
+    },
+    {
+      "path": "/api/addons/business/config",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config/import",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config/import",
+      "method": "POST",
+      "status": 409
+    },
+    {
+      "path": "/api/addons/business/config/import/rollback",
+      "method": "POST",
+      "status": 409
+    },
+    {
+      "path": "/api/addons/business/config/import/rollback",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/addons/business/config/import/rollback",
+      "method": "POST",
+      "status": 409
+    },
+    {
+      "path": "/api/addons/business/config/import/preview",
+      "method": "POST",
+      "status": 400
+    },
+    {
+      "path": "/api/addons/business/config",
+      "method": "GET",
+      "status": 200
+    }
+  ],
+  "initial_revision": 6,
+  "final_revision": 8,
+  "initial_settings_sha256": "4df6fd31b09cf037a6cd4c008ce4571252d961ccada457e76c8d1fa80ecf87cf",
+  "final_settings_sha256": "4df6fd31b09cf037a6cd4c008ce4571252d961ccada457e76c8d1fa80ecf87cf",
+  "passed": true
+}

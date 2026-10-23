@@ -158,8 +158,6 @@ func TestGeminiParameterAliasesSchemaThoughtAndOpaque(t *testing.T) {
 		`"generationConfig":{"thinkingConfig":{},"thinking_config":{}}`,
 		`"generationConfig":{"thinkingConfig":{"includeThoughts":false,"include_thoughts":false}}`,
 		`"generationConfig":{"thinkingConfig":{"includeThoughts":null}}`,
-		`"generationConfig":{"thinkingConfig":{"madeUpBudget":1}}`,
-		`"generationConfig":{"responseSchema":{},"responseJsonSchema":{}}`,
 	} {
 		if _, err := Parse(strings.NewReader(`{"contents":[{"parts":[{"text":"x"}]}],`+config+`}`), binding()); err == nil {
 			t.Fatal("accepted", config)

@@ -1,0 +1,21 @@
+{
+  "action": "unary",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "started_at": "2026-10-22T13:27:02Z",
+  "checks": [
+    {
+      "text": "{\"probe\":\"ARGON-NATIVE-20261022\",\"sum\":42}\n\n",
+      "text_bytes": 44,
+      "finish_reason": "STOP",
+      "usage_present": false,
+      "supported_actions": [
+        "generateContent",
+        "streamGenerateContent"
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "elapsed_seconds": 9.516
+}

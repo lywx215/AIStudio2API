@@ -32,7 +32,7 @@ func (d *captureDriver) Close() error {
 func readyCapture(_ context.Context, method string, _ map[string]any) (json.RawMessage, error) {
 	switch method {
 	case "session.new":
-		return json.RawMessage(`{"capabilities":{"browserName":"firefox","browserVersion":"152.0"}}`), nil
+		return json.RawMessage(`{"capabilities":{"browserName":"camoufox","browserVersion":"152.0.4-beta.29"}}`), nil
 	case "browsingContext.getTree":
 		return json.RawMessage(`{"contexts":[{"context":"fixture","url":"https://business.gemini.google/u/0/cid/config-fixture?csesidx=123"}]}`), nil
 	case "browsingContext.navigate":

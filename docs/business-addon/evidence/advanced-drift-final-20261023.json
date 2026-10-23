@@ -1,0 +1,130 @@
+{
+  "passed": true,
+  "fixtures": 20,
+  "results": [
+    {
+      "id": "reviewed-attachments",
+      "expected_pass": true,
+      "actual_pass": true,
+      "matched_expectation": true
+    },
+    {
+      "id": "windows-line-endings",
+      "expected_pass": true,
+      "actual_pass": true,
+      "matched_expectation": true
+    },
+    {
+      "id": "missing-close",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "changed-legacy-config",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "duplicate-start",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "management-priority-drift",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "unwrapped-root",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "wrong-auth-instance",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "legacy-default-tab-drift",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "lazy-loader-drift",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "legacy-tab-removed",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "candidate-baseline-moved",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "allowed-new-module",
+      "expected_pass": true,
+      "actual_pass": true,
+      "matched_expectation": true
+    },
+    {
+      "id": "protected-runtime-edited",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "old-test-edited",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "new-file-outside-budget",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "prefix-lookalike",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "baseline-cannot-expand-budget",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "baseline-cannot-replace-readme-hash",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    },
+    {
+      "id": "baseline-cannot-hide-new-root",
+      "expected_pass": false,
+      "actual_pass": false,
+      "matched_expectation": true
+    }
+  ],
+  "documentation_errors": [],
+  "real_candidate_verified": false,
+  "live_verified": false,
+  "scope": "synthetic in-memory drift only; no checkout, Go/Web test, browser or network"
+}

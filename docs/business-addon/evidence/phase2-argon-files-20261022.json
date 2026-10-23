@@ -1,0 +1,40 @@
+{
+  "action": "files",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "started_at": "2026-10-22T12:22:04Z",
+  "checks": [
+    {
+      "text": "{\"reference_token\": \"ARGON-TXT-7Q4M9C\", \"total_units\": 42}",
+      "text_bytes": 58,
+      "finish_reason": "STOP",
+      "usage_present": false,
+      "mime_type": "text/plain",
+      "input_bytes": 118,
+      "input_sha256": "464ff9817f7831278d6191379c8245355c888b17dc3cec2f14b50a49573ef891",
+      "expected": {
+        "reference_token": "ARGON-TXT-7Q4M9C",
+        "total_units": 42
+      },
+      "passed": true,
+      "deleted_http_status": 404
+    },
+    {
+      "text": "{\"reference_token\": \"ARGON-PDF-8V2K6R\", \"total_units\": 47}",
+      "text_bytes": 58,
+      "finish_reason": "STOP",
+      "usage_present": false,
+      "mime_type": "application/pdf",
+      "input_bytes": 1766,
+      "input_sha256": "611b45882cd7caee48abe3efe5f097a2cad2306428bc631a3172c8e1d28f9e6c",
+      "expected": {
+        "reference_token": "ARGON-PDF-8V2K6R",
+        "total_units": 47
+      },
+      "passed": true,
+      "deleted_http_status": 404
+    }
+  ],
+  "passed": true,
+  "elapsed_seconds": 32.265
+}

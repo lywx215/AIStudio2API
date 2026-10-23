@@ -1,0 +1,80 @@
+=== RUN   TestGeminiSDKPhase6RetrievedCitationsAndChat
+=== RUN   TestGeminiSDKPhase6RetrievedCitationsAndChat/Python
+    sdk_phase6_test.go:168: phase 6 Python SDK fixture failed: exit status 1
+        Traceback (most recent call last):
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 375, in <module>
+            raise SystemExit(main())
+                             ^^^^^^
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 46, in main
+            return worker()
+                   ^^^^^^^^
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 104, in worker
+            coverage = run_phase(client, types, errors, lambda: last_generations, lambda: last_wire_stream)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 347, in phase6_worker
+            followup([user("phase6-unary"), response.candidates[0].content, user("phase6-followup")])
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 338, in followup
+            response = client.models.generate_content(model=MODEL, contents=contents)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\models.py", line 6301, in generate_content
+            response = self._generate_content_with_continuation(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\models.py", line 6142, in _generate_content_with_continuation
+            response = self._generate_content(
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\models.py", line 4681, in _generate_content
+            response = self._api_client.request(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\_api_client.py", line 1839, in request
+            response = self._request(http_request, http_options, stream=False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\_api_client.py", line 1632, in _request
+            return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+            do = self.iter(retry_state=retry_state)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+            result = action(retry_state)
+                     ^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 393, in <lambda>
+            self._add_action_func(lambda rs: rs.outcome.result())
+                                             ^^^^^^^^^^^^^^^^^^^
+          File "C:\Users\lywx2\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py", line 449, in result
+            return self.__get_result()
+                   ^^^^^^^^^^^^^^^^^^^
+          File "C:\Users\lywx2\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py", line 401, in __get_result
+            raise self._exception
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+            result = fn(*args, **kwargs)
+                     ^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\_api_client.py", line 1608, in _request_once
+            response = self._httpx_client.send(httpx_request, stream=stream)  # type: ignore[union-attr, arg-type]
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\httpx\_client.py", line 914, in send
+            response = self._send_handling_auth(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+            response = self._send_handling_redirects(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+            response = self._send_single_request(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+            response = transport.handle_request(request)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\httpx\_transports\mock.py", line 24, in handle_request
+            response = self.handler(request)
+                       ^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 68, in round_trip
+            blob = body["contents"][0]["parts"][0]["inlineData"]
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+        KeyError: 'inlineData'
+=== RUN   TestGeminiSDKPhase6RetrievedCitationsAndChat/JavaScript
+    sdk_phase6_test.go:128: JavaScript SDK=2.22.0 requests=7 generations=6 coverage=[retrieved-context-not-web-source-identity citationSources-sdk-citations-no-invented-offsets mixed-parts-utf8-split-supports-terminal-only chat-all-parts-continued-without-candidate-metadata]; socket-free real-handler fixture
+--- FAIL: TestGeminiSDKPhase6RetrievedCitationsAndChat (1.52s)
+    --- FAIL: TestGeminiSDKPhase6RetrievedCitationsAndChat/Python (1.32s)
+    --- PASS: TestGeminiSDKPhase6RetrievedCitationsAndChat/JavaScript (0.20s)
+FAIL
+FAIL	github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini	5.274s
+FAIL

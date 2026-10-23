@@ -1,0 +1,11 @@
+{
+  "config_revision_before": 8,
+  "ready": true,
+  "origin": "http://127.0.0.1:2048",
+  "bytes": 51619840,
+  "old_pid": 33904,
+  "old_sha256": "2D97B26BC0F00B6B4FD81DA1CC3FC1CF93C97EADF32AD14944FEC5347127DE52",
+  "new_pid": 58736,
+  "restarted_at": "2026-10-22T16:14:16.6813914Z",
+  "new_sha256": "93C8CE4F48476453EBBC83C297DD06029A31B87B950EDEC819BBD9FF9738DF91"
+}

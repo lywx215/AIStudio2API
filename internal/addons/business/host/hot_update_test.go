@@ -145,7 +145,7 @@ func TestAccountErrorsSurviveConfigurationAndLabelSave(t *testing.T) {
 	for _, tc := range []struct {
 		code  int
 		state string
-	}{{429, "cooldown"}, {403, "auth_required"}} {
+	}{{429, "cooldown"}, {401, "auth_required"}} {
 		t.Run(tc.state, func(t *testing.T) {
 			var calls atomic.Int32
 			h, a := hotUpdateHost(t, offlineTransport(func(r *http.Request) (*http.Response, error) {

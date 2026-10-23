@@ -1,0 +1,25 @@
+=== RUN   TestGeminiJavaScriptSDKOfflineHarness
+    sdk_javascript_test.go:141: @google/genai=2.22.0 requests=35 generations=19 coverage=[models-list-pagination-get unary-inline-data mapped-zero-false-schema unmapped-optional-parameters-ignored thought-signature-suggestions fragmented-sse-utf8-stop invalid-structure-and-unavailable-method-preflight files-upload-get-list-reference-download-delete-ownership errors-truncation-no-retry-no-false-stop]; socket-free real-handler fixture
+    sdk_javascript_test.go:142: Pinned SDK drops SSE error fields; consumer requires STOP and rejects incomplete output without replay
+--- PASS: TestGeminiJavaScriptSDKOfflineHarness (0.55s)
+=== RUN   TestGeminiSDKPhase5PartsAndChat
+=== RUN   TestGeminiSDKPhase5PartsAndChat/Python
+    sdk_phase5_test.go:142: Python SDK=2.32.0 requests=13 generations=11 coverage=[native-code-result-signature-and-exact-history execution-outcomes-are-successful-parts grounding-only-terminal-utf8-byte-indices native-chat-unary-stream-next-turn failed-chat-prefix-refused-without-retry] streamErrors=raises_502; socket-free real-handler fixture
+=== RUN   TestGeminiSDKPhase5PartsAndChat/JavaScript
+    sdk_phase5_test.go:142: JavaScript SDK=2.22.0 requests=13 generations=11 coverage=[native-code-result-signature-and-exact-history execution-outcomes-are-successful-parts grounding-only-terminal-utf8-byte-indices native-chat-unary-stream-next-turn failed-chat-prefix-refused-without-retry] streamErrors=discarded_without_stop; socket-free real-handler fixture
+--- PASS: TestGeminiSDKPhase5PartsAndChat (1.44s)
+    --- PASS: TestGeminiSDKPhase5PartsAndChat/Python (1.28s)
+    --- PASS: TestGeminiSDKPhase5PartsAndChat/JavaScript (0.16s)
+=== RUN   TestGeminiSDKPhase6RetrievedCitationsAndChat
+=== RUN   TestGeminiSDKPhase6RetrievedCitationsAndChat/Python
+    sdk_phase6_test.go:128: Python SDK=2.32.0 requests=7 generations=6 coverage=[retrieved-context-not-web-source-identity citationSources-sdk-citations-no-invented-offsets mixed-parts-utf8-split-supports-terminal-only chat-all-parts-continued-without-candidate-metadata]; socket-free real-handler fixture
+=== RUN   TestGeminiSDKPhase6RetrievedCitationsAndChat/JavaScript
+    sdk_phase6_test.go:128: JavaScript SDK=2.22.0 requests=7 generations=6 coverage=[retrieved-context-not-web-source-identity citationSources-sdk-citations-no-invented-offsets mixed-parts-utf8-split-supports-terminal-only chat-all-parts-continued-without-candidate-metadata]; socket-free real-handler fixture
+--- PASS: TestGeminiSDKPhase6RetrievedCitationsAndChat (1.03s)
+    --- PASS: TestGeminiSDKPhase6RetrievedCitationsAndChat/Python (0.88s)
+    --- PASS: TestGeminiSDKPhase6RetrievedCitationsAndChat/JavaScript (0.15s)
+=== RUN   TestGeminiSDKOfflineHarness
+    sdk_test.go:150: google-genai==2.32.0 exercised real Gemini/file handlers via MockTransport; generations=15; no network sockets
+--- PASS: TestGeminiSDKOfflineHarness (0.90s)
+PASS
+ok  	github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini	15.894s

@@ -99,7 +99,7 @@ func TestGeminiOutputSuggestionsNativeUnionAndBudget(t *testing.T) {
 	}
 }
 
-func TestGeminiUnknownNativeFieldsAndMethodsRejectBeforeGeneration(t *testing.T) {
+func TestGeminiUnsupportedContentAndMethodsRejectBeforeGeneration(t *testing.T) {
 	calls := 0
 	h := Handler([]config.Binding{binding()}, generatorFunc(func(context.Context, contract.Selection, contract.Request, func(contract.Event) error) error {
 		calls++
@@ -108,10 +108,6 @@ func TestGeminiUnknownNativeFieldsAndMethodsRejectBeforeGeneration(t *testing.T)
 	for _, body := range []string{
 		`{"contents":[{"parts":[{"functionCall":{"name":"f","args":{}}}]}]}`,
 		`{"contents":[{"parts":[{"text":"x","thought":false}]}]}`,
-		`{"contents":[{"parts":[{"text":"x"}]}],"systemInstruction":{"parts":[{"text":"s"}]}}`,
-		`{"contents":[{"parts":[{"text":"x"}]}],"tools":[]}`,
-		`{"contents":[{"parts":[{"text":"x"}]}],"toolConfig":{}}`,
-		`{"contents":[{"parts":[{"text":"x"}]}],"cachedContent":"cached/old"}`,
 	} {
 		for _, action := range []string{"generateContent", "streamGenerateContent", "streamGenerateContent?alt=sse"} {
 			w := httptest.NewRecorder()

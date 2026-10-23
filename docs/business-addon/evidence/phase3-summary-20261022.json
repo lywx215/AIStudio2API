@@ -1,0 +1,197 @@
+{
+  "phase": "phase3-observation-remote-collection",
+  "date": "2026-10-22",
+  "implementation_status": "implemented_with_remaining_validation_and_followup_scope",
+  "global_live_verified": false,
+  "runtime": {
+    "origin": "http://127.0.0.1:2048",
+    "pid": 78796,
+    "started_at": "2026-10-22T13:24:21.6835438Z",
+    "executable_sha256": "CCE0A66174760BB55B52CF5D4AEA387935C9C8FF5C34CBEB5DB5E9384EE2567B",
+    "executable_bytes": 51420672,
+    "previous_binary_backup": "runtime/business-local/aistudio2api-before-phase3.exe",
+    "existing_account_preserved": true,
+    "config_revision": 6,
+    "state": "ready",
+    "active_requests": 0,
+    "resource_in_use_bytes": 0,
+    "owned_browser_profiles_remaining": 0,
+    "consecutive_failures": [
+      0
+    ]
+  },
+  "implemented": [
+    "Original-console-session bound remote manual browser collection with fixed operations, deadlines, cancellation and cleanup-before-CAS save.",
+    "Tested Camoufox version and capability admission; dedicated headless process/profile/cache.",
+    "Passive minimal model observations with request-dispatch scope binding, expiry, conflict and pending confirmation. No automatic model enablement.",
+    "Per-account direct/HTTP/SOCKS5 proxy and UA isolation; credentials remain encrypted.",
+    "Generation response headers use the overall request deadline while authentication/upload retain short header deadlines.",
+    "Unsupported optional Gemini fields are accepted and ignored; mapped parameters retain forwarding validation."
+  ],
+  "offline": {
+    "go_command": "CGO_ENABLED=0 go test -mod=readonly -json ./internal/addons/business/... ./internal/api ./internal/app ./scripts/business-addon/parameter-probe ./scripts/business-addon/token-count",
+    "latest_go_all_passed": false,
+    "latest_go_test_packages_passed": 12,
+    "latest_go_top_level_tests_passed": 217,
+    "latest_test_assertion_failures": 0,
+    "blocked_packages": [
+      "internal/addons/business/host",
+      "internal/api"
+    ],
+    "unexecuted_new_case": "TestRemoteCleanupFailureNeverSavesAndSurvivesShutdown",
+    "deferred_by_user": true,
+    "fixed_approval_artifacts": [
+      {
+        "path": "G:\\code\\gemini30\\AIStudio2API\\runtime\\business-local\\verification\\host.test.exe",
+        "sha256": "777047A82314447DC89EA918DE10615CF099B5B8B176EDCBC2BF52C10E46340B",
+        "executed": false,
+        "reason": "Windows Application Control blocked the final standard test invocation; user chose to retain unverified records."
+      },
+      {
+        "path": "G:\\code\\gemini30\\AIStudio2API\\runtime\\business-local\\verification\\api.test.exe",
+        "sha256": "CC482403B134159DCF73FAEEE8CC89729C290B8FA9C8A76CBFDCFAFE7C40B988",
+        "executed": false,
+        "reason": "Windows Application Control blocked the final standard test invocation; user chose to retain unverified records."
+      }
+    ],
+    "previous_complete_run": {
+      "packages": 14,
+      "top_level_tests": 311,
+      "evidence": "phase3-go-complete-20261022.jsonl",
+      "covers_final_source": false
+    },
+    "previous_followup_run": {
+      "packages": 4,
+      "top_level_tests": 160,
+      "evidence": "phase3-followup-tests-20261022.jsonl",
+      "covers_final_host_shutdown_change": false
+    },
+    "actual_headless_browser_test": "passed in latest command: input, screenshot, cleanup using a synthetic local data page; no Google login",
+    "vet": "passed: cmd/internal and two Business helpers",
+    "web_tests_passed": 152,
+    "web_typecheck_lint_build": "passed",
+    "build": "passed; final executable restarted and real unary verified",
+    "race": "not run: CGO disabled and no C compiler",
+    "boundary_gate": "passed: four frozen anchors and protected README hash retained",
+    "drift_gate": "passed: 20 synthetic fixtures",
+    "diff_check": "passed"
+  },
+  "live": {
+    "model": "business-gemini-4-argon",
+    "generation_attempts": 6,
+    "successful_generations": 4,
+    "failed_pdf_generations": 2,
+    "automatic_generation_replays": 0,
+    "stream": {
+      "text_events": 24,
+      "first_text_seconds": 11.375,
+      "text_arrival_span_seconds": 8.75,
+      "finish_reason": "STOP",
+      "passed": true
+    },
+    "txt_reference": {
+      "marker_and_arithmetic_correct": true,
+      "total_units": 42,
+      "deleted_http_status": 404
+    },
+    "pdf_reference_after_fix": {
+      "marker_and_arithmetic_correct": true,
+      "total_units": 47,
+      "finish_reason": "STOP",
+      "deleted_http_status": 404
+    },
+    "pdf_failure_note": "Two prior HTTP502 responses occurred before output; no low-level transport detail was captured, so the old 20-second header limit is not asserted as their sole cause.",
+    "final_unary": {
+      "passed": true,
+      "finish_reason": "STOP",
+      "elapsed_seconds": 9.516,
+      "usage_present": false
+    },
+    "remote_browser": {
+      "state": "waiting",
+      "frame_png_bytes": 210871,
+      "missing_fields": [
+        "config_id",
+        "csesidx",
+        "session_cookie"
+      ],
+      "account_saved": false,
+      "manual_key_accepted": true,
+      "tested_versions": [
+        "camoufox 152.0.4-beta.29"
+      ],
+      "generation_calls": 0,
+      "cleanup_confirmed": true
+    },
+    "model_observation_real_catalog_entries": 0,
+    "parameter_effects_verified": false,
+    "parameter_policy": "Unmapped optional fields ignored; acceptance/HTTP200 does not prove semantic support."
+  },
+  "limits": [
+    "Final Host/API test execution deferred by user after OS policy blocking. Earlier passes do not cover the final shutdown cleanup propagation change.",
+    "Real manual Google login/CAPTCHA/account saving and no-desktop Linux VPS operation have not been verified.",
+    "Persistent full browser fingerprint configuration remains followup work; current isolation covers dedicated profiles and saved UA/proxy.",
+    "Native multi-turn/session, system/tools semantic support, native countTokens/usage and JavaScript SDK remain unverified or unsupported.",
+    "This phase did not repeat the earlier >100k input token test.",
+    "Three requested Codex subagents reached usage limits before producing edits; root completed implementation.",
+    "No commit, push, remote deployment or external Claude/Antigravity review."
+  ],
+  "artifacts": {
+    "phase3-argon-stream.json": {
+      "file": "phase3-argon-stream-20261022.json",
+      "sha256": "A4BA1FD30F18CE3648FA1E199DCD57BB9AC5DD9375D18DE23CC435E5F0D7DCF0"
+    },
+    "phase3-argon-files.json": {
+      "file": "phase3-argon-files-20261022.json",
+      "sha256": "F4DAA911DEB0E6D7DFD112477EAC46696F7295EC6E3F1C13F2FA2F4AA2176538"
+    },
+    "phase3-argon-pdf-confirmation.json": {
+      "file": "phase3-argon-pdf-confirmation-20261022.json",
+      "sha256": "A46BD36564C9F7D838F2740D7DCCBAC83C501C789DD72D734BC77A14EC9EB269"
+    },
+    "phase3-argon-pdf-fixed.json": {
+      "file": "phase3-argon-pdf-fixed-20261022.json",
+      "sha256": "AA8E199009741BE2140F0BD3431EF7AD6747D37E4EE25FB01EAAF0419BC1F8EE"
+    },
+    "phase3-argon-final-unary.json": {
+      "file": "phase3-argon-final-unary-20261022.json",
+      "sha256": "7045DA28C8E022795027BFD4D9FE78E95B0BA0930E08CBA194DFD9993CE4C825"
+    },
+    "phase3-browser-final.json": {
+      "file": "phase3-browser-final-20261022.json",
+      "sha256": "352A77218274516D7C52FE4EF989C21DB7B2BD85F6CB166D06D25C43E76F9E37"
+    },
+    "phase3-final-status.json": {
+      "file": "phase3-final-status-20261022.json",
+      "sha256": "77F5285A83D1959F422A059FD70E3B4419B46BB49DD10D755AAC711FD24751F5"
+    },
+    "phase3-go-release.jsonl": {
+      "file": "phase3-go-release-20261022.jsonl",
+      "sha256": "3A035D7ED32B9C4F157AE01C192034643ECB231B7C9BC21495F02569F984DE4B"
+    },
+    "phase3-go-complete.jsonl": {
+      "file": "phase3-go-complete-20261022.jsonl",
+      "sha256": "A260CDC07020A2272E21CE424B54AEE5604D6FEE19170BBE558383B5BF741A56"
+    },
+    "phase3-followup-tests.jsonl": {
+      "file": "phase3-followup-tests-20261022.jsonl",
+      "sha256": "8C066D4E84E5350E357972C1E3D438F0C9A02909043D5542856CFE4BF0543C4B"
+    },
+    "phase3-web-release.log": {
+      "file": "phase3-web-release-20261022.log",
+      "sha256": "7713975CF572A7B6B6D7BCC79B140054A1122CA48AA74CB66091DD4CAEC64C11"
+    },
+    "phase3-web-build.log": {
+      "file": "phase3-web-build-20261022.log",
+      "sha256": "042ECA64F0F9B8D87932D871E4595E9FCB0B8B6805F5978C00CA7980DA76FF84"
+    },
+    "phase3-anchors-20261022.json": {
+      "file": "phase3-anchors-20261022.json",
+      "sha256": "D7332DA3DFFFB654BC8CFC7332D579776DAD6F007C495A2E3CD6EF31D4BB301C"
+    },
+    "phase3-drift-20261022.json": {
+      "file": "phase3-drift-20261022.json",
+      "sha256": "429A4E24C328BE7FEA207F7BA157C0F5514DD1C53C94F592717767B1E2F0DB34"
+    }
+  }
+}

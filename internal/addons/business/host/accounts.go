@@ -28,6 +28,11 @@ func (h *Host) reloadLocked() {
 			h.engine.Suspend()
 		}
 		h.collector.Cancel()
+		h.remoteMu.Lock()
+		if h.remote != nil {
+			h.remote.cancel()
+		}
+		h.remoteMu.Unlock()
 		return
 	}
 	if h.generationContext == nil || h.generationContext.Err() != nil {

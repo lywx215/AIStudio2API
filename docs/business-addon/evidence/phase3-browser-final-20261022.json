@@ -1,0 +1,16 @@
+{
+  "state": "waiting",
+  "frame_png_bytes": 210871,
+  "missing_fields": [
+    "config_id",
+    "csesidx",
+    "session_cookie"
+  ],
+  "account_saved": false,
+  "manual_key_accepted": true,
+  "tested_versions": [
+    "camoufox 152.0.4-beta.29"
+  ],
+  "generation_calls": 0,
+  "cleanup_confirmed": true
+}

@@ -55,11 +55,36 @@ test('Business client uses shared console requests and preserves config revision
   assert.ok(calls.every(([, options]) => options.signal === controller.signal && !options.headers))
 })
 
+test('Remote collection cancels its server task when the console panel unmounts', async () => {
+  const requests = []
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async (url, options) => { requests.push({ url, options }); return new Response('{}') }
+  const panel = await mountPanel({ requestJSON: async (url, options) => {
+    requests.push({ url, options })
+    if (url.endsWith('/browser-info')) return { executable_path: '/fixture/camoufox' }
+    if (url.endsWith('/observations')) return { revision: 0, entries: [] }
+    if (url.endsWith('/browser') && options.method === 'POST') return { task_id: 'fixture-task', state: 'starting', missing_fields: [], observations_count: 0, expires_at: '2030-01-01T00:00:00Z' }
+    throw new Error('Unexpected endpoint')
+  } }, 'BusinessCollection')
+  try {
+    const inputs = panel.nodes().filter(n => n.tag === 'input')
+    inputs[0].props['onUpdate:modelValue']('Fixture login')
+    await panel.submit()
+    const create = requests.find(r => r.url.endsWith('/browser') && r.options.method === 'POST')
+    assert.equal(JSON.parse(create.options.body).headless, true)
+    assert.equal(JSON.parse(create.options.body).revision, 0)
+    assert.ok(!requests.some(r => r.url.includes('generateContent')))
+  } finally { panel.close(); await setImmediate(); globalThis.fetch = previousFetch }
+  assert.ok(requests.some(r => r.url.endsWith('/browser/fixture-task') && r.options.method === 'DELETE' && r.options.keepalive))
+  assert.ok(requests.filter(r => r.options.signal).every(r => r.options.signal.aborted))
+})
+
 const fixtureConfig = () => ({
   schema_version: 1,
   revision: 0,
   enabled: false,
   max_concurrent: 2,
+  max_inflight_bytes: 256 * 1024 * 1024,
   request_timeout_seconds: 120,
   bindings: [
     {
@@ -83,6 +108,11 @@ const fixtureStatus = () => ({
   account_states: [],
   model_states: [],
   capacity: { limit: 2, active: 0, available: 2 },
+  resources: {
+    limit_bytes: 256 * 1024 * 1024,
+    in_use_bytes: 0,
+    available_bytes: 256 * 1024 * 1024,
+  },
 })
 const fixtureModelState = (overrides = {}) => ({
   public_id: 'business-test',
@@ -114,9 +144,10 @@ async function mountPanel(overrides = {}, componentName = 'BusinessPanel', props
       return fixtureStatus()
     },
     save: async (config, signal) => {
-      calls.saves.push(structuredClone(vue.toRaw(config)))
+      const plain = JSON.parse(JSON.stringify(config))
+      calls.saves.push(plain)
       calls.signals.push(signal)
-      return { ...config, revision: config.revision + 1 }
+      return { ...structuredClone(plain), revision: plain.revision + 1 }
     },
     accounts: async (signal) => {
       calls.signals.push(signal)
@@ -150,12 +181,18 @@ async function mountPanel(overrides = {}, componentName = 'BusinessPanel', props
   const registry = `__business_panel_${Math.random().toString(36).slice(2)}`
   const modules = {
     vue: { ...vue, withDirectives: (node) => node },
-    '@/api': { ApiError: FixtureAPIError },
+    '@/api': { ApiError: FixtureAPIError, requestJSON: overrides.requestJSON ?? (async () => ({})) },
     '@/i18n': { useI18n: () => ({ locale: vue.ref('zh-CN') }) },
     './client': { businessClient: client },
     './BusinessAccounts.vue': {
       default: vue.defineComponent({
-        setup: () => () => vue.h('section', 'Account panel fixture'),
+        props: ['states'],
+        setup: (props) => () =>
+          vue.h(
+            'section',
+            { 'data-account-states': JSON.stringify(props.states) },
+            'Account panel fixture',
+          ),
       }),
     },
     './BusinessTry.vue': {
@@ -170,6 +207,12 @@ async function mountPanel(overrides = {}, componentName = 'BusinessPanel', props
               onClick: () => emit('completed'),
             }),
       }),
+    },
+    './BusinessCollection.vue': {
+      default: vue.defineComponent({ setup: () => () => vue.h('section', 'Collection fixture') }),
+    },
+    './BusinessImport.vue': {
+      default: vue.defineComponent({ setup: () => () => vue.h('section', 'Import fixture') }),
     },
   }
   globalThis[registry] = modules
@@ -292,6 +335,57 @@ test('Business panel renders real readiness and disables unresolved model bindin
   }
 })
 
+test('Business import requires a current preview and applies its exact source and revision', async () => {
+  const calls = []
+  const source = { models: [{ id: 'new', name: 'New', routing_mode: 'explicit', upstream_model_id: 'observed' }] }
+  const panel = await mountPanel({
+    previewImport: async (input) => { calls.push(['preview', input]); return { revision: 6, source_hash: 'digest', added: [{ public_id: 'business-new', display_name: 'New' }], skipped: [], warnings: [] } },
+    applyImport: async (input) => { calls.push(['apply', input]); return { config: { revision: 7 }, rollback_id: 'undo' } },
+  }, 'BusinessImport', { revision: 6 })
+  try {
+    assert.equal(panel.button('确认导入').props.disabled, true)
+    const field = panel.nodes().find(n => n.tag === 'textarea')
+    field.props['onUpdate:modelValue'](JSON.stringify(source))
+    await panel.flush()
+    await panel.button('预览导入').props.onClick()
+    await panel.flush()
+    assert.equal(calls.length, 1)
+    assert.equal(panel.button('确认导入').props.disabled, false)
+    await panel.button('确认导入').props.onClick()
+    await panel.flush()
+    assert.deepEqual(calls[1], ['apply', { revision: 6, source_hash: 'digest', source }])
+    assert.equal(field.props.value ?? '', '')
+    assert.ok(panel.content().includes('默认停用'))
+  } finally { panel.close() }
+})
+
+test('Business import editing invalidates preview and shutdown aborts pending requests', async () => {
+  let resolve
+  let signal
+  let applies = 0
+  const panel = await mountPanel({
+    previewImport: async (_input, abort) => { signal = abort; return new Promise(done => { resolve = done }) },
+    applyImport: async () => { applies++; throw new Error('must not apply') },
+  }, 'BusinessImport', { revision: 3 })
+  try {
+    const field = panel.nodes().find(n => n.tag === 'textarea')
+    field.props['onUpdate:modelValue']('{"models":[]}')
+    await panel.flush()
+    const pending = panel.button('预览导入').props.onClick()
+    await panel.flush()
+    field.props['onUpdate:modelValue']('{"bindings":[]}')
+    await panel.flush()
+    resolve({ revision: 3, source_hash: 'old', added: [{}], skipped: [], warnings: [] })
+    await pending
+    await panel.flush()
+    assert.equal(panel.button('确认导入').props.disabled, true)
+    await panel.button('确认导入').props.onClick()
+    assert.equal(applies, 0)
+    panel.listeners.get('pagehide')()
+    assert.equal(signal.aborted, true)
+  } finally { panel.close() }
+})
+
 function modelDimensions(panel, id = 'business-test') {
   const article = panel.nodes().find((node) => node.props['data-business-model'] === id)
   assert.ok(article, `Missing model status: ${id}`)
@@ -324,6 +418,138 @@ test('model configuration and scheduling do not imply authentication or model ve
     assert.equal(panel.calls.trials.length, 0)
     assert.equal(panel.calls.collections.length, 0)
     assert.equal(panel.calls.saves.length, 0)
+  } finally {
+    panel.close()
+  }
+})
+
+test('resource budget settings default legacy configurations to 256 MiB and serialize byte values', async () => {
+  const legacy = fixtureConfig()
+  delete legacy.max_inflight_bytes
+  const panel = await mountPanel({ config: async () => legacy })
+  try {
+    const input = panel.nodes().find((node) => 'data-business-resource-budget' in node.props)
+    assert.equal(input.props.min, '64')
+    assert.equal(input.props.max, '4096')
+    assert.equal(input.props.step, '1')
+    await panel.submit()
+    assert.equal(panel.calls.saves[0].max_inflight_bytes, 256 * 1024 * 1024)
+    input.props['onUpdate:modelValue'](512)
+    await panel.submit()
+    assert.equal(panel.calls.saves[1].max_inflight_bytes, 512 * 1024 * 1024)
+    assert.equal(panel.calls.trials.length, 0)
+    assert.equal(panel.calls.collections.length, 0)
+  } finally {
+    panel.close()
+  }
+})
+
+test('resource budget edits reject out-of-range and fractional MiB before saving', async () => {
+  const panel = await mountPanel()
+  try {
+    const input = panel.nodes().find((node) => 'data-business-resource-budget' in node.props)
+    for (const invalid of [63, 4097, 64.5, Number.NaN, '']) {
+      input.props['onUpdate:modelValue'](invalid)
+      await panel.submit()
+      assert.equal(panel.calls.saves.length, 0)
+      assert.ok(panel.content().includes('64–4096'))
+    }
+    input.props['onUpdate:modelValue'](64)
+    await panel.submit()
+    assert.equal(panel.calls.saves[0].max_inflight_bytes, 64 * 1024 * 1024)
+  } finally {
+    panel.close()
+  }
+})
+
+test('resource status shows reserved data and insufficient generation reservation without erasing evidence', async () => {
+  const panel = await mountPanel({
+    status: async () => ({
+      ...fixtureStatus(),
+      enabled: true,
+      state: 'unavailable',
+      resources: {
+        limit_bytes: 256 * 1024 * 1024,
+        in_use_bytes: 225 * 1024 * 1024,
+        available_bytes: 31 * 1024 * 1024,
+      },
+      model_states: [
+        fixtureModelState({
+          state: 'unavailable',
+          code: 'BUSINESS_RESOURCE_BUDGET_FULL',
+          schedulable: false,
+          auth_verified: true,
+          model_verified: true,
+        }),
+      ],
+    }),
+  })
+  try {
+    const resource = panel.nodes().find((node) => 'data-business-resources' in node.props)
+    assert.ok(panel.content(resource).includes('总预算256 MiB'))
+    assert.ok(panel.content(resource).includes('已占用225 MiB'))
+    assert.ok(panel.content(resource).includes('可用31 MiB'))
+    assert.ok(panel.content().includes('32 MiB'))
+    assert.ok(panel.content().includes('不代表整个进程的内存用量'))
+    assert.ok(modelDimensions(panel).dimension('scheduling').includes('不可立即调度'))
+    assert.ok(modelDimensions(panel).dimension('authentication').includes('当前认证有效'))
+    assert.ok(modelDimensions(panel).dimension('model-call').includes('已有成功记录'))
+    assert.equal(panel.calls.trials.length, 0)
+  } finally {
+    panel.close()
+  }
+})
+
+test('lowering the resource budget can retain usage above the limit and zero remaining capacity', async () => {
+  const panel = await mountPanel({
+    status: async () => ({
+      ...fixtureStatus(),
+      enabled: true,
+      resources: {
+        limit_bytes: 64 * 1024 * 1024,
+        in_use_bytes: 128 * 1024 * 1024,
+        available_bytes: 0,
+      },
+      model_states: [
+        fixtureModelState({
+          state: 'unavailable',
+          code: 'BUSINESS_RESOURCE_BUDGET_FULL',
+          schedulable: false,
+        }),
+      ],
+    }),
+  })
+  try {
+    const resource = panel.nodes().find((node) => 'data-business-resources' in node.props)
+    assert.ok(panel.content(resource).includes('总预算64 MiB'))
+    assert.ok(panel.content(resource).includes('已占用128 MiB'))
+    assert.ok(panel.content(resource).includes('可用0 MiB'))
+    assert.ok(panel.content().includes('资源预算已满'))
+    assert.ok(panel.content().includes('预算调整不会取消已有工作'))
+    assert.match(panel.content(), /有模型可立即调度:\s*否/)
+  } finally {
+    panel.close()
+  }
+})
+
+test('account error details from status are forwarded to the account panel without probes', async () => {
+  const states = [
+    {
+      id: 'synthetic-account',
+      state: 'ready',
+      last_error_kind: 'upstream_rejected',
+      last_error_stage: 'generate',
+      consecutive_failures: 0,
+    },
+  ]
+  const panel = await mountPanel({
+    status: async () => ({ ...fixtureStatus(), account_states: states }),
+  })
+  try {
+    const accountPanel = panel.nodes().find((node) => node.props['data-account-states'])
+    assert.deepEqual(JSON.parse(accountPanel.props['data-account-states']), states)
+    assert.equal(panel.calls.trials.length, 0)
+    assert.equal(panel.calls.collections.length, 0)
   } finally {
     panel.close()
   }
@@ -667,6 +893,157 @@ test('editing an account label omits credentials and preserves enabled state and
   }
 })
 
+test('account diagnostics distinguish configuration and model rejection from authentication expiry', async () => {
+  for (const [kind, label] of [
+    ['local_parameter', '参数或映射校验'],
+    ['permission_denied', '权限或配置拒绝'],
+    ['upstream_rejected', '上游拒绝模型或请求'],
+    ['local_resource', '本地资源额度'],
+  ]) {
+    const panel = await mountPanel(
+      {
+        accounts: async () => ({
+          revision: 1,
+          accounts: [{ id: 'synthetic-account', label: 'Fixture', enabled: true, epoch: 1 }],
+        }),
+      },
+      'BusinessAccounts',
+      {
+        states: [
+          {
+            id: 'synthetic-account',
+            state: 'ready',
+            last_error_kind: kind,
+            last_error_stage: 'generate',
+            last_error_status: 'INVALID_ARGUMENT',
+            last_error_http_status: 400,
+            last_error_at: '2026-10-22T01:00:00Z',
+            consecutive_failures: 0,
+            raw_body: 'synthetic-secret-must-not-render',
+          },
+        ],
+      },
+    )
+    try {
+      const health = panel
+        .nodes()
+        .find((node) => node.props['data-business-account-health'] === 'synthetic-account')
+      const content = panel.content(health)
+      assert.ok(content.includes(label))
+      assert.ok(content.includes('提交模型请求'))
+      assert.ok(content.includes('HTTP 400'))
+      assert.ok(content.includes('INVALID_ARGUMENT'))
+      assert.ok(content.includes('不等同于'))
+      assert.match(content, /连续暂态失败数0/)
+      assert.ok(!content.includes('需要重新认证'))
+      assert.ok(!panel.content().includes('synthetic-secret-must-not-render'))
+      assert.equal(panel.calls.collections.length, 0)
+      assert.equal(panel.calls.trials.length, 0)
+    } finally {
+      panel.close()
+    }
+  }
+})
+
+test('account authentication failure is scoped separately from the console login', async () => {
+  const panel = await mountPanel(
+    {
+      accounts: async () => ({
+        revision: 1,
+        accounts: [{ id: 'synthetic-account', label: 'Fixture', enabled: true, epoch: 1 }],
+      }),
+    },
+    'BusinessAccounts',
+    {
+      states: [
+        {
+          id: 'synthetic-account',
+          state: 'auth_required',
+          last_error_kind: 'authentication',
+          last_error_stage: 'auth',
+          last_error_http_status: 401,
+          consecutive_failures: 0,
+        },
+      ],
+    },
+  )
+  try {
+    assert.ok(panel.content().includes('Google 认证失败'))
+    assert.ok(panel.content().includes('需要重新认证'))
+    assert.ok(panel.content().includes('此错误不会让控制台登录自动失效'))
+    assert.equal(panel.calls.collections.length, 0)
+    assert.equal(panel.calls.trials.length, 0)
+  } finally {
+    panel.close()
+  }
+})
+
+test('cooldown countdown respects long server deadlines and never sends work when time elapses', async () => {
+  const originalNow = Date.now
+  const originalSetInterval = globalThis.setInterval
+  const originalClearInterval = globalThis.clearInterval
+  let current = Date.parse('2026-10-22T01:00:00Z'),
+    tick,
+    clears = 0,
+    reads = 0
+  Date.now = () => current
+  globalThis.setInterval = (callback) => {
+    tick = callback
+    return 1
+  }
+  globalThis.clearInterval = () => {
+    clears++
+  }
+  let panel
+  try {
+    panel = await mountPanel(
+      {
+        accounts: async () => {
+          reads++
+          return {
+            revision: 1,
+            accounts: [{ id: 'synthetic-account', label: 'Fixture', enabled: true, epoch: 1 }],
+          }
+        },
+      },
+      'BusinessAccounts',
+      {
+        states: [
+          {
+            id: 'synthetic-account',
+            state: 'cooldown',
+            last_error_kind: 'quota_exhausted',
+            last_error_stage: 'stream',
+            last_error_http_status: 429,
+            consecutive_failures: 4,
+            cooldown_until: '2026-10-23T01:00:00Z',
+          },
+        ],
+      },
+    )
+    assert.ok(panel.content().includes('上游限流或配额'))
+    assert.ok(panel.content().includes('读取模型响应'))
+    assert.match(panel.content(), /连续暂态失败数4/)
+    assert.ok(panel.content().includes('24 小时'))
+    current = Date.parse('2026-10-23T01:00:01Z')
+    tick()
+    await panel.flush()
+    assert.ok(panel.content().includes('冷却时间已到，请刷新状态确认'))
+    assert.ok(panel.content().includes('当前运行状态: 冷却中'))
+    assert.equal(reads, 1)
+    assert.equal(panel.calls.trials.length, 0)
+    assert.equal(panel.calls.collections.length, 0)
+    panel.listeners.get('pagehide')()
+    assert.ok(clears > 0)
+    assert.ok(panel.calls.signals.every((signal) => signal.aborted))
+  } finally {
+    panel?.close()
+    Date.now = originalNow
+    globalThis.setInterval = originalSetInterval
+    globalThis.clearInterval = originalClearInterval
+  }
+})
+
 test('enabling an account only sends metadata without resubmitting credentials', async () => {
   const panel = await mountPanel(
     {
@@ -930,6 +1307,7 @@ test('native trial displays shared API errors and blocks sending during a config
       .props['onUpdate:modelValue']('business-test')
     await panel.submit()
     assert.ok(panel.content().includes('400 INVALID_ARGUMENT: Synthetic unknown field'))
+    assert.ok(panel.content().includes('参数、模型或权限拒绝不等同于会话过期'))
   } finally {
     panel.close()
   }

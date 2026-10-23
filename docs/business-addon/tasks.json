@@ -2049,7 +2049,7 @@
     "web/src/playground/**"
   ],
   "active_branch": "dev-2",
-  "implementation_stage": "local_argon_acceptance_complete",
+  "implementation_stage": "advanced_tools_count_implemented_with_latest_app_policy_blocked_and_explicit_live_limits",
   "implementation_notes": {
     "T00": "基线与用户既有改动已冻结；本轮anchors确认四接点和README摘要。",
     "T01": "单程序/端口/consoleAuth/APIkey，Business独立状态的ADR已记录；同进程极端故障限制明确。",
@@ -2149,5 +2149,139 @@
     "global_live_verified": false,
     "evidence": "docs/business-addon/evidence/phase1-summary-20261022.json",
     "validation_limits": "Final API/app/token-count and latest added core test blocked by Windows Application Control; race unavailable."
+  },
+  "phase2_errors_resources": {
+    "implementation_complete": true,
+    "global_live_verified": false,
+    "evidence": "docs/business-addon/evidence/phase2-summary-20261022.json",
+    "go_top_level_tests_passed": 297,
+    "web_tests_passed": 149,
+    "local_restart_and_bounded_argon_regression": true,
+    "validation_limits": "Scoped Go regression passed, including prior blocked cases; race unavailable. Budget is not an RSS ceiling. Advanced parameters and later phases remain outside verified capability."
+  },
+  "phase3_observation_collection": {
+    "implementation_status": "implemented_with_remaining_validation_and_followup_scope",
+    "global_live_verified": false,
+    "evidence": "docs/business-addon/evidence/phase3-summary-20261022.json",
+    "latest_go_test_packages_passed": 12,
+    "latest_go_top_level_tests_passed": 217,
+    "web_tests_passed": 152,
+    "local_restart_and_bounded_argon_regression": true,
+    "deferred_verification": [
+      "final Host tests",
+      "final API tests"
+    ],
+    "validation_limits": "User chose to retain the two Windows Application Control blocked test records; final shutdown cleanup case unexecuted. Real manual login/Linux VPS, full fingerprint configuration, native advanced semantics and JavaScript SDK remain pending."
+  },
+  "latest_phase_evidence": "docs/business-addon/evidence/advanced-summary-20261023.json",
+  "implementation_notes_scope": "Original 58 task IDs/order/dependencies and historical task records are preserved. The consolidated completion summary, roadmap and latest validation record take precedence over historical stage notes; global live_verified remains false.",
+  "phase4_native_conversations": {
+    "implementation_status": "implemented_with_scoped_live_regression_and_explicit_validation_limits",
+    "global_live_verified": false,
+    "evidence": "docs/business-addon/evidence/phase4-summary-20261022.json",
+    "latest_per_package_tests_passed": 167,
+    "latest_test_packages_passed": 11,
+    "local_restart_and_bounded_argon_regression": true,
+    "native_three_turn_same_session": true,
+    "javascript_sdk_live": true,
+    "deferred_verification": [
+      "final Host tests",
+      "final API tests"
+    ],
+    "os_blocked_verification": [
+      "final app tests"
+    ],
+    "validation_limits": "Exact completed history only; initial 3 real failures retained and empty-content compatibility fixed. Native advanced semantics, arbitrary history import and global release verification remain incomplete."
+  },
+  "phase5_native_output": {
+    "implementation_status": "implemented_with_scoped_live_regression_and_explicit_validation_limits",
+    "global_live_verified": false,
+    "evidence": "docs/business-addon/evidence/phase5-summary-20261022.json",
+    "latest_go_top_level_tests_passed": 188,
+    "latest_go_test_packages_passed": 11,
+    "local_restart_and_bounded_argon_regression": true,
+    "python_and_javascript_chat_stream_continuation_live": true,
+    "code_execution_output_live_observed": true,
+    "grounding_live_verified": false,
+    "deferred_verification": [
+      "final Host tests",
+      "final API tests"
+    ],
+    "os_blocked_verification": [
+      "final resources tests",
+      "historically blocked app tests not repeated"
+    ],
+    "validation_limits": "Four actual generations passed. Limited grounding projection passed offline but was not observed live. Native advanced request semantics/countTokens/usage and global release verification remain incomplete."
+  },
+  "phase6_native_metadata": {
+    "implementation_status": "implemented_with_scoped_live_regression_and_explicit_validation_limits",
+    "global_live_verified": false,
+    "evidence": "docs/business-addon/evidence/phase6-summary-20261022.json",
+    "latest_go_top_level_tests_passed": 203,
+    "latest_go_test_packages_passed": 11,
+    "local_restart_and_bounded_argon_regression": true,
+    "python_and_javascript_chat_stream_continuation_live": true,
+    "code_execution_output_live_observed": true,
+    "grounding_live_verified": false,
+    "citation_live_verified": false,
+    "deferred_verification": [
+      "internal/addons/business/host",
+      "internal/api",
+      "internal/addons/business/resources",
+      "internal/app"
+    ],
+    "deferred_tests_executed": false,
+    "validation_limits": "Four actual generations passed. RetrievedContext, exact cross-Part grounding and source-only citation passed offline but were not observed live. Unmapped native advanced request semantics/countTokens/usage and global verification remain incomplete."
+  },
+  "consolidated_completion": {
+    "summary": "docs/business-addon/evidence/completion-summary-20261022.json",
+    "roadmap": "docs/business-addon/completion-roadmap.md",
+    "implementation_status": "bounded_implementation_integrated_with_live_regression_and_explicit_remaining_limits",
+    "global_live_verified": false,
+    "local_restart": true,
+    "argon_generations_passed": 4,
+    "model_config_import_checks_passed": 9,
+    "go_packages_passed": 7,
+    "go_top_level_tests_passed": 131,
+    "frontend_tests_passed": 154,
+    "policy_blocked": [
+      "internal/addons/business/gemini",
+      "internal/addons/business/files",
+      "scripts/business-addon/token-count",
+      "internal/addons/business/config"
+    ],
+    "prior_deferred_not_started": [
+      "internal/addons/business/host",
+      "internal/api",
+      "internal/addons/business/resources",
+      "internal/app"
+    ],
+    "new_sdk_media_tests_executed": false,
+    "native_media_live_verified": false,
+    "remaining_limits": [
+      "All prior and new policy-blocked tests remain unaccepted; no full repository/release signoff.",
+      "Media decoder and MIME contracts passed in Core/contract; new Gemini media-history and dual-SDK synthetic contracts remain unexecuted, and live Argon produced no media/grounding/citation samples.",
+      "No authoritative widget support for native countTokens/usage, batch/cache/Live/embedding, arbitrary function/tool rounds, systemInstruction or advanced sampling/schema/thinking semantics; unavailable or ignored as documented.",
+      "Generated upstream file references lack a verified authorized download contract; no invented public fileData URI.",
+      "Arbitrary imported history, restart recovery, deleted historical files and automatic account switching/replay are unsupported.",
+      "M08 covers model configuration only, not account/secret migration or full database restore; C06 browser generation condition is not triggered.",
+      "Manual Google login/captcha, complete Linux collection, dual-WAA coexistence, actual upstream upgrade/rollback and overall release admission remain external acceptance work."
+    ]
+  },
+  "advanced_tools_count": {
+    "summary": "docs/business-addon/evidence/advanced-summary-20261023.json",
+    "scope_acceptance_complete": false,
+    "global_live_verified": false,
+    "google_search_empty_config_implemented": true,
+    "late_reply_id_grounding_live_verified": false,
+    "advanced_parameters_semantics_verified": false,
+    "native_count_tokens_implemented": false,
+    "local_restart": true,
+    "real_generations_attempted": 4,
+    "final_sdk_passed": false,
+    "go_top_level_passed": 104,
+    "latest_app_blocked": true,
+    "latest_thought_fix_in_running_build": false,
+    "deferred_tests_executed": false
   }
 }

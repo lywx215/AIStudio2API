@@ -1,0 +1,64 @@
+{
+  "kind": "public_widget_static_evidence",
+  "read_without_credentials": true,
+  "model_calls": 0,
+  "loader_url": "https://cloud.google.com/ai/gen-app-builder/client",
+  "bundle_url": "https://www.gstatic.com/_/mss/boq-cloud-ai-ucs/_/js/k=boq-cloud-ai-ucs.UcsWidgetUi.en_US.pveFsgaw8rQ.2021.O/am=AACAERg/d=1/rs=AAj4Nmy6tdJplhe-n3Ngu_SbpIesx-rN-Q/m=bootstrap_module,ucs_widget_module,xlite_module",
+  "bundle_bytes": 13333329,
+  "bundle_sha256": "4939333d6a81876631d6acb65573884f5f750897b9a94295f5766aaf36892a73",
+  "offset_unit": "Unicode code points after UTF-8 decoding and universal-newline normalization (Python Path.read_text)",
+  "anchors": [
+    {
+      "name": "widget_stream_transport",
+      "offset": 3901139,
+      "symbol": "As",
+      "fact": "As wraps the request through _.us and sends method widgetStreamAssist."
+    },
+    {
+      "name": "thinking_request_container",
+      "offset": 4907675,
+      "symbol": "Opb",
+      "excerpt": "Ba&&(xa.generationSpec={thinkingConfig:{thinkingLevel:Ba}})",
+      "fact": "Selected thinkingLevel is placed in streamAssistRequest.generationSpec.thinkingConfig.thinkingLevel. The same constructor still sets modelId in assistGenerationConfig."
+    },
+    {
+      "name": "observed_level_ids",
+      "offset": 5951372,
+      "symbol": "fVb",
+      "fact": "Read params.supportedThinkingLevels[].id/name/description/disabled and defaultThinkingLevelId; ids are strings, not fixed LOW/HIGH literals."
+    },
+    {
+      "name": "model_extension_scope",
+      "offset": 5951617,
+      "symbol": "gVb",
+      "fact": "Select capabilities.extensions[] by the exact URI https://www.googleapis.com/gemini-enterprise/a2a/extensions/model/v1, then use its params."
+    },
+    {
+      "name": "agent_card_source",
+      "offset": 4716220,
+      "fact": "The extension source is a2aAgentInfo.agentCard.capabilities.extensions; the detail path also parses a2aAgentDefinition.jsonAgentCard. This does not establish Business Argon support."
+    }
+  ],
+  "literal_counts": {
+    "generationSpec": 1,
+    "thinkingConfig": 1,
+    "thinkingLevel": 8,
+    "systemInstruction": 0,
+    "responseSchema": 0,
+    "responseMimeType": 0,
+    "temperature": 1
+  },
+  "temperature_match_scope": "MCP sampling/createMessage schema, not widgetStreamAssist generation settings",
+  "official_sources": [
+    "https://docs.cloud.google.com/gemini/enterprise/docs/reference/rest/v1alpha/projects.locations.collections.engines.assistants/streamAssist",
+    "https://docs.cloud.google.com/gemini/enterprise/docs/reference/rest/v1alpha/AssistGenerationConfig",
+    "https://docs.cloud.google.com/gemini/enterprise/docs/reference/rest/v1alpha/Query"
+  ],
+  "public_rest_generation_spec_fields": ["modelId"],
+  "known_rejected_container": "streamAssistRequest.assistGenerationConfig",
+  "known_rejected_fields": ["maxOutputTokens", "responseMimeType", "temperature", "thinkingConfig", "topK", "topP"],
+  "known_rejection_evidence": "runtime/business-local/live-parameter-probe-envelope.json",
+  "probe_gate": "Require the target model/agent's observed enabled thinking-level id before a single opt-in generationSpec probe. Never guess an enum or replay the six rejected fields.",
+  "semantics_verified": false,
+  "configuration_changed": false
+}

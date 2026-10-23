@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"slices"
 	"sync"
@@ -25,49 +24,79 @@ type entry struct {
 	active                            *lease
 	retired                           bool
 	pending                           *entry
+	lastError                         errorRecord
+	consecutiveFailures               int
 }
 
 // account/timeout/ctx are captured at acquisition and never changed. token and
 // expires are touched only by the owning generation goroutine. released is
 // protected by Engine.mu, so a duplicate/late release cannot affect a new lease.
 type lease struct {
-	owner      *entry
-	account    vault.Account
-	token      string
-	expires    time.Time
-	timeout    time.Duration
-	ctx        context.Context
-	cancel     context.CancelFunc
-	stopEngine func() bool
-	released   bool
+	owner                    *entry
+	account                  vault.Account
+	token                    string
+	expires                  time.Time
+	timeout                  time.Duration
+	ctx                      context.Context
+	cancel                   context.CancelFunc
+	stopEngine               func() bool
+	released                 bool
+	submitted, outputStarted bool
+	client                   *http.Client
 }
 
 type Engine struct {
-	mu                    sync.Mutex
-	entries               map[string]*entry
-	order                 []string
-	limit, active, cursor int
-	suspended             bool
-	client                *http.Client
-	ctx                   context.Context
-	cancel                context.CancelFunc
-	timeout               time.Duration
+	mu                                    sync.Mutex
+	entries                               map[string]*entry
+	order                                 []string
+	limit, active, cursor                 int
+	suspended                             bool
+	client                                *http.Client
+	ctx                                   context.Context
+	cancel                                context.CancelFunc
+	timeout                               time.Duration
+	policy                                backoffPolicy
+	conversations                         map[string]*conversation
+	sessionsCreated, continuationAttempts uint64
+	conversationEpoch                     uint64
 }
 
 type AccountState struct {
-	ID             string               `json:"id"`
-	State          string               `json:"state"`
-	AuthVerified   bool                 `json:"auth_verified"`
-	AuthVerifiedAt time.Time            `json:"auth_verified_at,omitempty,omitzero"`
-	VerifiedModels map[string]time.Time `json:"verified_models,omitempty"`
+	ID                     string               `json:"id"`
+	State                  string               `json:"state"`
+	AuthVerified           bool                 `json:"auth_verified"`
+	AuthVerifiedAt         time.Time            `json:"auth_verified_at,omitempty,omitzero"`
+	VerifiedModels         map[string]time.Time `json:"verified_models,omitempty"`
+	LastErrorKind          ErrorKind            `json:"last_error_kind,omitempty"`
+	LastErrorStage         ErrorStage           `json:"last_error_stage,omitempty"`
+	LastErrorStatus        string               `json:"last_error_status,omitempty"`
+	LastErrorReason        string               `json:"last_error_reason,omitempty"`
+	LastErrorHTTPStatus    int                  `json:"last_error_http_status,omitempty"`
+	LastErrorSubmitted     bool                 `json:"last_error_submitted"`
+	LastErrorOutputStarted bool                 `json:"last_error_output_started"`
+	LastErrorAt            time.Time            `json:"last_error_at,omitempty,omitzero"`
+	ConsecutiveFailures    int                  `json:"consecutive_failures"`
+	CooldownUntil          time.Time            `json:"cooldown_until,omitempty,omitzero"`
+}
+
+// Persist only safe primitive classifications, never an underlying error,
+// response message, credentials or a transport URL inside account state.
+type errorRecord struct {
+	kind              ErrorKind
+	stage             ErrorStage
+	status, reason    string
+	httpStatus        int
+	submitted, output bool
+	at                time.Time
 }
 
 type RuntimeSnapshot struct {
-	Accounts  []AccountState `json:"accounts"`
-	Limit     int            `json:"limit"`
-	Active    int            `json:"active"`
-	Closed    bool           `json:"closed"`
-	Suspended bool           `json:"suspended"`
+	Accounts      []AccountState       `json:"accounts"`
+	Limit         int                  `json:"limit"`
+	Active        int                  `json:"active"`
+	Closed        bool                 `json:"closed"`
+	Suspended     bool                 `json:"suspended"`
+	Conversations ConversationSnapshot `json:"conversations"`
 }
 
 func freshEntry(account vault.Account) *entry {
@@ -83,6 +112,7 @@ func desiredEntry(previous *entry, account vault.Account) *entry {
 	if previous != nil && sameCredentialVersion(previous.account, account) {
 		next.token, next.expires, next.cooldown = previous.token, previous.expires, previous.cooldown
 		next.authVerifiedAt, next.state = previous.authVerifiedAt, previous.state
+		next.lastError, next.consecutiveFailures = previous.lastError, previous.consecutiveFailures
 		for model, at := range previous.verifiedModels {
 			next.verifiedModels[model] = at
 		}
@@ -111,6 +141,8 @@ func (e *Engine) Suspend() {
 		return
 	}
 	e.suspended = true
+	e.conversationEpoch++
+	clear(e.conversations)
 	cancels := []context.CancelFunc{}
 	for _, current := range e.entries {
 		if current.active == nil {
@@ -188,6 +220,7 @@ func (e *Engine) Reconcile(accounts []vault.Account, limit int, timeout time.Dur
 		}
 	}
 	e.order = order
+	e.pruneConversationsLocked()
 	if len(order) == 0 {
 		e.cursor = 0
 	} else {
@@ -202,8 +235,10 @@ func (e *Engine) Reconcile(accounts []vault.Account, limit int, timeout time.Dur
 func (e *Engine) Snapshot() RuntimeSnapshot {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	now := time.Now()
+	e.pruneConversationsLocked()
+	now := e.policy.now()
 	result := RuntimeSnapshot{Accounts: []AccountState{}, Limit: e.limit, Active: e.active, Closed: e.ctx.Err() != nil, Suspended: e.suspended}
+	result.Conversations = e.conversationSnapshotLocked()
 	for _, id := range e.order {
 		current := e.entries[id]
 		if current == nil {
@@ -230,6 +265,11 @@ func (e *Engine) Snapshot() RuntimeSnapshot {
 			state = "ready"
 		}
 		item := AccountState{ID: id, State: state, AuthVerified: !result.Closed && visible.token != "" && now.Before(visible.expires), AuthVerifiedAt: visible.authVerifiedAt, VerifiedModels: map[string]time.Time{}}
+		item.LastErrorKind, item.LastErrorStage = visible.lastError.kind, visible.lastError.stage
+		item.LastErrorStatus, item.LastErrorReason = visible.lastError.status, visible.lastError.reason
+		item.LastErrorHTTPStatus = visible.lastError.httpStatus
+		item.LastErrorSubmitted, item.LastErrorOutputStarted = visible.lastError.submitted, visible.lastError.output
+		item.LastErrorAt, item.ConsecutiveFailures, item.CooldownUntil = visible.lastError.at, visible.consecutiveFailures, visible.cooldown
 		for model, at := range visible.verifiedModels {
 			item.VerifiedModels[model] = at
 		}
@@ -243,6 +283,8 @@ func (e *Engine) States() []AccountState { return e.Snapshot().Accounts }
 func (e *Engine) Close() {
 	e.cancel()
 	e.mu.Lock()
+	e.conversationEpoch++
+	clear(e.conversations)
 	cancels := []context.CancelFunc{}
 	for _, current := range e.entries {
 		if current.active != nil {
@@ -259,6 +301,10 @@ func (e *Engine) Close() {
 func (e *Engine) acquire(ctx context.Context, scope []string) (*lease, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	return e.acquireLocked(ctx, scope)
+}
+
+func (e *Engine) acquireLocked(ctx context.Context, scope []string) (*lease, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -274,7 +320,7 @@ func (e *Engine) acquire(ctx context.Context, scope []string) (*lease, error) {
 	for offset := 0; offset < len(e.order); offset++ {
 		index := (e.cursor + offset) % len(e.order)
 		current := e.entries[e.order[index]]
-		if current == nil || current.retired || !current.account.Enabled || current.active != nil || current.state == "auth_required" || time.Now().Before(current.cooldown) || (len(scope) > 0 && !slices.Contains(scope, current.account.ID)) {
+		if current == nil || current.retired || !current.account.Enabled || current.active != nil || current.state == "auth_required" || e.policy.now().Before(current.cooldown) || (len(scope) > 0 && !slices.Contains(scope, current.account.ID)) {
 			continue
 		}
 		leaseCtx, cancel := context.WithTimeout(ctx, e.timeout)
@@ -314,7 +360,7 @@ func (e *Engine) verifyModel(item *lease, selection contract.Selection) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.currentLeaseLocked(item) {
-		item.owner.verifiedModels[model] = time.Now().UTC()
+		item.owner.verifiedModels[model] = e.policy.now().UTC()
 	}
 }
 
@@ -337,24 +383,40 @@ func (e *Engine) release(item *lease, err error) {
 			}
 			current.pending = nil
 		} else {
-			var upstream *upstreamError
-			if errors.As(err, &upstream) {
-				switch upstream.status {
-				case 401, 403:
-					current.token = ""
-					current.expires, current.authVerifiedAt = time.Time{}, time.Time{}
-					current.state = "auth_required"
-				case 429:
-					current.state, current.cooldown = "cooldown", time.Now().Add(time.Minute)
-				default:
-					current.state, current.cooldown = "cooldown", time.Now().Add(5*time.Second)
-				}
-			} else {
-				current.state = "ready"
-			}
+			e.applyOutcomeLocked(current, err, item)
 		}
 	}
 	e.mu.Unlock()
 	item.stopEngine()
 	item.cancel()
+}
+
+func (e *Engine) applyOutcomeLocked(current *entry, err error, item *lease) {
+	if err == nil {
+		current.state, current.cooldown = "ready", time.Time{}
+		current.lastError, current.consecutiveFailures = errorRecord{}, 0
+		return
+	}
+	outcome, ok := err.(*OperationError)
+	if !ok {
+		outcome = classifyOperation(err, StagePreflight, item.submitted, item.outputStarted, nil)
+	}
+	now := e.policy.now()
+	current.lastError = errorRecord{kind: outcome.Kind, stage: outcome.Stage, status: outcome.Status, reason: outcome.Reason, httpStatus: outcome.HTTPStatus, submitted: outcome.Submitted, output: outcome.OutputStarted, at: now.UTC()}
+	switch outcome.Kind {
+	case ErrorAuthentication:
+		current.token = ""
+		current.expires = time.Time{}
+		current.state = "auth_required"
+	case ErrorQuotaExhausted, ErrorTransient, ErrorProtocol:
+		if current.consecutiveFailures < 1<<30 {
+			current.consecutiveFailures++
+		}
+		delay := e.policy.delay(outcome.Kind, current.consecutiveFailures, time.Duration(outcome.RetryAfterSeconds)*time.Second)
+		current.state, current.cooldown = "cooldown", now.Add(delay)
+	default:
+		// Parameters, local budgets, downstream writes and caller cancellation
+		// never penalize an otherwise usable account or reset its failure count.
+		current.state = "ready"
+	}
 }

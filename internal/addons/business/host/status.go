@@ -7,20 +7,23 @@ import (
 
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/config"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/core"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources"
 )
 
 type status struct {
-	State           string              `json:"state"`
-	Enabled         bool                `json:"enabled"`
-	GenerationReady bool                `json:"generation_ready"`
-	Code            string              `json:"code,omitempty"`
-	ConfigRevision  uint64              `json:"config_revision"`
-	Transport       string              `json:"transport"`
-	Capabilities    map[string]string   `json:"capabilities"`
-	AccountStates   []core.AccountState `json:"account_states"`
-	ModelStates     []modelStatus       `json:"model_states"`
-	Capacity        capacityStatus      `json:"capacity"`
-	LiveVerified    bool                `json:"live_verified"`
+	State           string                    `json:"state"`
+	Enabled         bool                      `json:"enabled"`
+	GenerationReady bool                      `json:"generation_ready"`
+	Code            string                    `json:"code,omitempty"`
+	ConfigRevision  uint64                    `json:"config_revision"`
+	Transport       string                    `json:"transport"`
+	Capabilities    map[string]string         `json:"capabilities"`
+	AccountStates   []core.AccountState       `json:"account_states"`
+	ModelStates     []modelStatus             `json:"model_states"`
+	Capacity        capacityStatus            `json:"capacity"`
+	Resources       resources.Snapshot        `json:"resources"`
+	Conversations   core.ConversationSnapshot `json:"conversations"`
+	LiveVerified    bool                      `json:"live_verified"`
 }
 
 type modelStatus struct {
@@ -47,6 +50,8 @@ type statusInput struct {
 	Runtime                 core.RuntimeSnapshot
 	EnginePresent           bool
 	Generating              int
+	Resources               resources.Snapshot
+	BudgetPresent           bool
 	Problem, AccountProblem string
 	Closed                  bool
 	OwnsLegacy              func(string) bool
@@ -60,6 +65,9 @@ func (h *Host) statusLocked() status {
 	if h.engine != nil {
 		input.Runtime = h.engine.Snapshot()
 	}
+	if h.budget != nil {
+		input.Resources, input.BudgetPresent = h.budget.Snapshot(), true
+	}
 	return computeStatus(input)
 }
 
@@ -70,7 +78,14 @@ func computeStatus(input statusInput) status {
 	c := input.Config
 	s := status{State: "unavailable", Enabled: c.Enabled, ConfigRevision: c.Revision, Transport: "http",
 		AccountStates: copyAccountStates(input.Runtime.Accounts), ModelStates: make([]modelStatus, 0, len(c.Bindings)),
-		Capabilities: map[string]string{"text": "implemented", "streaming": "implemented", "generationConfig": "requires_verified_mapping", "multi_turn": "unsupported", "tools": "unsupported", "files": "implemented", "browser_collection": "local_visible_user_action"}}
+		Capabilities: map[string]string{"text": "implemented", "streaming": "implemented", "generationConfig": "mapped_fields_forwarded_others_ignored", "multi_turn": "completed_prefix_only", "tools": "google_search_empty_config_provider_gated_others_ignored", "files": "implemented", "browser_collection": "remote_manual_capability_gated", "model_observation": "passive_pending_confirmation"}}
+	s.Capabilities["inline_media"] = "bounded_passthrough_not_model_capability"
+	s.Capabilities["model_import"] = "preview_apply_undo_disabled_models"
+	s.Capabilities["countTokens"] = "unsupported_no_native_upstream_contract"
+	s.Capabilities["usageMetadata"] = "unavailable_not_estimated"
+	s.Capabilities["google_search"] = "provider_checked_empty_config_only"
+	s.Capabilities["function_calling"] = "unsupported_ignored"
+	s.Capabilities["code_execution"] = "request_control_unverified_output_passthrough"
 	limit := max(0, c.MaxConcurrent)
 	if input.EnginePresent {
 		limit = min(limit, max(0, input.Runtime.Limit))
@@ -79,6 +94,11 @@ func computeStatus(input statusInput) status {
 	// these counts would double-count work; parsing still reserves capacity.
 	active := max(0, max(input.Runtime.Active, input.Generating))
 	s.Capacity = capacityStatus{Limit: limit, Active: active, Available: max(0, limit-active)}
+	s.Resources = input.Resources
+	s.Conversations = input.Runtime.Conversations
+	if !input.BudgetPresent {
+		s.Resources = resources.Snapshot{LimitBytes: c.MaxInflightBytes, AvailableBytes: c.MaxInflightBytes}
+	}
 	blockedState, blockedCode := "", ""
 	switch {
 	case input.Closed:
@@ -124,6 +144,9 @@ func computeStatus(input statusInput) status {
 			m.Schedulable = false
 			m.State = "unavailable"
 			m.Code = "BUSINESS_CAPACITY_FULL"
+		}
+		if m.Schedulable && s.Resources.AvailableBytes < resources.GenerationReserveBytes {
+			m.Schedulable, m.State, m.Code = false, "unavailable", "BUSINESS_RESOURCE_BUDGET_FULL"
 		}
 		if blockedState != "" {
 			m.Schedulable = false

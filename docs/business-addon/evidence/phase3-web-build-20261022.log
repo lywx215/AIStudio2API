@@ -1,0 +1,160 @@
+
+> aistudio2api-web@0.1.0 build
+> vue-tsc --noEmit && vp build
+
+transforming...
+✓ 3721 modules transformed.
+rendering chunks...
+computing gzip size...
+../internal/webui/dist/index.html                                                         1.25 kB │ gzip:   0.57 kB
+../internal/webui/dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff                           4.42 kB
+../internal/webui/dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2                          4.92 kB
+../internal/webui/dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2                          5.20 kB
+../internal/webui/dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2                          5.46 kB
+../internal/webui/dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff                           5.98 kB
+../internal/webui/dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff                           6.18 kB
+../internal/webui/dist/assets/google-sans-code-symbols2-wght-normal-B9bgzW0v.woff2        6.38 kB
+../internal/webui/dist/assets/KaTeX_Size1-Regular-C195tn64.woff                           6.49 kB
+../internal/webui/dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2                    6.90 kB
+../internal/webui/dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2                       6.91 kB
+../internal/webui/dist/assets/google-sans-code-adlam-wght-normal-DMKbyh18.woff2           7.21 kB
+../internal/webui/dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf                            7.58 kB
+../internal/webui/dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff                     7.65 kB
+../internal/webui/dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff                        7.71 kB
+../internal/webui/dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2                         9.64 kB
+../internal/webui/dist/assets/inter-vietnamese-wght-normal-CBcvBZtf.woff2                10.25 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2                     10.34 kB
+../internal/webui/dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf                           10.36 kB
+../internal/webui/dist/assets/inter-tight-vietnamese-wght-normal-TKKdAiBA.woff2          10.48 kB
+../internal/webui/dist/assets/KaTeX_Script-Regular-D5yQViql.woff                         10.58 kB
+../internal/webui/dist/assets/google-sans-code-vietnamese-wght-normal-DxxfW2pt.woff2     11.16 kB
+../internal/webui/dist/assets/inter-greek-ext-wght-normal-DlzME5K_.woff2                 11.23 kB
+../internal/webui/dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2                       11.31 kB
+../internal/webui/dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2                          11.34 kB
+../internal/webui/dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf                           11.50 kB
+../internal/webui/dist/assets/inter-tight-greek-ext-wght-normal-DQgQPNk4.woff2           11.70 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2                      12.02 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2                        12.21 kB
+../internal/webui/dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf                           12.22 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff                      12.31 kB
+../internal/webui/dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf                     12.34 kB
+../internal/webui/dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf                        12.36 kB
+../internal/webui/dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff                        13.20 kB
+../internal/webui/dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff                           13.29 kB
+../internal/webui/dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2                    13.56 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff                       14.11 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff                         14.40 kB
+../internal/webui/dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff                     16.02 kB
+../internal/webui/dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2                       16.40 kB
+../internal/webui/dist/assets/KaTeX_Math-Italic-t53AETM-.woff2                           16.44 kB
+../internal/webui/dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf                          16.64 kB
+../internal/webui/dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2                       16.78 kB
+../internal/webui/dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2                           16.98 kB
+../internal/webui/dist/assets/inter-tight-cyrillic-wght-normal-BS41q_Tv.woff2            16.99 kB
+../internal/webui/dist/assets/google-sans-code-symbols-wght-normal-DYh2i20j.woff2        17.39 kB
+../internal/webui/dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff                        18.66 kB
+../internal/webui/dist/assets/KaTeX_Math-Italic-DA0__PXp.woff                            18.74 kB
+../internal/webui/dist/assets/inter-cyrillic-wght-normal-DqGufNeO.woff2                  18.74 kB
+../internal/webui/dist/assets/inter-greek-wght-normal-CkhJZR-_.woff2                     18.99 kB
+../internal/webui/dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff                        19.41 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf                       19.43 kB
+../internal/webui/dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf                         19.57 kB
+../internal/webui/dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf                            19.58 kB
+../internal/webui/dist/assets/KaTeX_Main-Italic-BMLOBm91.woff                            19.67 kB
+../internal/webui/dist/assets/inter-tight-greek-wght-normal-sS1B39LI.woff2               22.19 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf                        22.36 kB
+../internal/webui/dist/assets/google-sans-code-math-wght-normal-BmC33yrp.woff2           23.26 kB
+../internal/webui/dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf                          24.50 kB
+../internal/webui/dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2                             25.32 kB
+../internal/webui/dist/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2              25.96 kB
+../internal/webui/dist/assets/KaTeX_Main-Regular-B22Nviop.woff2                          26.27 kB
+../internal/webui/dist/assets/inter-tight-cyrillic-ext-wght-normal-okcGN4Nq.woff2        26.66 kB
+../internal/webui/dist/assets/google-sans-code-latin-ext-wght-normal-Cxz4iEe8.woff2      26.68 kB
+../internal/webui/dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf                      27.55 kB
+../internal/webui/dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2                           28.07 kB
+../internal/webui/dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff                              29.91 kB
+../internal/webui/dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff                           30.77 kB
+../internal/webui/dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf                         31.19 kB
+../internal/webui/dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf                             31.30 kB
+../internal/webui/dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf                         32.96 kB
+../internal/webui/dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff                            33.51 kB
+../internal/webui/dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf                             33.58 kB
+../internal/webui/dist/assets/google-sans-code-latin-wght-normal-BLCTwao7.woff2          34.54 kB
+../internal/webui/dist/assets/inter-tight-latin-wght-normal-DX-nOvPD.woff2               44.87 kB
+../internal/webui/dist/assets/inter-latin-wght-normal-Dx4kXJAl.woff2                     48.25 kB
+../internal/webui/dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf                               51.33 kB
+../internal/webui/dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf                            53.58 kB
+../internal/webui/dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf                             63.63 kB
+../internal/webui/dist/assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2                 85.06 kB
+../internal/webui/dist/assets/inter-tight-latin-ext-wght-normal-B4u9PlvR.woff2           89.80 kB
+../internal/webui/dist/assets/mermaid-worker-BUJ3s-yE.js                              1,592.88 kB
+../internal/webui/dist/assets/CameraDialog-CVqpF2wG.css                                   0.08 kB │ gzip:   0.10 kB
+../internal/webui/dist/assets/AddImageButton-CTxq1ANb.css                                 0.19 kB │ gzip:   0.15 kB
+../internal/webui/dist/assets/BusinessPanel-Cl6n3EmC.css                                  0.94 kB │ gzip:   0.42 kB
+../internal/webui/dist/assets/UiSwitch-B0YGBlFu.css                                       0.95 kB │ gzip:   0.41 kB
+../internal/webui/dist/assets/MediaLayout-DDhHJm_h.css                                    1.34 kB │ gzip:   0.57 kB
+../internal/webui/dist/assets/MediaPromptBox-D2KLPs-H.css                                 2.14 kB │ gzip:   0.78 kB
+../internal/webui/dist/assets/ManagementKeysPanel-B8TAKR3D.css                            2.40 kB │ gzip:   0.88 kB
+../internal/webui/dist/assets/SttButton-Cb6Qxv6r.css                                      2.88 kB │ gzip:   0.83 kB
+../internal/webui/dist/assets/preferences-CLq2ctWD.css                                    3.51 kB │ gzip:   1.13 kB
+../internal/webui/dist/assets/ImagenPage-2x82W1sN.css                                     4.62 kB │ gzip:   1.32 kB
+../internal/webui/dist/assets/VideoPage-CnM_hg12.css                                      5.81 kB │ gzip:   1.52 kB
+../internal/webui/dist/assets/ModelEmptyState-Bdcq8QiM.css                                9.54 kB │ gzip:   2.39 kB
+../internal/webui/dist/assets/run-keys-CHtDyCEZ.css                                      10.30 kB │ gzip:   2.42 kB
+../internal/webui/dist/assets/MusicPage-C__qKKvx.css                                     11.96 kB │ gzip:   2.49 kB
+../internal/webui/dist/assets/LivePage-soowLu9_.css                                      13.44 kB │ gzip:   2.90 kB
+../internal/webui/dist/assets/SpeechPage-CjGqObU9.css                                    20.09 kB │ gzip:   3.77 kB
+../internal/webui/dist/assets/PlaygroundPage-BJJnoWAF.css                                28.77 kB │ gzip:   5.71 kB
+../internal/webui/dist/assets/JsonEditorDialog-C1S7sGFz.css                              41.31 kB │ gzip:  10.99 kB
+../internal/webui/dist/assets/StudioLayout-vKeRlaHN.css                                  50.12 kB │ gzip:  18.16 kB
+../internal/webui/dist/assets/index-Cxqbohlh.css                                         70.60 kB │ gzip:  14.21 kB
+../internal/webui/dist/assets/media-query-gNeUO35U.js                                     0.24 kB │ gzip:   0.18 kB
+../internal/webui/dist/assets/UiSwitch-CZpSWnFv.js                                        0.68 kB │ gzip:   0.43 kB
+../internal/webui/dist/assets/rolldown-runtime-XKyaHtl9.js                                0.72 kB │ gzip:   0.42 kB
+../internal/webui/dist/assets/PromptRoute-uT92VekX.js                                     1.05 kB │ gzip:   0.58 kB
+../internal/webui/dist/assets/pcm-player-Cqe3Jjox.js                                      1.17 kB │ gzip:   0.70 kB
+../internal/webui/dist/assets/CameraDialog-cP9FsasU.js                                    1.49 kB │ gzip:   0.90 kB
+../internal/webui/dist/assets/ImageRoute-CPrJSdqh.js                                      1.93 kB │ gzip:   0.95 kB
+../internal/webui/dist/assets/MediaLayout-D3UdYjgQ.js                                     1.96 kB │ gzip:   1.05 kB
+../internal/webui/dist/assets/AddImageButton-i04-ElHS.js                                  1.97 kB │ gzip:   0.98 kB
+../internal/webui/dist/assets/MediaPromptBox-lzEEY4Cr.js                                  2.84 kB │ gzip:   1.41 kB
+../internal/webui/dist/assets/ModelEmptyState-BymMJqgl.js                                 2.85 kB │ gzip:   1.26 kB
+../internal/webui/dist/assets/kinds-CWrutLHP.js                                           3.38 kB │ gzip:   1.55 kB
+../internal/webui/dist/assets/SttButton-CPW5vPSi.js                                       5.11 kB │ gzip:   2.31 kB
+../internal/webui/dist/assets/VersionPanel-Dk2hHhPM.js                                    5.90 kB │ gzip:   2.14 kB
+../internal/webui/dist/assets/OverviewPanel-BUexO69u.js                                   7.18 kB │ gzip:   2.95 kB
+../internal/webui/dist/assets/RecordDrawer-1h3h9XiS.js                                    7.50 kB │ gzip:   2.76 kB
+../internal/webui/dist/assets/DialogTitle-0BC1fjjn.js                                     7.90 kB │ gzip:   2.13 kB
+../internal/webui/dist/assets/RankingTable-qwM9pEzs.js                                    8.95 kB │ gzip:   3.32 kB
+../internal/webui/dist/assets/PopoverTrigger-DEeFGsCm.js                                  9.45 kB │ gzip:   2.10 kB
+../internal/webui/dist/assets/code-Bm6fRbcN.js                                            9.45 kB │ gzip:   3.50 kB
+../internal/webui/dist/assets/ImagenPage-B8BuwTtq.js                                     11.05 kB │ gzip:   4.58 kB
+../internal/webui/dist/assets/ProxiesPanel-DgVcAozE.js                                   12.21 kB │ gzip:   4.29 kB
+../internal/webui/dist/assets/RecordsTable-DElzl4i-.js                                   13.18 kB │ gzip:   4.68 kB
+../internal/webui/dist/assets/StudioLayout-Du_PAc_d.js                                   22.07 kB │ gzip:   7.36 kB
+../internal/webui/dist/assets/VideoPage-BPJpxp5n.js                                      23.79 kB │ gzip:   8.08 kB
+../internal/webui/dist/assets/ManagementKeysPanel-BBih-1h6.js                            23.79 kB │ gzip:   8.83 kB
+../internal/webui/dist/assets/runtime-dom.esm-bundler-B7pEF3fN.js                        24.10 kB │ gzip:   9.50 kB
+../internal/webui/dist/assets/UsagePanel-BMlg8AD9.js                                     24.51 kB │ gzip:   8.83 kB
+../internal/webui/dist/assets/Teleport-IfQKKjlA.js                                       29.91 kB │ gzip:  11.38 kB
+../internal/webui/dist/assets/MusicPage-BQWDz0lt.js                                      38.83 kB │ gzip:  13.45 kB
+../internal/webui/dist/assets/BusinessPanel-CT3b4cvQ.js                                  52.70 kB │ gzip:  17.51 kB
+../internal/webui/dist/assets/LivePage-BvEJRnJq.js                                       53.85 kB │ gzip:  16.62 kB
+../internal/webui/dist/assets/dist-tbuGAZwg.js                                           54.53 kB │ gzip:  16.92 kB
+../internal/webui/dist/assets/preference-BOCNyqwO.js                                     55.79 kB │ gzip:  18.79 kB
+../internal/webui/dist/assets/SpeechPage-DWWF5Cwe.js                                     57.54 kB │ gzip:  20.06 kB
+../internal/webui/dist/assets/markdown-it-DLySunvq.js                                    97.31 kB │ gzip:  40.92 kB
+../internal/webui/dist/assets/PlaygroundPage-NmEq8A0t.js                                118.00 kB │ gzip:  35.81 kB
+../internal/webui/dist/assets/preferences-BTqQisA6.js                                   140.53 kB │ gzip:  46.49 kB
+../internal/webui/dist/assets/run-keys-CRFSkUfu.js                                      181.29 kB │ gzip:  61.10 kB
+../internal/webui/dist/assets/index-dGY2L4FK.js                                         227.28 kB │ gzip:  66.88 kB
+../internal/webui/dist/assets/JsonEditorDialog-CRqLIItX.js                              298.26 kB │ gzip:  89.55 kB
+../internal/webui/dist/assets/i18n-CSTTxhGT.js                                          519.36 kB │ gzip: 174.73 kB
+../internal/webui/dist/assets/UsageCharts-X1mSguQC.js                                   580.07 kB │ gzip: 196.79 kB
+
+✓ built in 1.93s
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

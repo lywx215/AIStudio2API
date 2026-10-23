@@ -15,6 +15,11 @@ func configureProcess(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: windows.CREATE_NEW_PROCESS_GROUP | windows.CREATE_SUSPENDED}
 }
 
+func configureHeadless(cmd *exec.Cmd) {
+	cmd.SysProcAttr.HideWindow = true
+	cmd.SysProcAttr.CreationFlags |= windows.CREATE_NO_WINDOW
+}
+
 // This job belongs only to this Business collection. Closing it never targets
 // the original AI Studio browser, the host process or unrelated Firefox tabs.
 func bindProcess(cmd *exec.Cmd) (func() error, error) {

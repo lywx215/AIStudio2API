@@ -1,0 +1,22 @@
+{
+  "generation_calls": 1,
+  "model": "business-gemini-4-argon",
+  "checks": {
+    "management_routes": true,
+    "stream_incremental_stop": true,
+    "requested_markers": true,
+    "unmapped_optional_parameters_accepted": true,
+    "idle_and_resources_released": true,
+    "account_ready": true
+  },
+  "passed": true,
+  "parameter_semantics": "Unmapped optional parameters ignored; successful HTTP is not effect verification.",
+  "catalog_count": 0,
+  "http_status": 200,
+  "text_events": 24,
+  "first_text_seconds": 11.375,
+  "text_span_seconds": 8.75,
+  "text_bytes": 3124,
+  "finish_reason": "STOP",
+  "elapsed_seconds": 21.344
+}

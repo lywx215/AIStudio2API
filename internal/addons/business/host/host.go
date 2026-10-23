@@ -19,6 +19,8 @@ import (
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/files"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/observe"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault"
 )
 
@@ -37,6 +39,7 @@ type Host struct {
 	cancel            context.CancelFunc
 	fileStore         *files.Store
 	fileAPI           *fileapi.Handler
+	budget            *resources.Budget
 	collector         browser.Manager
 	launcher          browser.Launcher
 	operationMu       sync.Mutex
@@ -44,6 +47,13 @@ type Host struct {
 	generating        int
 	generationContext context.Context
 	generationCancel  context.CancelFunc
+	remoteMu          sync.Mutex
+	remote            *browserTask
+	remoteLast        *browserTask
+	remoteCleanup     error
+	legacyCollect     bool
+	observations      *observe.Catalog
+	importUndo        *configImportUndo
 }
 
 func New(path string, ownsLegacy func(string) bool) *Host {
@@ -51,11 +61,13 @@ func New(path string, ownsLegacy func(string) bool) *Host {
 	ctx, cancel := context.WithCancel(context.Background())
 	h := &Host{path: path, config: c, ownsLegacy: ownsLegacy, accounts: vault.New(filepath.Join(filepath.Dir(path), "vault")), ctx: ctx, cancel: cancel}
 	h.fileStore = files.New(filepath.Join(filepath.Dir(path), "files"))
+	h.observations = observe.New(filepath.Join(filepath.Dir(path), "observations.json"))
 	h.fileAPI = fileapi.New(h.fileStore)
 	if err != nil {
 		h.config = config.Default()
 		h.problem = err.Error()
 	}
+	h.budget = resources.New(h.config.MaxInflightBytes)
 	if h.config.Enabled && h.problem == "" {
 		h.reloadLocked()
 	}
@@ -102,10 +114,16 @@ func (h *Host) AdminHandler() http.Handler {
 			c := h.config.Clone()
 			h.mu.RUnlock()
 			writeJSON(w, c)
+		case r.URL.Path == "/api/addons/business/config/import" || strings.HasPrefix(r.URL.Path, "/api/addons/business/config/import/"):
+			h.handleConfigImport(w, r)
 		case r.URL.Path == "/api/addons/business/accounts" || r.URL.Path == "/api/addons/business/accounts/delete":
 			h.handleAccounts(w, r)
 		case r.URL.Path == "/api/addons/business/collect":
 			h.handleCollect(w, r)
+		case r.URL.Path == "/api/addons/business/browser-info" || r.URL.Path == "/api/addons/business/browser" || strings.HasPrefix(r.URL.Path, "/api/addons/business/browser/"):
+			h.handleBrowser(w, r)
+		case r.URL.Path == "/api/addons/business/observations" || r.URL.Path == "/api/addons/business/observations/confirm":
+			h.handleObservations(w, r)
 		case r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/api/addons/business/try/models/"):
 			if !strings.HasSuffix(r.URL.Path, ":generateContent") {
 				contract.Error(w, 400, "INVALID_ARGUMENT", "Only explicit unary Business trial requests are supported")
@@ -152,6 +170,9 @@ func (h *Host) AdminHandler() http.Handler {
 			}
 			changes := c.ChangesFrom(h.config)
 			h.config = c.Clone()
+			if changes.Resources {
+				h.budget.SetLimit(c.MaxInflightBytes)
+			}
 			if changes.Activation {
 				h.reloadLocked()
 			} else if changes.Scheduling && h.engine != nil {
@@ -188,10 +209,16 @@ func (h *Host) PublicHandler() http.Handler {
 			return
 		}
 		if strings.HasPrefix(r.URL.Path, "/v1beta/files") || r.URL.Path == "/upload/v1beta/files" {
-			h.fileAPI.ServeHTTP(w, r)
+			ctx, lease := h.budget.Begin(r.Context())
+			defer lease.Close()
+			h.fileAPI.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 		if r.Method == http.MethodPost && (strings.HasSuffix(r.URL.Path, ":generateContent") || strings.HasSuffix(r.URL.Path, ":streamGenerateContent")) {
+			if r.ContentLength > gemini.MaxRequestBytes {
+				contract.Error(w, 413, "RESOURCE_EXHAUSTED", "Business request body is too large")
+				return
+			}
 			if engine == nil || generationContext == nil {
 				contract.Error(w, 503, "UNAVAILABLE", "No eligible Business account is available")
 				return
@@ -215,6 +242,13 @@ func (h *Host) PublicHandler() http.Handler {
 			h.generating++
 			h.mu.Unlock()
 			defer func() { h.mu.Lock(); h.generating--; h.mu.Unlock() }()
+			budgetContext, lease := h.budget.Begin(r.Context())
+			defer lease.Close()
+			if _, err := lease.Reserve(resources.GenerationReserveBytes); err != nil {
+				gemini.Error(w, err)
+				return
+			}
+			r = r.WithContext(budgetContext)
 		}
 		bindings := make([]config.Binding, 0, len(c.Bindings))
 		for _, binding := range c.Bindings {
@@ -246,6 +280,8 @@ func (h *Host) UploadHandler() http.Handler {
 			contract.Error(w, 503, "UNAVAILABLE", "Business is disabled or unavailable")
 			return
 		}
-		h.fileAPI.UploadHandler().ServeHTTP(w, r)
+		ctx, lease := h.budget.Begin(r.Context())
+		defer lease.Close()
+		h.fileAPI.UploadHandler().ServeHTTP(w, r.WithContext(ctx))
 	})
 }

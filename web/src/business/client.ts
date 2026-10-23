@@ -1,5 +1,12 @@
 import { requestJSON } from '@/api'
-import type { BusinessConfig, BusinessStatus, BusinessAccounts, BusinessCredential } from './types'
+import type {
+  BusinessConfig,
+  BusinessStatus,
+  BusinessAccounts,
+  BusinessCredential,
+  BusinessImportPreview,
+  BusinessImportResult,
+} from './types'
 
 const root = '/api/addons/business'
 
@@ -12,6 +19,27 @@ export const businessClient = {
     requestJSON<BusinessConfig>(`${root}/config`, {
       method: 'PUT',
       body: JSON.stringify(config),
+      signal,
+    }),
+  previewImport: (input: { revision: number; source: object }, signal: AbortSignal) =>
+    requestJSON<BusinessImportPreview>(`${root}/config/import/preview`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      signal,
+    }),
+  applyImport: (
+    input: { revision: number; source_hash: string; source: object },
+    signal: AbortSignal,
+  ) =>
+    requestJSON<BusinessImportResult>(`${root}/config/import`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+      signal,
+    }),
+  rollbackImport: (input: { revision: number; rollback_id: string }, signal: AbortSignal) =>
+    requestJSON<BusinessConfig>(`${root}/config/import/rollback`, {
+      method: 'POST',
+      body: JSON.stringify(input),
       signal,
     }),
   accounts: (signal: AbortSignal) => requestJSON<BusinessAccounts>(`${root}/accounts`, { signal }),

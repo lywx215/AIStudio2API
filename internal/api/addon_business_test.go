@@ -18,6 +18,42 @@ import (
 	"github.com/Mag1cFall/AIStudio2API/internal/managementcontract"
 )
 
+func TestAddonConsoleBindingSurvivesRequestButEndsAtLogout(t *testing.T) {
+	var captured []contract.Console
+	cfg := Config{AdminAuthEnabled: true, Business: &BusinessAddon{Admin: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, ok := contract.ConsoleFrom(r.Context())
+		if !ok {
+			t.Error("console binding missing")
+		}
+		captured = append(captured, c)
+		w.WriteHeader(204)
+	})}}
+	auth := newAdminAuth(cfg)
+	auth.mu.Lock()
+	auth.addSession("fixture-a", time.Now().Add(time.Hour), false)
+	auth.addSession("fixture-b", time.Now().Add(time.Hour), false)
+	auth.mu.Unlock()
+	h := attachBusiness(http.NotFoundHandler(), cfg, auth)
+	for _, token := range []string{"fixture-a", "fixture-a", "fixture-b"} {
+		r := httptest.NewRequest("GET", "http://localhost/api/addons/business/status", nil)
+		r.AddCookie(&http.Cookie{Name: adminCookieName, Value: token})
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != 204 {
+			t.Fatal(w.Code)
+		}
+	}
+	if len(captured) != 3 || captured[0].ID != captured[1].ID || captured[0].ID == captured[2].ID || captured[0].Lifetime.Err() != nil {
+		t.Fatal("invalid session identity/lifetime")
+	}
+	auth.mu.Lock()
+	auth.removeSession("fixture-a")
+	auth.mu.Unlock()
+	if captured[0].Lifetime.Err() == nil || captured[2].Lifetime.Err() != nil {
+		t.Fatal("logout did not isolate owner cancellation")
+	}
+}
+
 func TestAddonNativeFilesUseDurableAuthenticatedOwners(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "business", "config.json")
 	c := addonconfig.Default()

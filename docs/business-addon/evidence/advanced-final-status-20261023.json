@@ -1,0 +1,100 @@
+{
+  "captured_at": "2026-10-22T16:23:18.8055070Z",
+  "state": "ready",
+  "generation_ready": true,
+  "config_revision": 8,
+  "capabilities": {
+    "browser_collection": "remote_manual_capability_gated",
+    "code_execution": "request_control_unverified_output_passthrough",
+    "countTokens": "unsupported_no_native_upstream_contract",
+    "files": "implemented",
+    "function_calling": "unsupported_ignored",
+    "generationConfig": "mapped_fields_forwarded_others_ignored",
+    "google_search": "provider_checked_empty_config_only",
+    "inline_media": "bounded_passthrough_not_model_capability",
+    "model_import": "preview_apply_undo_disabled_models",
+    "model_observation": "passive_pending_confirmation",
+    "multi_turn": "completed_prefix_only",
+    "streaming": "implemented",
+    "text": "implemented",
+    "tools": "google_search_empty_config_provider_gated_others_ignored",
+    "usageMetadata": "unavailable_not_estimated"
+  },
+  "capacity": {
+    "limit": 1,
+    "active": 0,
+    "available": 1
+  },
+  "resources": {
+    "limit_bytes": 268435456,
+    "in_use_bytes": 0,
+    "available_bytes": 268435456
+  },
+  "conversations": {
+    "retained": 0,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 0,
+    "continuation_attempts": 0
+  },
+  "accounts": [
+    {
+      "state": "ready",
+      "auth_verified": false,
+      "consecutive_failures": 0,
+      "last_error_kind": null,
+      "last_error_stage": null
+    }
+  ],
+  "models": [
+    {
+      "public_id": "business-auto",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-4-argon",
+      "state": "ready",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.8-flash",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.7-flash",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.6-flash",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.5-flash",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-3.1-pro",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    },
+    {
+      "public_id": "business-gemini-2.5-pro",
+      "state": "disabled",
+      "auth_verified": false,
+      "model_verified": false
+    }
+  ],
+  "live_verified": false
+}

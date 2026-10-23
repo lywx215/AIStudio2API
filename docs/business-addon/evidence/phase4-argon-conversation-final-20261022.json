@@ -1,0 +1,53 @@
+{
+  "model": "business-gemini-4-argon",
+  "generation_attempts": 3,
+  "checks": {
+    "initial_file_read_ack": true,
+    "remembered_file_marker_and_sum": true,
+    "native_continuation_stream": true,
+    "one_session_two_continuations": true,
+    "consumed_prefix_rejected_without_generation": true,
+    "idle_resources_ready": true,
+    "file_deleted": true
+  },
+  "passed": true,
+  "started_at": "2026-10-22T14:10:43Z",
+  "before_conversations": {
+    "retained": 0,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 0,
+    "continuation_attempts": 0
+  },
+  "last_http_status": 200,
+  "first_turn": {
+    "elapsed_seconds": 16.125,
+    "finish_reason": "STOP",
+    "usage_present": false,
+    "text": "ACK-PHASE4"
+  },
+  "second_turn": {
+    "elapsed_seconds": 11.641,
+    "finish_reason": "STOP",
+    "usage_present": false,
+    "text": "{\"project_code\": \"ARGON-P4-382679760DAF\", \"total_units\": 42}"
+  },
+  "stream_turn": {
+    "events": 22,
+    "text_events": 20,
+    "first_text_seconds": 7.297,
+    "text_span_seconds": 8.562,
+    "finish_reason": "STOP",
+    "elapsed_seconds": 17.015,
+    "text": "Project Code: **ARGON-P4-382679760DAF**\nTotal Units: **42**\n\n1. Rain forms when water vapor condenses around microscopic particles in the atmosphere and becomes heavy enough to fall under gravity.\n2. The distinct, earthy scent that accompanies the first rain after a dry spell is known as petrichor, caused by oils released from soil and bacteria.\n3. Raindrops do not actually look like teardrops as they fall; air resistance flattens their bottoms, making smaller drops spherical and larger ones shaped like hamburger buns.\n4. The terminal velocity of an average raindrop is roughly between 9 and 20 miles per hour, depending on its diameter.\n5. Acid rain occurs when sulfur dioxide and nitrogen oxides are emitted into the atmosphere and react with water molecules to create acidic precipitation.\n6. Orographic precipitation happens when moist air is forced upward by mountain ranges, cooling rapidly and releasing rain on the windward slopes.\n7. Rainbows appear when sunlight refracts, reflects, and disperses inside individual water droplets suspended in the atmosphere after a shower.\n8. Tropical rainforests rely on consistent, heavy rainfall to sustain the highest levels of terrestrial biodiversity on Earth.\n9. Freezing rain develops when snow melts while passing through a warm atmospheric layer and then supercools in a shallow freezing layer just above the ground, turning to ice upon impact.\n10. Virga is an observable streak of precipitation that falls from a cloud but evaporates or sublimates completely before ever reaching the ground.\n11. Monsoon systems are driven by seasonal shifts in wind caused by temperature differences between land and ocean, bringing vital rain to agricultural regions.\n12. Urban heat islands can alter local weather patterns, often increasing rainfall intensity downwind of major metropolitan areas.\n13. The rhythmic sound of falling rain acts as natural pink noise, which helps mask background sounds and promotes relaxation in the human brain.\n14. Gentle, steady rain typically falls from flat, layered nimbostratus clouds, whereas intense downpours and thunderstorms originate from towering cumulonimbus clouds.\n15. In desert ecosystems, a single brief rainstorm can trigger a \"superbloom\" of dormant wildflower seeds that have waited years for sufficient moisture.\n16. The global water cycle depends on precipitation to replenish freshwater aquifers, rivers, and lakes that sustain terrestrial life.\n\nPHASE4-STREAM-END\n\n"
+  },
+  "after_conversations": {
+    "retained": 1,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 1,
+    "continuation_attempts": 2
+  },
+  "consumed_prefix_http_status": 409,
+  "elapsed_seconds": 45.203
+}

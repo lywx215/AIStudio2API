@@ -20,6 +20,7 @@ type Changes struct {
 	Metadata   bool
 	Routing    bool
 	Scheduling bool
+	Resources  bool
 	Activation bool
 }
 
@@ -29,6 +30,7 @@ func (c Config) ChangesFrom(previous Config) Changes {
 	changes := Changes{
 		Activation: c.Enabled != previous.Enabled,
 		Scheduling: c.MaxConcurrent != previous.MaxConcurrent || c.RequestTimeoutSeconds != previous.RequestTimeoutSeconds,
+		Resources:  c.MaxInflightBytes != previous.MaxInflightBytes,
 	}
 	old := make(map[string]Binding, len(previous.Bindings))
 	for _, b := range previous.Bindings {

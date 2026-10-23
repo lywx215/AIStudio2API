@@ -43,7 +43,7 @@ func readyCommand(t *testing.T, methods *[]string) func(context.Context, string,
 		}
 		switch method {
 		case "session.new":
-			return json.RawMessage(`{"capabilities":{"browserName":"firefox","browserVersion":"152.0.1"}}`), nil
+			return json.RawMessage(`{"capabilities":{"browserName":"camoufox","browserVersion":"152.0.4-beta.29"}}`), nil
 		case "browsingContext.getTree":
 			return rawJSON(map[string]any{"contexts": []any{map[string]string{"context": "synthetic-context", "url": captureURL}}}), nil
 		case "browsingContext.navigate":
@@ -96,12 +96,12 @@ func TestCaptureCleanupFailureDiscardsCredential(t *testing.T) {
 	}
 }
 
-func TestDriverVersionStrictFirefox152(t *testing.T) {
+func TestDriverVersionRejectsUntestedReleases(t *testing.T) {
 	for _, version := range []string{"", "151.0", "152x", "152.0beta", "152.0\n", "153.0"} {
 		t.Run(version, func(t *testing.T) {
 			closed := false
 			d := &fakeDriver{command: func(context.Context, string, map[string]any) (json.RawMessage, error) {
-				return rawJSON(map[string]any{"capabilities": map[string]string{"browserName": "firefox", "browserVersion": version}}), nil
+				return rawJSON(map[string]any{"capabilities": map[string]string{"browserName": "camoufox", "browserVersion": version}}), nil
 			}, close: func() error { closed = true; return nil }}
 			_, err := Collect(context.Background(), Options{}, func(context.Context, Options) (Driver, error) { return d, nil })
 			if !errors.Is(err, ErrVersion) || !closed {

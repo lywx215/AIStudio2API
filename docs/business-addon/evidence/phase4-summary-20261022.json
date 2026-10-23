@@ -1,0 +1,219 @@
+{
+  "phase": "phase4-native-conversations-and-sdk",
+  "date": "2026-10-22",
+  "implementation_status": "implemented_with_scoped_live_regression_and_explicit_validation_limits",
+  "global_live_verified": false,
+  "runtime": {
+    "origin": "http://127.0.0.1:2048",
+    "pid": 75144,
+    "started_at": "2026-10-22T14:10:23.0762737Z",
+    "executable_sha256": "548DC4BF625DC2677944B23751E1FEEFA78382CE4860CCCF33A19A70FF96533F",
+    "executable_bytes": 51479552,
+    "previous_binary_backup": "runtime/business-local/aistudio2api-before-phase4.exe",
+    "existing_account_preserved": true,
+    "config_revision": 6,
+    "state": "ready",
+    "active_requests": 0,
+    "resource_in_use_bytes": 0,
+    "consecutive_failures": [
+      0
+    ],
+    "conversations": {
+      "retained": 2,
+      "limit": 128,
+      "ttl_seconds": 900,
+      "sessions_created": 2,
+      "continuation_attempts": 2
+    }
+  },
+  "implemented": [
+    "Native upstream session continuation from exact, completed and delivered Gemini history; only the newest user query is sent upstream.",
+    "Principal/model/options/account credential epoch isolation, single-use prefixes, one writer, ambiguity rejection, bounded 15 minute cache (128 global / 16 per principal).",
+    "Current-turn attachment upload with prior file IDs retained only in their original session/account; historical file ownership and content still checked.",
+    "Delivery acknowledgment, lifecycle epoch barriers, and no continuation after error, cancellation, failed output delivery or ambiguous submission.",
+    "Strict JSON/Unicode/duplicate-key/stream-budget checks with fixed safe diagnostics; real empty content metadata frames ignored without fabricating parts or completion.",
+    "Pinned Python 2.32.0 and JavaScript 2.22.0 offline SDK contracts; explicit JS consumer completion checker for swallowed SSE errors."
+  ],
+  "offline": {
+    "all_requested_checks_passed": false,
+    "latest_per_package_runs_combined": true,
+    "packages_passed": 11,
+    "top_level_tests_passed": 167,
+    "package_results": [
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/browser",
+        "result": "pass",
+        "top_level_tests_passed": 24,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/config",
+        "result": "pass",
+        "top_level_tests_passed": 8,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract",
+        "result": "skip",
+        "top_level_tests_passed": 0,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/core",
+        "result": "pass",
+        "top_level_tests_passed": 54,
+        "evidence": "phase4-core-final-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/dispatch",
+        "result": "skip",
+        "top_level_tests_passed": 0,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi",
+        "result": "pass",
+        "top_level_tests_passed": 13,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/files",
+        "result": "pass",
+        "top_level_tests_passed": 14,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini",
+        "result": "pass",
+        "top_level_tests_passed": 38,
+        "evidence": "phase4-gemini-final-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/observe",
+        "result": "pass",
+        "top_level_tests_passed": 2,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources",
+        "result": "pass",
+        "top_level_tests_passed": 5,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault",
+        "result": "pass",
+        "top_level_tests_passed": 3,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/app",
+        "result": "fail",
+        "top_level_tests_passed": 0,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/parameter-probe",
+        "result": "pass",
+        "top_level_tests_passed": 1,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/token-count",
+        "result": "pass",
+        "top_level_tests_passed": 5,
+        "evidence": "phase4-go-initial-20261022.jsonl"
+      }
+    ],
+    "deferred_by_user": [
+      "internal/addons/business/host",
+      "internal/api"
+    ],
+    "deferred_tests_executed": false,
+    "blocked_packages": [
+      "internal/app"
+    ],
+    "blocked_reason": "Standard app.test.exe execution blocked by Windows Application Control; not an assertion failure. No policy change or moved test executable.",
+    "initial_sdk_assertion_failure": "Fixture incorrectly expected JS SDK 2.22.0 to throw on a standard SSE error event. Final fixture confirms the actual wire error/no STOP/no replay and SDK silent completion; final Gemini package passed.",
+    "intermediate_diagnostic_test_failure": "Initial diagnostic patch changed over-limit classification. Restored RESOURCE_EXHAUSTED precedence without weakening the test; final Core 54 top-level tests passed.",
+    "sdk": {
+      "python": "google-genai==2.32.0",
+      "python_synthetic_generations": 15,
+      "javascript": "@google/genai@2.22.0",
+      "javascript_pipe_requests": 35,
+      "javascript_synthetic_generations": 19,
+      "network_model_calls": 0
+    },
+    "vet": "cmd/internal and two Business helpers passed; final changed Core vetted again",
+    "frontend": "No phase4 frontend changes; phase3 historical 152 tests/typecheck/lint/build retained, not rerun",
+    "race": "Not run: CGO disabled and no C compiler",
+    "build": "Passed; sandbox Go module stat-cache write warning retained in runtime log",
+    "boundary_gate": "Passed: frozen anchors and root README SHA preserved",
+    "drift_gate": "20 synthetic fixtures passed",
+    "diff_check": "passed"
+  },
+  "live": {
+    "model": "business-gemini-4-argon",
+    "generation_attempts": 7,
+    "successful_generations": 4,
+    "failed_generations_before_fix": 3,
+    "automatic_generation_replays": 0,
+    "failed_initial_attempts": [
+      "phase4-argon-conversation-initial-20261022.json",
+      "phase4-argon-js-initial-20261022.json"
+    ],
+    "diagnostic_failure": {
+      "evidence": "phase4-argon-conversation-diagnostic-20261022.json",
+      "reason": "stream_empty_content",
+      "limit": "Confirms an empty grounded content frame was rejected; initial two failures had no detailed diagnostic and cannot independently prove the same reason."
+    },
+    "native_three_turn": {
+      "passed": true,
+      "sessions_created_delta": 1,
+      "continuation_attempts_delta": 2,
+      "file_marker_and_sum_correct": true,
+      "stream_text_events": 20,
+      "stream_first_text_seconds": 7.297,
+      "stream_text_span_seconds": 8.562,
+      "finish_reason": "STOP",
+      "consumed_prefix_http_status": 409,
+      "consumed_prefix_no_generation": true,
+      "file_deleted_get404": true,
+      "evidence": "phase4-argon-conversation-final-20261022.json"
+    },
+    "javascript_unary": {
+      "passed": true,
+      "elapsed_seconds": 96.584,
+      "expected_json": true,
+      "finish_reason": "STOP",
+      "usage_present": false,
+      "evidence": "phase4-argon-js-final-20261022.json"
+    },
+    "long_context": "Not repeated in phase4; historical 153363 input / 6816 output used Google file-ingestion counts, not native Argon usage",
+    "advanced_parameters": "Unmapped optional parameters accepted/ignored; live HTTP200 is not evidence of their semantics. Mapped 0/false/schema forwarding tested offline only."
+  },
+  "remaining_limits": [
+    "Host/API final tests deferred by user; app final tests blocked by OS policy.",
+    "Arbitrary imported or restarted history is not resumable; preserve complete model parts, keep the same request options and keep historical broker files valid.",
+    "Native tools/functions, systemInstruction semantics, advanced sampling/schema/thinking mappings, native countTokens/usage and grounding conversion remain unverified or unavailable.",
+    "JavaScript SDK 2.22.0 may swallow SSE errors; require successful STOP with the supplied consumer check.",
+    "Real manual Google login, Linux VPS collection, full fingerprint persistence, dual-WAA coexistence and actual upstream upgrade candidate remain outside this verification."
+  ],
+  "deployment": false,
+  "commit_or_push": false,
+  "external_review": false,
+  "evidence_files": [
+    "phase4-go-initial-20261022.jsonl",
+    "phase4-gemini-final-20261022.jsonl",
+    "phase4-core-diagnostics-initial-20261022.jsonl",
+    "phase4-core-final-20261022.jsonl",
+    "phase4-argon-conversation-initial-20261022.json",
+    "phase4-argon-js-initial-20261022.json",
+    "phase4-argon-conversation-diagnostic-20261022.json",
+    "phase4-argon-conversation-final-20261022.json",
+    "phase4-argon-js-final-20261022.json",
+    "phase4-final-status-20261022.json",
+    "phase4-anchors-20261022.json",
+    "phase4-drift-20261022.json"
+  ]
+}

@@ -19,6 +19,15 @@ import (
 // handleCollect runs only inside the original consoleAuth wrapper. Its open
 // request owns the visible browser; cancellation/logout closes that browser.
 func (h *Host) handleCollect(w http.ResponseWriter, r *http.Request) {
+	h.remoteMu.Lock()
+	if h.remote != nil || h.remoteCleanup != nil || h.legacyCollect {
+		h.remoteMu.Unlock()
+		contract.Error(w, 409, "ABORTED", "Another browser task is active or cleanup requires attention")
+		return
+	}
+	h.legacyCollect = true
+	h.remoteMu.Unlock()
+	defer func() { h.remoteMu.Lock(); h.legacyCollect = false; h.remoteMu.Unlock() }()
 	if r.Method != http.MethodPost {
 		contract.Error(w, 405, "INVALID_ARGUMENT", "Method not allowed")
 		return
@@ -72,7 +81,7 @@ func (h *Host) handleCollect(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, browser.ErrCleanup):
 			contract.Error(w, 503, "UNAVAILABLE", "Browser cleanup was not confirmed; credentials were not saved")
 		case errors.Is(err, browser.ErrVersion):
-			contract.Error(w, 412, "FAILED_PRECONDITION", "A compatible Camoufox Firefox 152 executable is required")
+			contract.Error(w, 412, "FAILED_PRECONDITION", "A tested browser release with the required BiDi capabilities is required")
 		case errors.Is(err, context.Canceled):
 			contract.Error(w, 499, "CANCELLED", "Business collection cancelled")
 		case errors.Is(err, context.DeadlineExceeded):

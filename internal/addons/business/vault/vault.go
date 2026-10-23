@@ -24,9 +24,13 @@ type Credential struct {
 	CSESIndex  string `json:"csesidx"`
 	ConfigID   string `json:"config_id"`
 	UserAgent  string `json:"user_agent"`
+	ProxyURL   string `json:"proxy_url,omitempty"`
 }
 
 func (c Credential) Validate() error {
+	if ValidateProxy(c.ProxyURL) != nil {
+		return errors.New("invalid Business proxy")
+	}
 	if c.SecureCSES == "" || c.CSESIndex == "" || c.ConfigID == "" {
 		return errors.New("required Business credential fields are missing")
 	}

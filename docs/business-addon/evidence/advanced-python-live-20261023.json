@@ -1,0 +1,130 @@
+{
+  "sdk": "google-genai==2.32.0",
+  "model": "business-gemini-4-argon",
+  "passed": false,
+  "checks": {
+    "baseline_idle": true,
+    "local_preflights": true,
+    "count_tokens_unimplemented": true,
+    "first_marker_and_fact": true,
+    "stream_completed": true,
+    "grounding_valid": true,
+    "search_grounding_observed": false,
+    "official_pep8_supported": false,
+    "history_retained_all_parts": true,
+    "continuation_recalled": true,
+    "continuation_completed": true,
+    "tools_unchanged_on_wire": true,
+    "no_synthetic_usage": true,
+    "one_session_one_continuation": true,
+    "final_idle": true
+  },
+  "preflights": {
+    "google_search_null": {
+      "http_status": 400,
+      "rejected_locally": true
+    },
+    "google_search_alias_conflict": {
+      "http_status": 400,
+      "rejected_locally": true
+    },
+    "google_search_duplicate": {
+      "http_status": 400,
+      "rejected_locally": true
+    },
+    "function_call_message": {
+      "http_status": 400,
+      "rejected_locally": true
+    },
+    "function_response_message": {
+      "http_status": 400,
+      "rejected_locally": true
+    },
+    "tool_config_alias_conflict": {
+      "http_status": 400,
+      "rejected_locally": true
+    }
+  },
+  "unmapped_options_requested": {
+    "temperature": 0,
+    "maxOutputTokens": 64,
+    "thinkingConfig": {
+      "includeThoughts": false,
+      "thinkingBudget": 0
+    }
+  },
+  "advanced_parameter_semantics_claimed": false,
+  "token_estimate_produced": false,
+  "count_tokens_http_status": 501,
+  "stream_turn": {
+    "events": 10,
+    "parts": 10,
+    "text_events": 9,
+    "thought_parts": 0,
+    "signature_parts": 0,
+    "code_parts": 0,
+    "execution_result_parts": 0,
+    "citation_sources": 0,
+    "usage_observed": false,
+    "metadata_only_at_stop": true,
+    "citation_indices_absent": true,
+    "stop_observed": true,
+    "terminal_parts": 1,
+    "first_text_seconds": 17.094,
+    "text_arrival_span_seconds": 1.672,
+    "grounding_sources": 1,
+    "retrieved_context_sources": 1,
+    "web_sources": 0,
+    "grounding_supports": 0,
+    "valid_supports": 0,
+    "official_pep8_sources": 1,
+    "official_pep8_supports": 0,
+    "all_supports_valid": true,
+    "text_bytes": 666,
+    "output_sha256": "c4f147980d1a168f86a6834a903aba08918358ce7e4147301f359a8e482e07a8",
+    "elapsed_seconds": 19.937,
+    "grounding_evidence": "source_only"
+  },
+  "continuation_turn": {
+    "events": 1,
+    "parts": 2,
+    "text_events": 1,
+    "thought_parts": 0,
+    "signature_parts": 0,
+    "code_parts": 0,
+    "execution_result_parts": 0,
+    "citation_sources": 0,
+    "usage_observed": false,
+    "metadata_only_at_stop": true,
+    "citation_indices_absent": true,
+    "stop_observed": true,
+    "terminal_parts": 2,
+    "first_text_seconds": 8.735,
+    "text_arrival_span_seconds": 0.0,
+    "grounding_sources": 0,
+    "retrieved_context_sources": 0,
+    "web_sources": 0,
+    "grounding_supports": 0,
+    "valid_supports": 0,
+    "official_pep8_sources": 0,
+    "official_pep8_supports": 0,
+    "all_supports_valid": true,
+    "text_bytes": 61,
+    "output_sha256": "7bd56cd87be5bfc77da62c5e330b84f2eb361a195245102505b7768e4253a73f",
+    "elapsed_seconds": 8.735,
+    "grounding_evidence": "none"
+  },
+  "sessions_created_delta": 1,
+  "continuation_attempts_delta": 1,
+  "final_active": 0,
+  "final_in_use_bytes": 0,
+  "generation_attempts": 2,
+  "generation_http_statuses": [
+    200,
+    200
+  ],
+  "status_attempts": 2,
+  "preflight_attempts": 6,
+  "count_tokens_attempts": 1,
+  "elapsed_seconds": 29.125
+}

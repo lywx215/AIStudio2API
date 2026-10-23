@@ -76,6 +76,11 @@ async function send(): Promise<void> {
       failure instanceof ApiError
         ? `${failure.status}${failure.code ? ` ${failure.code}` : ''}: ${failure.message}`
         : text('请求失败，请检查连接或重试。', 'Request failed. Check the connection or retry.')
+    if (failure instanceof ApiError && (failure.status === 400 || failure.status === 403))
+      notice.value = text(
+        '参数、模型或权限拒绝不等同于会话过期。请查看模型映射和账号诊断后再决定是否更新凭据。',
+        'A parameter, model or permission rejection does not imply an expired session. Check the mapping and account diagnostics before deciding whether credentials need replacement.',
+      )
     emit('completed')
   } finally {
     if (active && run === sequence) {

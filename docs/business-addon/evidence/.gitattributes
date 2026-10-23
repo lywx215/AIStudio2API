@@ -1,0 +1,4 @@
+# Preserve captured evidence bytes, hashes, and original terminal formatting.
+*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.jsonl -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.log -text -whitespace

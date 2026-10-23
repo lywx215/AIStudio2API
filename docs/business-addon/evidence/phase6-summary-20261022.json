@@ -1,0 +1,361 @@
+{
+  "phase": "phase6-native-source-metadata-and-cumulative-streams",
+  "date": "2026-10-22",
+  "implementation_status": "implemented_with_scoped_live_regression_and_explicit_validation_limits",
+  "global_live_verified": false,
+  "scope_basis": "User authorized remaining native-interface adaptation with three parallel Codex agents and existing-account local acceptance; prior OS-blocked tests remain deferred.",
+  "runtime": {
+    "checked_at": "2026-10-22T15:09:46.3993303Z",
+    "origin": "http://127.0.0.1:2048",
+    "pid": 77796,
+    "executable_sha256": "FF5C5456FD84AF5930EA9F8E795D19FAFC84354B5E8B3797FB703D06EB37AEBB",
+    "executable_bytes": 51546624,
+    "started_at": "2026-10-22T15:07:07.1985428Z",
+    "state": "ready",
+    "generation_ready": true,
+    "config_revision": 6,
+    "account_count": 1,
+    "accounts": [
+      {
+        "state": "ready",
+        "auth_verified": true,
+        "consecutive_failures": 0,
+        "last_error_kind": null
+      }
+    ],
+    "model_states": [
+      {
+        "public_id": "business-auto",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-4-argon",
+        "state": "ready",
+        "configuration_valid": true,
+        "schedulable": true,
+        "auth_verified": true,
+        "model_verified": true
+      },
+      {
+        "public_id": "business-gemini-3.8-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.7-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.6-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.5-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.1-pro",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-2.5-pro",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      }
+    ],
+    "capacity": {
+      "limit": 1,
+      "active": 0,
+      "available": 1
+    },
+    "resources": {
+      "limit_bytes": 268435456,
+      "in_use_bytes": 0,
+      "available_bytes": 268435456
+    },
+    "conversations": {
+      "retained": 2,
+      "limit": 128,
+      "ttl_seconds": 900,
+      "sessions_created": 2,
+      "continuation_attempts": 2
+    },
+    "live_verified": false,
+    "previous_binary_backup": "runtime/business-local/aistudio2api-before-phase6.exe",
+    "existing_account_preserved": true
+  },
+  "implemented": [
+    "Document sources now project retrievedContext URI/title instead of guessing web/Google Search provenance from HTTP URI.",
+    "Terminal deduplication requires the full ordered delivered Part prefix; ordinary text may be resegmented within runs, while typed/thought/signature/inline boundaries match exactly.",
+    "One source-byte-to-output-Part projection drives deduplication and final grounding, including supports split across earlier Parts and a new suffix; incomplete mappings fail rather than silently truncate supports.",
+    "Native citationMetadata.citationSources preserves actual URI/license without guessed offsets, dates, titles or licenses; stable tuple deduplication and fixed safe errors.",
+    "Final-only metadata, source/field/count/encoded-byte budgets and shared 4 MiB output limit; no metadata or successful history commit after upstream/delivery failure.",
+    "Pinned dual SDK fixtures verify native wire names, normalized citation names, mixed Parts, final source metadata and Chat history without candidate metadata."
+  ],
+  "offline": {
+    "selected_scope_passed": true,
+    "all_project_verification_complete": false,
+    "final_selected_go_command_exit": 0,
+    "final_core_command_exit": 0,
+    "latest_per_package_runs_combined": true,
+    "packages_passed": 11,
+    "top_level_tests_passed": 203,
+    "top_level_assertion_failures": 0,
+    "package_results": [
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/browser",
+        "result": "pass",
+        "top_level_tests_passed": 24
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/config",
+        "result": "pass",
+        "top_level_tests_passed": 8
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract",
+        "result": "pass",
+        "top_level_tests_passed": 2
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/dispatch",
+        "result": "skip",
+        "top_level_tests_passed": 0
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi",
+        "result": "pass",
+        "top_level_tests_passed": 13
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/files",
+        "result": "pass",
+        "top_level_tests_passed": 14
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini",
+        "result": "pass",
+        "top_level_tests_passed": 52
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/observe",
+        "result": "pass",
+        "top_level_tests_passed": 2
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault",
+        "result": "pass",
+        "top_level_tests_passed": 3
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/parameter-probe",
+        "result": "pass",
+        "top_level_tests_passed": 1
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/token-count",
+        "result": "pass",
+        "top_level_tests_passed": 5
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/core",
+        "result": "pass",
+        "top_level_tests_passed": 79
+      }
+    ],
+    "deferred_by_user": [
+      "internal/addons/business/host",
+      "internal/api",
+      "internal/addons/business/resources",
+      "internal/app"
+    ],
+    "deferred_tests_executed": false,
+    "deferred_reason": "Host/API and previously OS-blocked resources/app retained unaccepted; no test executable rename, relocation or policy bypass.",
+    "skipped": [
+      "browser TestRemoteBrowserLiveHeadless opt-in not repeated",
+      "dispatch has no test files"
+    ],
+    "initial_fixture_failure": "Python fixture inspected inlineData only at the first user Part and raised KeyError when mixed model history also contained suggestions. Narrowed the fixture probe; full SDK and Gemini regression subsequently passed. Not a model or service failure.",
+    "sdk": {
+      "python": "google-genai==2.32.0",
+      "javascript": "@google/genai@2.22.0",
+      "new_fixture_requests_per_sdk": 7,
+      "new_fixture_synthetic_generations_per_sdk": 6,
+      "existing_phase4_phase5_sdk_regression": "passed",
+      "network_model_calls": 0
+    },
+    "vet": "cmd/internal plus both Business helpers passed",
+    "build": "passed; sandbox Go module stat-cache write warning retained",
+    "frontend": "No phase6 frontend changes; phase3 historical 152 tests/typecheck/lint/build retained without rerun",
+    "race": "not run: CGO disabled and no C compiler",
+    "boundary_gate": "passed; frozen anchors and root README preserved",
+    "drift_gate": "20 synthetic fixtures and documentation links passed",
+    "diff_check": "passed",
+    "independent_internal_agent_review": "Read-only review found no high-confidence blocking defect; no external reviewer invoked."
+  },
+  "live": {
+    "model": "business-gemini-4-argon",
+    "generation_attempts": 4,
+    "successful_generations": 4,
+    "failed_generations": 0,
+    "automatic_generation_replays": 0,
+    "python_sdk": {
+      "passed": true,
+      "stream": {
+        "events": 20,
+        "text_events": 18,
+        "code_parts": 1,
+        "result_parts": 1,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "usage_present": false,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "citation_offsets_absent": true,
+        "metadata_only_at_stop": true,
+        "terminal_parts": 1,
+        "finish_reason": "STOP",
+        "first_text_seconds": 21.125,
+        "text_span_seconds": 6.704,
+        "elapsed_seconds": 27.829,
+        "text_bytes": 2035
+      },
+      "continuation": {
+        "events": 1,
+        "text_events": 16,
+        "code_parts": 0,
+        "result_parts": 0,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "usage_present": false,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "citation_offsets_absent": true,
+        "metadata_only_at_stop": true,
+        "terminal_parts": 17,
+        "finish_reason": "STOP",
+        "first_text_seconds": 13.765,
+        "text_span_seconds": 0.0,
+        "elapsed_seconds": 13.765,
+        "text_bytes": 1546
+      },
+      "checks": {
+        "file_sum_and_marker": true,
+        "stream_success": true,
+        "sdk_curated_history_continuation": true,
+        "one_session_one_continuation": true,
+        "idle_resources_ready": true,
+        "file_deleted": true
+      },
+      "evidence": "phase6-argon-python-20261022.json"
+    },
+    "javascript_sdk": {
+      "passed": true,
+      "stream": {
+        "events": 15,
+        "parts": 15,
+        "text_events": 14,
+        "terminal_parts": 1,
+        "code_parts": 0,
+        "execution_result_parts": 0,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "citation_indices_absent": true,
+        "metadata_only_at_stop": true,
+        "usage_present": false,
+        "finish_reason": "STOP",
+        "elapsed_seconds": 14.88,
+        "first_text_seconds": 8.548,
+        "text_span_seconds": 5.722,
+        "text_bytes": 1443,
+        "numbered_lines": 16
+      },
+      "continuation": {
+        "elapsed_seconds": 7.523,
+        "text_bytes": 53,
+        "finish_reason": "STOP",
+        "usage_present": false,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "citation_indices_absent": true,
+        "metadata_only_at_stop": true
+      },
+      "checks": {
+        "baseline_ready_idle": true,
+        "first_marker_and_sum": true,
+        "sixteen_lines_and_end": true,
+        "stream_completed": true,
+        "metadata_only_at_stop": true,
+        "citation_indices_absent": true,
+        "chat_retained_all_parts": true,
+        "recalled_marker_sum": true,
+        "continuation_completed": true,
+        "no_synthetic_usage": true,
+        "one_session_one_continuation": true,
+        "final_ready_idle": true
+      },
+      "evidence": "phase6-argon-js-20261022.json"
+    },
+    "native_code_result_observed": true,
+    "grounding_live_verified": false,
+    "citation_live_verified": false,
+    "source_metadata_note": "No native grounding or citation sources returned in four actual calls, including an official-source prompt. New source projections and exact terminal-span mapping are offline verified only.",
+    "advanced_parameters": "Mapped 0/false/raw schema forwarding remains covered offline; no new verified widget parameter mapping. Prompt-triggered code does not prove native tools semantics.",
+    "long_context": "Not repeated in phase6; historical 153363/6816 counts were file-ingestion measurements, not native Argon usage."
+  },
+  "remaining_limits": [
+    "Host/API/resources/app tests remain unaccepted by user direction; no final release-wide verification.",
+    "Grounding/citation transformations have no real widget sample in this run; source-only citations intentionally omit offsets.",
+    "Incomplete/different terminal snapshots retain repeated content rather than deleting unmatched typed, thought or auxiliary Parts.",
+    "Native tools/functions, systemInstruction, advanced sampling/schema/thinking mappings and native countTokens/usage remain unavailable or unverified.",
+    "Arbitrary imported history, replay, restoration after process restart and continuation through deleted historical broker files remain unsupported.",
+    "JS SDK may swallow SSE errors; consumers still must require STOP.",
+    "Manual Google login/Linux VPS collection, complete fingerprint persistence, dual-WAA and real upstream upgrade candidate remain outside acceptance."
+  ],
+  "deployment": false,
+  "commit_or_push": false,
+  "external_review": false,
+  "evidence_files": [
+    "phase6-go-final-20261022.jsonl",
+    "phase6-core-final-20261022.jsonl",
+    "phase6-sdk-initial-20261022.log",
+    "phase6-sdk-final-20261022.log",
+    "phase6-argon-python-20261022.json",
+    "phase6-argon-js-20261022.json",
+    "phase6-final-status-20261022.json",
+    "phase6-anchors-20261022.json",
+    "phase6-drift-20261022.json"
+  ]
+}

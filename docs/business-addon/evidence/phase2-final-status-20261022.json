@@ -1,0 +1,23 @@
+{
+  "state": "ready",
+  "generation_ready": true,
+  "config_revision": 6,
+  "capacity": {
+    "limit": 1,
+    "active": 0,
+    "available": 1
+  },
+  "resources": {
+    "limit_bytes": 268435456,
+    "in_use_bytes": 0,
+    "available_bytes": 268435456
+  },
+  "accounts": [
+    {
+      "state": "ready",
+      "auth_verified": true,
+      "consecutive_failures": 0
+    }
+  ],
+  "argon_model_verified": true
+}

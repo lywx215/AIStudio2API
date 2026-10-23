@@ -1,0 +1,4 @@
+{"Time":"2026-10-22T22:44:22.6669971+08:00","Action":"start","Package":"github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini"}
+{"Time":"2026-10-22T22:44:24.7063936+08:00","Action":"output","Package":"github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini","Output":"fork/exec C:\\Users\\lywx2\\AppData\\Local\\Temp\\go-build2213127050\\b001\\gemini.test.exe: An Application Control policy has blocked this file.\n"}
+{"Time":"2026-10-22T22:44:24.7063936+08:00","Action":"output","Package":"github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini","Output":"FAIL\tgithub.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini\t2.039s\n"}
+{"Time":"2026-10-22T22:44:24.7063936+08:00","Action":"fail","Package":"github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini","Elapsed":2.039}

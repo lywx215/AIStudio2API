@@ -1,7 +1,7 @@
 package gemini
 
 import (
-	"encoding/base64"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,16 +9,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/config"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources"
 )
 
 type candidate struct {
-	Content      content `json:"content"`
-	Index        int     `json:"index"`
-	FinishReason string  `json:"finishReason,omitempty"`
+	Content           content                     `json:"content"`
+	Index             int                         `json:"index"`
+	FinishReason      string                      `json:"finishReason,omitempty"`
+	GroundingMetadata *contract.GroundingMetadata `json:"groundingMetadata,omitempty"`
+	CitationMetadata  *contract.CitationMetadata  `json:"citationMetadata,omitempty"`
 }
 type content struct {
 	Role  string          `json:"role"`
@@ -29,13 +31,22 @@ type response struct {
 	ModelVersion string      `json:"modelVersion,omitempty"`
 }
 
-func responseFor(parts []contract.Part, finished bool) response {
+type responseMetadata struct {
+	grounding *contract.GroundingMetadata
+	citation  *contract.CitationMetadata
+}
+
+func responseFor(parts []contract.Part, finished bool, metadata ...responseMetadata) response {
 	if parts == nil {
 		parts = []contract.Part{}
 	}
 	c := candidate{Content: content{Role: "model", Parts: parts}, Index: 0}
 	if finished {
 		c.FinishReason = "STOP"
+		if len(metadata) > 0 {
+			c.GroundingMetadata = metadata[0].grounding
+			c.CitationMetadata = metadata[0].citation
+		}
 	}
 	return response{Candidates: []candidate{c}}
 }
@@ -81,12 +92,12 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			}
 			limit := 50
 			if raw := r.URL.Query().Get("pageSize"); raw != "" {
-				v, err := strconv.Atoi(raw)
-				if err != nil || v < 1 || v > 1000 {
-					Error(w, invalid("pageSize must be between 1 and 1000"))
+				v, err := strconv.ParseInt(raw, 10, 32)
+				if err != nil || v < 1 {
+					Error(w, invalid("pageSize must be a positive 32-bit integer"))
 					return
 				}
-				limit = v
+				limit = int(min(v, 1000))
 			}
 			end := min(start+limit, len(models))
 			items := []any{}
@@ -126,12 +137,20 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			return
 		}
 		if action != "generateContent" && action != "streamGenerateContent" {
+			if action == "countTokens" {
+				Error(w, contract.Fail(501, "UNIMPLEMENTED", "Business has no verified native token-count endpoint; file ingestion counts are not generation usage"))
+				return
+			}
 			Error(w, contract.Fail(501, "UNIMPLEMENTED", "This Business model method is not available"))
 			return
 		}
-		_ = control.SetReadDeadline(time.Now().Add(15 * time.Second))
-		input, err := ParseWithFiles(r.Context(), r.Body, *binding, resolver)
-		_ = control.SetReadDeadline(time.Time{})
+		if r.ContentLength > maxRequestBytes {
+			Error(w, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business request exceeds 68 MiB"))
+			return
+		}
+		parseCtx, finishRead := generationReadContext(control, r.Context())
+		input, err := ParseWithFiles(parseCtx, r.Body, *binding, resolver)
+		finishRead()
 		if err != nil {
 			Error(w, err)
 			return
@@ -150,15 +169,24 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 		finished := false
 		first := true
 		total := 0
+		totalParts := 0
 		parts := []contract.Part{}
 		var terminal []contract.Part
+		var pending []contract.Part
+		var grounding *contract.GroundingMetadata
+		var citation *contract.CitationMetadata
+		terminalWriteAttempted := false
 		var emitFailure error
-		selection := contract.Selection{ModelID: binding.UpstreamModelID, Auto: binding.SelectorMode == "auto", AccountIDs: binding.AccountIDs}
+		selection := contract.Selection{PublicID: binding.PublicID, ModelID: binding.UpstreamModelID, Auto: binding.SelectorMode == "auto", AccountIDs: binding.AccountIDs}
+		deliveryCtx, completeDelivery := contract.WithDelivery(r.Context())
+		delivered := false
+		defer func() { completeDelivery(delivered) }()
 		writeEvent := func(eventParts []contract.Part, done bool) error {
-			data, marshalErr := json.Marshal(responseFor(eventParts, done))
+			data, release, marshalErr := marshalResponse(r.Context(), eventParts, done, responseMetadata{grounding, citation})
 			if marshalErr != nil {
-				return contract.Fail(502, "DATA_LOSS", "Business output cannot be encoded")
+				return marshalErr
 			}
+			defer release()
 			control := http.NewResponseController(w)
 			_ = control.SetWriteDeadline(time.Now().Add(15 * time.Second))
 			if !started {
@@ -176,22 +204,23 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 					}
 				}
 			}
+			var writeErr error
 			if alt == "sse" {
-				_, err = fmt.Fprintf(w, "data: %s\n\n", data)
+				_, writeErr = fmt.Fprintf(w, "data: %s\n\n", data)
 			} else {
 				if !first {
-					_, err = w.Write([]byte(","))
+					_, writeErr = w.Write([]byte(","))
 				}
-				if err == nil {
-					_, err = w.Write(data)
+				if writeErr == nil {
+					_, writeErr = w.Write(data)
 				}
 			}
 			first = false
-			if err != nil {
-				return err
+			if writeErr != nil {
+				return writeErr
 			}
-			if err = control.Flush(); err != nil {
-				return err
+			if writeErr = control.Flush(); writeErr != nil {
+				return writeErr
 			}
 			return nil
 		}
@@ -208,31 +237,70 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 				return contract.Fail(502, "DATA_LOSS", "Unexpected event after completion")
 			}
 			finished = event.Finished
+			totalParts += len(event.Parts)
+			if totalParts > 4096 {
+				return contract.Fail(502, "RESOURCE_EXHAUSTED", "Business output exceeds 4096 parts")
+			}
 			for _, p := range event.Parts {
-				total += len(p.Text) + len(p.ThoughtSignature)
-				if p.InlineData != nil {
-					if p.Text != "" || p.Thought || p.ThoughtSignature != "" || p.InlineData.MIMEType != contract.SuggestionsMIMEType || !utf8.Valid(p.InlineData.Data) || !json.Valid(p.InlineData.Data) {
-						return contract.Fail(502, "DATA_LOSS", "Business returned an invalid inline content part")
-					}
-					total += len(p.InlineData.Data) + base64.StdEncoding.EncodedLen(len(p.InlineData.Data))
+				if err := validateOutputPart(p); err != nil {
+					return err
 				}
+				total += p.PayloadBytes()
+			}
+			if _, err := resources.Reserve(r.Context(), int64(len(event.Parts))*128); err != nil {
+				return err
+			}
+			// Retain bounded references for final grounding offsets, including SSE.
+			parts = append(parts, event.Parts...)
+			if event.CitationMetadata != nil {
+				if !event.Finished {
+					return contract.Fail(502, "DATA_LOSS", "Business citations must accompany completion")
+				}
+				bytes, err := validateOutputCitation(r.Context(), event.CitationMetadata)
+				if err != nil {
+					return err
+				}
+				total += bytes
+				citation = event.CitationMetadata
+			}
+			if event.GroundingMetadata != nil {
+				if !event.Finished {
+					return contract.Fail(502, "DATA_LOSS", "Business grounding must accompany completion")
+				}
+				bytes, err := validateOutputGrounding(r.Context(), event.GroundingMetadata, parts)
+				if err != nil {
+					return err
+				}
+				total += bytes
+				grounding = event.GroundingMetadata
 			}
 			if total > 4<<20 {
 				return contract.Fail(502, "RESOURCE_EXHAUSTED", "Business output exceeds 4 MiB")
 			}
 			if !stream {
-				parts = append(parts, event.Parts...)
 				return nil
 			}
+			available := append(pending, event.Parts...)
 			if event.Finished {
 				// A terminal frame is released only after Generate itself succeeds.
 				// A later transport/parser error must never carry a STOP reason.
-				terminal = append([]contract.Part(nil), event.Parts...)
+				terminal = append([]contract.Part(nil), available...)
+				pending = nil
 				return nil
 			}
-			return writeEvent(event.Parts, false)
+			if len(available) == 0 {
+				return nil
+			}
+			// Official Chat SDKs require a real final content part to retain the
+			// completed model turn. Hold one original part, never synthesize or
+			// repeat text. This costs at most one upstream part of latency.
+			pending = append([]contract.Part(nil), available[len(available)-1:]...)
+			if len(available) == 1 {
+				return nil
+			}
+			return writeEvent(available[:len(available)-1], false)
 		}
-		err = generator.Generate(r.Context(), selection, input, emit)
+		err = generator.Generate(deliveryCtx, selection, input, emit)
 		if err == nil {
 			err = emitFailure
 		}
@@ -240,9 +308,21 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			err = contract.Fail(502, "DATA_LOSS", "Business stream ended without completion")
 		}
 		if err == nil && stream {
+			terminalWriteAttempted = true
 			err = writeEvent(terminal, true)
 		}
 		if err != nil {
+			if stream && emitFailure == nil && !terminalWriteAttempted {
+				unsent := pending
+				if finished {
+					unsent = terminal
+				}
+				if len(unsent) > 0 {
+					if writeErr := writeEvent(unsent, false); writeErr != nil {
+						err = writeErr
+					}
+				}
+			}
 			if !started {
 				Error(w, err)
 				return
@@ -264,15 +344,66 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			return
 		}
 		if !stream {
+			data, release, encodeErr := marshalResponse(r.Context(), parts, true, responseMetadata{grounding, citation})
+			if encodeErr != nil {
+				Error(w, encodeErr)
+				return
+			}
+			defer release()
 			_ = control.SetWriteDeadline(time.Now().Add(15 * time.Second))
-			write(w, responseFor(parts, true))
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "no-store")
+			_, err = w.Write(data)
 		} else if alt != "sse" {
-			_, _ = w.Write([]byte("]"))
+			_, err = w.Write([]byte("]"))
 		}
+		delivered = err == nil
 	})
+}
+
+func marshalResponse(ctx context.Context, parts []contract.Part, finished bool, metadata ...responseMetadata) ([]byte, func(), error) {
+	// JSON can expand a string sixfold; Marshal also copies its encoder buffer.
+	// Charge both encoded buffers before invoking it, including per-part keys.
+	bytes := int64(4096 + len(parts)*1024)
+	for _, part := range parts {
+		bytes += int64(part.PayloadBytes()) * 12
+	}
+	if finished && len(metadata) > 0 {
+		if metadata[0].grounding != nil {
+			bytes += 2 * contract.MaxGroundingBytes
+		}
+		if metadata[0].citation != nil {
+			bytes += 2 * contract.MaxCitationBytes
+		}
+	}
+	release, err := resources.Reserve(ctx, bytes)
+	if err != nil {
+		return nil, nil, err
+	}
+	data, err := json.Marshal(responseFor(parts, finished, metadata...))
+	if err != nil {
+		release()
+		return nil, nil, contract.Fail(502, "DATA_LOSS", "Business output cannot be encoded")
+	}
+	return data, release, nil
 }
 func model(b config.Binding) any {
 	return map[string]any{"name": "models/" + b.PublicID, "displayName": b.DisplayName, "supportedGenerationMethods": []string{"generateContent", "streamGenerateContent"}}
+}
+
+func generationReadContext(control *http.ResponseController, parent context.Context) (context.Context, func()) {
+	ctx, cancel := context.WithTimeout(parent, 15*time.Second)
+	deadline, _ := ctx.Deadline()
+	_ = control.SetReadDeadline(deadline)
+	interrupted := make(chan struct{})
+	stop := context.AfterFunc(ctx, func() { defer close(interrupted); _ = control.SetReadDeadline(time.Now()) })
+	return ctx, func() {
+		if !stop() {
+			<-interrupted
+		}
+		cancel()
+		_ = control.SetReadDeadline(time.Time{})
+	}
 }
 func write(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")

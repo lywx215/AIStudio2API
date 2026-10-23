@@ -1,0 +1,164 @@
+{
+  "action": "files",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "started_at": "2026-10-22T13:02:48Z",
+  "checks": [
+    {
+      "text": "{\"reference_token\": \"ARGON-TXT-7Q4M9C\", \"total_units\": 42}",
+      "text_bytes": 58,
+      "finish_reason": "STOP",
+      "usage_present": false,
+      "mime_type": "text/plain",
+      "input_bytes": 118,
+      "input_sha256": "464ff9817f7831278d6191379c8245355c888b17dc3cec2f14b50a49573ef891",
+      "expected": {
+        "reference_token": "ARGON-TXT-7Q4M9C",
+        "total_units": 42
+      },
+      "passed": true,
+      "deleted_http_status": 404
+    }
+  ],
+  "passed": false,
+  "error_type": "ServerError",
+  "http_status": 502,
+  "local_status": {
+    "state": "unavailable",
+    "enabled": true,
+    "generation_ready": false,
+    "code": "BUSINESS_ACCOUNT_COOLDOWN",
+    "config_revision": 6,
+    "transport": "http",
+    "capabilities": {
+      "browser_collection": "local_visible_user_action",
+      "files": "implemented",
+      "generationConfig": "requires_verified_mapping",
+      "multi_turn": "unsupported",
+      "streaming": "implemented",
+      "text": "implemented",
+      "tools": "unsupported"
+    },
+    "account_states": [
+      {
+        "id": "acct-2f7208dfb9937c62f58a65afc2fde266",
+        "state": "cooldown",
+        "auth_verified": true,
+        "auth_verified_at": "2026-10-22T21:01:49.0172544+08:00",
+        "verified_models": {
+          "gemini-4-argon": "2026-10-22T13:03:03.1185069Z"
+        },
+        "last_error_kind": "transient",
+        "last_error_stage": "generate",
+        "last_error_submitted": true,
+        "last_error_output_started": false,
+        "last_error_at": "2026-10-22T13:03:26.7115532Z",
+        "consecutive_failures": 1,
+        "cooldown_until": "2026-10-22T21:03:28.15765494+08:00"
+      }
+    ],
+    "model_states": [
+      {
+        "public_id": "business-auto",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-4-argon",
+        "state": "unavailable",
+        "code": "BUSINESS_ACCOUNT_COOLDOWN",
+        "configuration_valid": true,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": true,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "model_verified_at": "2026-10-22T13:03:03.1185069Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-3.8-flash",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-3.7-flash",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-3.6-flash",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-3.5-flash",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-3.1-pro",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      },
+      {
+        "public_id": "business-gemini-2.5-pro",
+        "state": "disabled",
+        "code": "BUSINESS_MODEL_DISABLED",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false,
+        "auth_verified_at": "2026-10-22T13:01:49.0172544Z",
+        "eligible_account_ids": []
+      }
+    ],
+    "capacity": {
+      "limit": 1,
+      "active": 0,
+      "available": 1
+    },
+    "resources": {
+      "limit_bytes": 268435456,
+      "in_use_bytes": 16777216,
+      "available_bytes": 251658240
+    },
+    "live_verified": false
+  },
+  "elapsed_seconds": 38.515
+}

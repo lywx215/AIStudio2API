@@ -1,0 +1,20 @@
+{
+  "model": "business-gemini-4-argon",
+  "generation_attempts": 1,
+  "checks": {
+    "file_deleted": true
+  },
+  "passed": false,
+  "started_at": "2026-10-22T14:06:55Z",
+  "before_conversations": {
+    "retained": 0,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 0,
+    "continuation_attempts": 0
+  },
+  "last_http_status": 502,
+  "protocol_diagnostic": "Business response is malformed or incomplete (stream_empty_content)",
+  "error_type": "HTTPStatusError",
+  "elapsed_seconds": 19.594
+}

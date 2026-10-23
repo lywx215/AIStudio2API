@@ -14,6 +14,12 @@ import (
 
 const MaxBytes = 128 << 10
 
+const (
+	DefaultMaxInflightBytes int64 = 256 << 20
+	MinInflightBytes        int64 = 64 << 20
+	MaxInflightBytes        int64 = 4096 << 20
+)
+
 type Binding struct {
 	PublicID             string                      `json:"public_id"`
 	DisplayName          string                      `json:"display_name"`
@@ -44,12 +50,13 @@ type Config struct {
 	Revision              uint64    `json:"revision"`
 	Enabled               bool      `json:"enabled"`
 	MaxConcurrent         int       `json:"max_concurrent"`
+	MaxInflightBytes      int64     `json:"max_inflight_bytes"`
 	RequestTimeoutSeconds int       `json:"request_timeout_seconds"`
 	Bindings              []Binding `json:"bindings"`
 }
 
 func Default() Config {
-	c := Config{SchemaVersion: 1, MaxConcurrent: 2, RequestTimeoutSeconds: 120, Bindings: []Binding{}}
+	c := Config{SchemaVersion: 1, MaxConcurrent: 2, MaxInflightBytes: DefaultMaxInflightBytes, RequestTimeoutSeconds: 120, Bindings: []Binding{}}
 	for _, item := range [][2]string{
 		{"auto", "Auto"}, {"gemini-4-argon", "Gemini 4 Argon"}, {"gemini-3.8-flash", "Gemini 3.8 Flash"},
 		{"gemini-3.7-flash", "Gemini 3.7 Flash"}, {"gemini-3.6-flash", "Gemini 3.6 Flash"},
@@ -75,6 +82,9 @@ func (c Config) Validate(ownsLegacy func(string) bool) error {
 	}
 	if c.MaxConcurrent < 1 || c.MaxConcurrent > 16 {
 		return errors.New("max_concurrent must be between 1 and 16")
+	}
+	if c.MaxInflightBytes < MinInflightBytes || c.MaxInflightBytes > MaxInflightBytes || c.MaxInflightBytes%(1<<20) != 0 {
+		return errors.New("max_inflight_bytes must be an integer MiB between 64 and 4096 MiB")
 	}
 	if c.RequestTimeoutSeconds < 10 || c.RequestTimeoutSeconds > 300 {
 		return errors.New("request_timeout_seconds must be between 10 and 300")
@@ -148,7 +158,9 @@ func Decode(r io.Reader) (Config, error) {
 	if len(data) > MaxBytes {
 		return Config{}, errors.New("Business configuration is too large")
 	}
-	var c Config
+	// Existing schema-1 documents predate this field. Only omission receives
+	// the default; an explicit zero/null must not silently disable admission.
+	c := Config{MaxInflightBytes: DefaultMaxInflightBytes}
 	d := json.NewDecoder(bytes.NewReader(data))
 	d.DisallowUnknownFields()
 	if err := d.Decode(&c); err != nil {
@@ -156,6 +168,10 @@ func Decode(r io.Reader) (Config, error) {
 	}
 	if err := d.Decode(new(any)); err != io.EOF {
 		return Config{}, errors.New("expected one JSON document")
+	}
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(data, &fields) == nil && bytes.Equal(bytes.TrimSpace(fields["max_inflight_bytes"]), []byte("null")) {
+		return Config{}, errors.New("max_inflight_bytes must be a number")
 	}
 	return c, nil
 }

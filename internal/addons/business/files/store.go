@@ -21,6 +21,9 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
+
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract"
+	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources"
 )
 
 const DefaultMaxBytes int64 = 50 << 20
@@ -416,7 +419,10 @@ func (s *Store) Chunk(ctx context.Context, token, owner string, offset int64, co
 	if content == nil {
 		content = strings.NewReader("")
 	}
-	data, err := io.ReadAll(io.LimitReader(contextReader{ctx, content}, limit+1))
+	data, err := resources.ReadAll(ctx, contextReader{ctx, content}, limit+1)
+	if ctx.Err() != nil {
+		return Upload{}, ctx.Err()
+	}
 	if err != nil {
 		return Upload{}, err
 	}
@@ -451,6 +457,11 @@ func (s *Store) Chunk(ctx context.Context, token, owner string, offset int64, co
 			return Upload{}, ErrOffset
 		}
 		if len(data) != 0 {
+			release, err := resources.Reserve(ctx, int64(len(data)))
+			if err != nil {
+				return Upload{}, err
+			}
+			defer release()
 			f, err := os.Open(s.blob(e.File.ID))
 			if err != nil {
 				return Upload{}, ErrUnavailable
@@ -605,6 +616,19 @@ func (s *Store) Snapshot(ctx context.Context, owner, id string) (Snapshot, error
 	if err != nil {
 		return Snapshot{}, err
 	}
+	if allowance, ok := resources.AttachmentAllowance(ctx); ok && e.File.Size > allowance {
+		return Snapshot{}, contract.Fail(413, "RESOURCE_EXHAUSTED", "Business attachments exceed 50 MiB")
+	}
+	release, err := resources.Reserve(ctx, e.File.Size)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	success := false
+	defer func() {
+		if !success {
+			release()
+		}
+	}()
 	f, err := os.Open(s.blob(id))
 	if errors.Is(err, os.ErrNotExist) {
 		return Snapshot{}, ErrNotFound
@@ -612,7 +636,23 @@ func (s *Store) Snapshot(ctx context.Context, owner, id string) (Snapshot, error
 	if err != nil {
 		return Snapshot{}, ErrUnavailable
 	}
-	data, err := io.ReadAll(io.LimitReader(contextReader{ctx, f}, e.File.Size+1))
+	stat, statErr := f.Stat()
+	if statErr != nil || stat.Size() != e.File.Size {
+		_ = f.Close()
+		return Snapshot{}, ErrUnavailable
+	}
+	data := make([]byte, int(e.File.Size))
+	_, err = io.ReadFull(contextReader{ctx, f}, data)
+	if err == nil {
+		var extra [1]byte
+		var count int
+		count, err = f.Read(extra[:])
+		if count != 0 {
+			err = ErrUnavailable
+		} else if errors.Is(err, io.EOF) {
+			err = nil
+		}
+	}
 	closeErr := f.Close()
 	if err != nil {
 		return Snapshot{}, err
@@ -627,6 +667,7 @@ func (s *Store) Snapshot(ctx context.Context, owner, id string) (Snapshot, error
 	if int64(len(data)) != e.File.Size || hex.EncodeToString(hash[:]) != e.File.Hash {
 		return Snapshot{}, ErrUnavailable
 	}
+	success = true
 	return Snapshot{Record: e.File, Data: data}, nil
 }
 

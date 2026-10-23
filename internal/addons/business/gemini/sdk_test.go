@@ -57,6 +57,9 @@ func TestGeminiSDKOfflineHarness(t *testing.T) {
 	second.PublicID = "business-other"
 	generations := 0
 	generator := generatorFunc(func(_ context.Context, _ contract.Selection, input contract.Request, emit func(contract.Event) error) error {
+		if len(input.History) > 1 {
+			return contract.Fail(409, "FAILED_PRECONDITION", "Unknown completed conversation prefix")
+		}
 		generations++
 		if len(input.QueryParts) == 0 && len(input.Attachments) == 0 {
 			return contract.Fail(400, "INVALID_ARGUMENT", "empty fixture request")

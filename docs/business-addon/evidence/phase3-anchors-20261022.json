@@ -1,0 +1,16 @@
+{
+  "branch": "dev-2",
+  "base": "21596862b3805ab15ec184aa0037624c39c07626",
+  "modified_existing_anchors": [
+    "internal/api/router.go",
+    "internal/app/app.go",
+    "web/src/App.vue",
+    "web/src/types.ts"
+  ],
+  "readme_sha256_preserved": true,
+  "anchor_violations": [],
+  "unexpected_existing_edits": [],
+  "unexpected_new_files": [],
+  "passed": true,
+  "scope": "offline edit boundary only; no Go/Web/runtime/live verification"
+}

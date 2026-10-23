@@ -29,6 +29,8 @@ def main():
     parser.add_argument("--fixtures", type=Path)
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
+    if args.action == "preflight":
+        raise SystemExit("Parameter-rejection preflight is retired: unmapped optional parameters are now ignored. No requests were sent. Use the offline SDK and Gemini compatibility tests.")
     origin = urlsplit(args.origin)
     if origin.scheme != "http" or origin.hostname != "127.0.0.1" or origin.path or origin.query or origin.fragment or origin.username:
         raise SystemExit("Only an exact IPv4 loopback HTTP origin is allowed")
@@ -97,17 +99,6 @@ def main():
             report["checks"].append({"enabled_accounts": sum(a["enabled"] for a in accounts["accounts"]),
                 "model_binding": MODEL, "status": status,
                 "passed": status.get("state") == "ready" and status.get("generation_ready") is True})
-        elif args.action == "preflight":
-            for field, value in {"temperature": 0, "maxOutputTokens": 64,
-                                 "topP": 0.5, "thinkingConfig": {"includeThoughts": False}}.items():
-                response = http.post(f"/v1beta/models/{MODEL}:generateContent",
-                    headers={**PROVIDER, "x-goog-api-key": key}, json={
-                        "contents": [{"parts": [{"text": "Reply OK."}]}], "generationConfig": {field: value}})
-                body = response.json()
-                error = body.get("error", {})
-                report["checks"].append({"field": field, "http_status": response.status_code,
-                    "body": body, "passed": response.status_code == 400 and error.get("status") == "INVALID_ARGUMENT"
-                        and error.get("message") == "Business does not have a verified mapping for generationConfig." + field})
         else:
             from google import genai
             from google.genai import types

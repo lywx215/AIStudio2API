@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract"
 	"github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault"
@@ -28,13 +29,14 @@ const baseURL = "https://biz-discoveryengine.googleapis.com/v1alpha/locations/gl
 func New(parent context.Context, accounts []vault.Account, limit int, timeout time.Duration, transport http.RoundTripper) *Engine {
 	if transport == nil {
 		t := http.DefaultTransport.(*http.Transport).Clone()
+		t.Proxy = nil // Business never inherits another module's process proxy.
 		t.ResponseHeaderTimeout = 20 * time.Second
 		t.TLSHandshakeTimeout = 10 * time.Second
 		t.MaxIdleConnsPerHost = 16
 		transport = t
 	}
 	ctx, cancel := context.WithCancel(parent)
-	e := &Engine{entries: make(map[string]*entry), limit: max(1, min(limit, 16)), timeout: timeout, ctx: ctx, cancel: cancel,
+	e := &Engine{entries: make(map[string]*entry), limit: max(1, min(limit, 16)), timeout: timeout, ctx: ctx, cancel: cancel, policy: defaultBackoffPolicy(),
 		client: &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
 	e.Reconcile(accounts, limit, timeout)
 	context.AfterFunc(ctx, e.client.CloseIdleConnections)
@@ -45,51 +47,98 @@ type upstreamError struct{ status int }
 
 func (*upstreamError) Error() string { return "Business upstream request failed" }
 
-// Generate leases one account for a fresh session. There is no replay of a
-// submitted generation, no account switch after output and no shared history.
+// Generate leases an account for a new session or an exact, completed native
+// prefix. It never replays historical generations or changes an account mid-turn.
 func (e *Engine) Generate(ctx context.Context, selection contract.Selection, input contract.Request, emit func(contract.Event) error) (result error) {
+	caller := ctx
 	if err := ctx.Err(); err != nil {
-		return publicError(err)
+		return classifyOperation(err, StagePreflight, false, false, caller)
 	}
 	if err := validateAttachments(input.Attachments); err != nil {
+		return classifyOperation(err, StagePreflight, false, false, caller)
+	}
+	if err := validateConversation(input); err != nil {
+		return classifyOperation(err, StagePreflight, false, false, caller)
+	}
+	for _, value := range input.Generation {
+		if !json.Valid(value) {
+			return classifyOperation(contract.Fail(400, "INVALID_ARGUMENT", "Invalid Business generation parameter JSON"), StagePreflight, false, false, caller)
+		}
+	}
+	a, previous, err := e.acquireConversation(ctx, selection, input)
+	if err != nil {
+		return classifyOperation(err, StagePreflight, false, false, caller)
+	}
+	stage := StageAuth
+	defer func() {
+		if result != nil {
+			result = classifyOperation(result, stage, a.submitted, a.outputStarted, caller)
+		}
+		e.release(a, result)
+	}()
+	ctx = a.ctx
+	a.client = e.client
+	if proxy := a.account.Credential.ProxyURL; proxy != "" {
+		if vault.ValidateProxy(proxy) != nil {
+			return contract.Fail(400, "INVALID_ARGUMENT", "Invalid Business proxy")
+		}
+		u, _ := url.Parse(proxy)
+		t := http.DefaultTransport.(*http.Transport).Clone()
+		t.Proxy, t.ResponseHeaderTimeout, t.TLSHandshakeTimeout = http.ProxyURL(u), 20*time.Second, 10*time.Second
+		a.client = &http.Client{Transport: t, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+		defer a.client.CloseIdleConnections()
+	}
+	if err = e.ensureToken(ctx, a); err != nil {
 		return err
 	}
-	a, err := e.acquire(ctx, selection.AccountIDs)
+	if input.GoogleSearch {
+		stage = StageConfigLookup
+		if err := e.requireGoogleSearch(ctx, a); err != nil {
+			return err
+		}
+	}
+	sessionName := ""
+	if previous != nil {
+		sessionName = previous.session
+	} else {
+		var id [16]byte
+		if _, err := rand.Read(id[:]); err != nil {
+			return contract.Fail(500, "INTERNAL", "Business session randomness is unavailable")
+		}
+		name := hex.EncodeToString(id[:])
+		var session struct {
+			Session struct {
+				Name string `json:"name"`
+			} `json:"session"`
+		}
+		body := map[string]any{"configId": a.account.Credential.ConfigID, "additionalParams": map[string]string{"token": "-"}, "createSessionRequest": map[string]any{"session": map[string]string{"name": name, "displayName": name}}}
+		stage = StageSession
+		response, err := e.post(ctx, "widgetCreateSession", a, body)
+		if err == nil {
+			err = decodeBounded(response.Body, &session, 1<<20)
+			response.Body.Close()
+		}
+		if err != nil {
+			return err
+		}
+		if !validSessionName(session.Session.Name) {
+			return contract.Fail(502, "DATA_LOSS", "Business returned an invalid session")
+		}
+		sessionName = session.Session.Name
+		e.mu.Lock()
+		e.sessionsCreated++
+		e.mu.Unlock()
+	}
+	stage = StageUpload
+	fileIDs, err := e.uploadAttachments(ctx, a, sessionName, input.Attachments)
 	if err != nil {
-		return publicError(err)
+		return err
 	}
-	var operationErr error
-	defer func() { e.release(a, operationErr) }()
-	ctx = a.ctx
-	if err = e.ensureToken(ctx, a); err != nil {
-		operationErr = err
-		return publicError(err)
-	}
-	var id [16]byte
-	_, _ = rand.Read(id[:])
-	name := hex.EncodeToString(id[:])
-	var session struct {
-		Session struct {
-			Name string `json:"name"`
-		} `json:"session"`
-	}
-	body := map[string]any{"configId": a.account.Credential.ConfigID, "additionalParams": map[string]string{"token": "-"}, "createSessionRequest": map[string]any{"session": map[string]string{"name": name, "displayName": name}}}
-	response, err := e.post(ctx, "widgetCreateSession", a, body)
-	if err == nil {
-		err = decodeBounded(response.Body, &session, 1<<20)
-		response.Body.Close()
-	}
-	if err != nil {
-		operationErr = err
-		return publicError(err)
-	}
-	if session.Session.Name == "" {
-		return contract.Fail(502, "DATA_LOSS", "Business returned an invalid session")
-	}
-	fileIDs, err := e.uploadAttachments(ctx, a, session.Session.Name, input.Attachments)
-	if err != nil {
-		operationErr = err
-		return publicError(err)
+	if previous != nil {
+		fileIDs, err = appendContextFileIDs(previous.fileIDs, fileIDs)
+		if err != nil {
+			return err
+		}
 	}
 	generation := map[string]any{}
 	for k, v := range input.Generation {
@@ -98,59 +147,94 @@ func (e *Engine) Generate(ctx context.Context, selection contract.Selection, inp
 	if !selection.Auto {
 		generation["modelId"] = selection.ModelID
 	}
-	assist := map[string]any{"session": session.Session.Name, "query": map[string]any{"parts": input.QueryParts}, "answerGenerationMode": "NORMAL", "assistGenerationConfig": generation, "assistSkippingMode": "REQUEST_ASSIST"}
+	assist := map[string]any{"session": sessionName, "query": map[string]any{"parts": input.QueryParts}, "answerGenerationMode": "NORMAL", "assistGenerationConfig": generation, "assistSkippingMode": "REQUEST_ASSIST"}
+	if input.GoogleSearch {
+		assist["toolsSpec"] = map[string]any{"webGroundingSpec": map[string]any{}}
+	}
 	if len(fileIDs) > 0 {
 		assist["fileIds"] = fileIDs
 	}
-	body = map[string]any{"configId": a.account.Credential.ConfigID, "additionalParams": map[string]string{"token": "-"}, "streamAssistRequest": assist}
-	response, err = e.post(ctx, "widgetStreamAssist", a, body)
+	body := map[string]any{"configId": a.account.Credential.ConfigID, "additionalParams": map[string]string{"token": "-"}, "streamAssistRequest": assist}
+	stage = StageGenerate
+	if previous != nil {
+		e.mu.Lock()
+		e.continuationAttempts++
+		e.mu.Unlock()
+	}
+	response, err := e.post(ctx, "widgetStreamAssist", a, body)
 	if err != nil {
-		operationErr = err
-		return publicError(err)
+		return err
 	}
 	defer response.Body.Close()
-	err = decodeStream(response.Body, emit)
-	operationErr = err
+	stage = StageStream
+	var output []contract.Part
+	err = decodeStream(response.Body, func(event contract.Event) error {
+		if len(input.History) > 0 {
+			if len(output)+len(event.Parts) > 4096 {
+				return contract.Fail(502, "RESOURCE_EXHAUSTED", "Business output exceeds 4096 parts")
+			}
+			output = append(output, event.Parts...)
+		}
+		if len(event.Parts) > 0 {
+			a.outputStarted = true
+		}
+		if err := emit(event); err != nil {
+			return &deliveryError{err}
+		}
+		return nil
+	})
 	if ctx.Err() != nil {
-		return publicError(ctx.Err())
+		return ctx.Err()
 	}
 	if err == nil {
 		e.verifyModel(a, selection)
+		e.completeConversation(caller, a, selection, input, sessionName, fileIDs, output)
 	}
-	return publicError(err)
+	return err
 }
 
 func publicError(err error) error {
 	if err == nil {
 		return nil
 	}
-	var failure *contract.Failure
-	if errors.As(err, &failure) {
-		return failure
-	}
-	if errors.Is(err, context.DeadlineExceeded) {
-		return contract.Fail(504, "DEADLINE_EXCEEDED", "Business request timed out")
-	}
-	if errors.Is(err, context.Canceled) {
-		return contract.Fail(499, "CANCELLED", "Business request cancelled")
-	}
-	var upstream *upstreamError
-	if errors.As(err, &upstream) {
-		if upstream.status == 401 || upstream.status == 403 {
-			return contract.Fail(503, "UNAVAILABLE", "Business credentials need refresh")
-		}
-		if upstream.status == 429 {
-			return contract.Fail(429, "RESOURCE_EXHAUSTED", "Business upstream rate limit reached")
-		}
-	}
-	return contract.Fail(502, "UNAVAILABLE", "Business upstream request failed")
+	return classifyOperation(err, StagePreflight, false, false, nil)
 }
 func decodeBounded(r io.Reader, value any, limit int64) error {
 	data, err := io.ReadAll(io.LimitReader(r, limit+1))
-	if err != nil || int64(len(data)) > limit {
-		return errors.New("invalid upstream body")
+	if err != nil {
+		return &transportError{err}
 	}
-	return json.Unmarshal(data, value)
+	if int64(len(data)) > limit {
+		return &protocolError{errors.New("invalid upstream body")}
+	}
+	if failure, ok := rpcEnvelopeFailure(data); ok {
+		return failure
+	}
+	if err := json.Unmarshal(data, value); err != nil {
+		return &protocolError{err}
+	}
+	return nil
+}
+
+func validSessionName(value string) bool {
+	if value == "" || len(value) > 4096 || strings.ContainsAny(value, "\\:?#%") || strings.IndexFunc(value, unicode.IsControl) >= 0 {
+		return false
+	}
+	parts := strings.Split(value, "/")
+	if len(parts) < 2 || parts[len(parts)-2] != "sessions" {
+		return false
+	}
+	for _, part := range parts {
+		if part == "" || part == "." || part == ".." {
+			return false
+		}
+		for _, c := range part {
+			if c != '-' && c != '_' && c != '.' && (c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
+				return false
+			}
+		}
+	}
+	return true
 }
 func (e *Engine) post(ctx context.Context, action string, a *lease, body any) (*http.Response, error) {
 	if err := ctx.Err(); err != nil {
@@ -158,24 +242,45 @@ func (e *Engine) post(ctx context.Context, action string, a *lease, body any) (*
 	}
 	data, err := json.Marshal(body)
 	if err != nil {
+		return nil, contract.Fail(400, "INVALID_ARGUMENT", "Business request parameters cannot be serialized")
+	}
+	return e.postEncoded(ctx, action, a, bytes.NewReader(data), int64(len(data)))
+}
+
+// postEncoded is shared by bounded small JSON and streaming base64 uploads.
+// It does not retry or switch accounts, and only the fixed origin is accepted.
+func (e *Engine) postEncoded(ctx context.Context, action string, a *lease, body io.Reader, contentLength int64) (*http.Response, error) {
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	r, err := http.NewRequestWithContext(ctx, "POST", baseURL+action, bytes.NewReader(data))
+	if action != "widgetCreateSession" && action != "widgetAddContextFile" && action != "widgetStreamAssist" && action != "lookupWidgetConfig" {
+		return nil, contract.Fail(400, "INVALID_ARGUMENT", "Unsupported Business transport action")
+	}
+	r, err := http.NewRequestWithContext(ctx, "POST", baseURL+action, body)
 	if err != nil {
 		return nil, err
 	}
+	r.ContentLength = contentLength
 	r.Header.Set("Authorization", "Bearer "+a.token)
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Origin", "https://business.gemini.google")
 	r.Header.Set("Referer", "https://business.gemini.google/")
 	r.Header.Set("User-Agent", userAgent(a.account.Credential))
-	response, err := e.client.Do(r)
+	if action == "widgetStreamAssist" {
+		a.submitted = true
+	}
+	client := e.leaseClient(a)
+	if action == "widgetStreamAssist" {
+		var closeIdle func()
+		client, closeIdle = generationClient(client)
+		defer closeIdle()
+	}
+	response, err := client.Do(r)
 	if err != nil {
-		return nil, err
+		return nil, &transportError{err}
 	}
 	if response.StatusCode != 200 {
-		response.Body.Close()
-		return nil, &upstreamError{response.StatusCode}
+		return nil, httpFailure(response, e.policy.now())
 	}
 	return response, nil
 }
@@ -192,7 +297,7 @@ func (e *Engine) ensureToken(ctx context.Context, a *lease) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if a.token != "" && time.Now().Before(a.expires) {
+	if a.token != "" && e.policy.now().Before(a.expires) {
 		return nil
 	}
 	r, err := http.NewRequestWithContext(ctx, "GET", authURL+"?csesidx="+url.QueryEscape(a.account.Credential.CSESIndex), nil)
@@ -204,32 +309,38 @@ func (e *Engine) ensureToken(ctx context.Context, a *lease) error {
 		r.AddCookie(&http.Cookie{Name: "__Host-C_OSES", Value: a.account.Credential.HostCOSES})
 	}
 	r.Header.Set("User-Agent", userAgent(a.account.Credential))
-	response, err := e.client.Do(r)
+	response, err := e.leaseClient(a).Do(r)
 	if err != nil {
-		return err
+		return &transportError{err}
 	}
 	defer response.Body.Close()
 	if response.StatusCode != 200 {
-		return &upstreamError{response.StatusCode}
+		return httpFailure(response, e.policy.now())
 	}
 	data, err := io.ReadAll(io.LimitReader(response.Body, (64<<10)+1))
-	if err != nil || len(data) > 64<<10 {
-		return errors.New("invalid auth response")
+	if err != nil {
+		return &transportError{err}
+	}
+	if len(data) > 64<<10 {
+		return &protocolError{errors.New("invalid auth response")}
 	}
 	data = bytes.TrimSpace(bytes.TrimPrefix(data, []byte(")]}'")))
+	if failure, ok := rpcEnvelopeFailure(data); ok {
+		return failure
+	}
 	var auth struct {
 		KeyID     string `json:"keyId"`
 		XSRFToken string `json:"xsrfToken"`
 	}
 	if json.Unmarshal(data, &auth) != nil || auth.KeyID == "" || auth.XSRFToken == "" {
-		return &upstreamError{401}
+		return &protocolError{errors.New("invalid auth response")}
 	}
 	key, err := base64.RawURLEncoding.DecodeString(strings.TrimRight(auth.XSRFToken, "="))
 	if err != nil || len(key) == 0 {
-		return &upstreamError{401}
+		return &protocolError{errors.New("invalid auth key")}
 	}
 	defer clear(key)
-	now := time.Now()
+	now := e.policy.now()
 	header, _ := json.Marshal(map[string]string{"alg": "HS256", "typ": "JWT", "kid": auth.KeyID})
 	payload, _ := json.Marshal(map[string]any{"iss": "https://business.gemini.google", "aud": "https://biz-discoveryengine.googleapis.com", "sub": "csesidx/" + a.account.Credential.CSESIndex, "iat": now.Unix(), "exp": now.Unix() + 300, "nbf": now.Unix()})
 	message := base64.RawURLEncoding.EncodeToString(header) + "." + base64.RawURLEncoding.EncodeToString(payload)

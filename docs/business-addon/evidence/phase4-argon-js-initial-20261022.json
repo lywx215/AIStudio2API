@@ -1,0 +1,12 @@
+{
+  "sdk": "@google/genai@2.22.0",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "action": "generateContent",
+  "started_at": "2026-10-22T14:02:12.272Z",
+  "generation_attempts": 1,
+  "passed": false,
+  "error_type": "ApiError",
+  "http_status": 502,
+  "elapsed_seconds": 79.301
+}

@@ -34,7 +34,10 @@ func (h *Host) closeOperations(ctx context.Context) error {
 	go func() { h.operations.Wait(); close(done) }()
 	select {
 	case <-done:
-		return err
+		h.remoteMu.Lock()
+		cleanupErr := h.remoteCleanup
+		h.remoteMu.Unlock()
+		return errors.Join(err, cleanupErr)
 	case <-ctx.Done():
 		return errors.Join(err, ctx.Err())
 	}

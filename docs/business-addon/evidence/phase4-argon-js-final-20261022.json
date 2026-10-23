@@ -1,0 +1,14 @@
+{
+  "sdk": "@google/genai@2.22.0",
+  "origin": "http://127.0.0.1:2048",
+  "model": "business-gemini-4-argon",
+  "action": "generateContent",
+  "started_at": "2026-10-22T14:11:43.338Z",
+  "generation_attempts": 1,
+  "passed": true,
+  "expected_fields_matched": true,
+  "finish_reason": "STOP",
+  "text_bytes": 47,
+  "usage_present": false,
+  "elapsed_seconds": 96.584
+}

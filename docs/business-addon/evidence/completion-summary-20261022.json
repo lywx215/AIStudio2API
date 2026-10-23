@@ -1,0 +1,495 @@
+{
+  "scope": "Consolidated remaining Business native-interface development; no sequential stage handoffs",
+  "date": "2026-10-22",
+  "implementation_status": "bounded_implementation_integrated_with_live_regression_and_explicit_remaining_limits",
+  "global_live_verified": false,
+  "implemented": [
+    "Bounded native inlineData media pass-through, exact MIME/bytes/thought/signature retention, strict ProtoJSON base64 variants and canonical encoded-plus-decoded byte limits.",
+    "Media history round-trip identity; model media fragments no longer consume the 32 user attachment slots. Overall history/part/request byte limits still apply.",
+    "Models.list positive int32 pageSize above 1000 is capped as documented. Zero remains invalid.",
+    "Model configuration import preview/apply/undo using source hash, revision CAS, disabled/unverified additions, original-console lifetime binding and stored-byte limits; no account/secret import or existing binding/global-setting replacement.",
+    "Import UI invalidates stale previews, blocks import while settings drafts are unsaved, refreshes revision conflicts and aborts navigation work.",
+    "Pinned dual SDK completion fixtures and guarded live runners cover file lifecycle, catalog and native stream/Chat. New synthetic SDK fixture execution remains blocked.",
+    "Final capability matrix and explicit disposition of all 29 historically open tasks; no invented subsequent stages."
+  ],
+  "runtime": {
+    "pid": 57340,
+    "origin": "http://127.0.0.1:2048",
+    "sha256": "512685F6E946C0E4C1CFB4D4484D59CC0605AE7B3804A2A62D42B4368F30ED31",
+    "bytes": 51593728,
+    "state": "ready",
+    "generation_ready": true,
+    "config_revision": 8,
+    "account_count": 1,
+    "account_auth_verified": [
+      true
+    ],
+    "account_failures": [
+      0
+    ],
+    "model_verified": [
+      true
+    ],
+    "capacity": {
+      "limit": 1,
+      "active": 0,
+      "available": 1
+    },
+    "resources": {
+      "limit_bytes": 268435456,
+      "in_use_bytes": 0,
+      "available_bytes": 268435456
+    },
+    "conversations": {
+      "retained": 2,
+      "limit": 128,
+      "ttl_seconds": 900,
+      "sessions_created": 2,
+      "continuation_attempts": 2
+    },
+    "capabilities": {
+      "browser_collection": "remote_manual_capability_gated",
+      "files": "implemented",
+      "generationConfig": "mapped_fields_forwarded_others_ignored",
+      "inline_media": "bounded_passthrough_not_model_capability",
+      "model_import": "preview_apply_undo_disabled_models",
+      "model_observation": "passive_pending_confirmation",
+      "multi_turn": "completed_prefix_only",
+      "streaming": "implemented",
+      "text": "implemented",
+      "tools": "unsupported_ignored"
+    },
+    "previous_binary_backup": "runtime/business-local/aistudio2api-before-completion.exe",
+    "existing_account_preserved": true
+  },
+  "offline": {
+    "packages_passed": 7,
+    "top_level_tests_passed": 131,
+    "package_results": [
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/dispatch",
+        "result": "skip",
+        "tests_passed": 0
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/observe",
+        "result": "pass",
+        "tests_passed": 2
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract",
+        "result": "pass",
+        "tests_passed": 3
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault",
+        "result": "pass",
+        "tests_passed": 3
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/files",
+        "result": "fail",
+        "tests_passed": 0
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/parameter-probe",
+        "result": "pass",
+        "tests_passed": 1
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/token-count",
+        "result": "fail",
+        "tests_passed": 0
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/browser",
+        "result": "pass",
+        "tests_passed": 24
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi",
+        "result": "pass",
+        "tests_passed": 13
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/core",
+        "result": "pass",
+        "tests_passed": 85
+      }
+    ],
+    "core_final_tests_passed": 85,
+    "other_final_tests_passed": 46,
+    "top_level_assertion_failures_in_final_executed_tests": 0,
+    "selected_unaffected_command_exit": 1,
+    "core_final_command_exit": 0,
+    "new_policy_blocked": [
+      "internal/addons/business/gemini",
+      "internal/addons/business/files",
+      "scripts/business-addon/token-count",
+      "internal/addons/business/config"
+    ],
+    "blocked_assertions_executed": false,
+    "blocked_test_programs_retried_or_relocated": false,
+    "prior_deferred_not_started": [
+      "internal/addons/business/host",
+      "internal/api",
+      "internal/addons/business/resources",
+      "internal/app"
+    ],
+    "new_sdk_media_contract": "source completed and vetted, not executed because Gemini test executable was blocked",
+    "new_gemini_media_history_tests": "compiled/vetted but unexecuted; real text/file continuation does not verify media history",
+    "new_config_unit_tests": "4 tests, executable blocked; later edge fixes not executed",
+    "new_host_unit_tests": "3 tests, not executed by user direction",
+    "frontend_tests": 154,
+    "frontend_failed": 0,
+    "frontend_typecheck": "passed",
+    "frontend_lint": "passed",
+    "frontend_build": "passed; existing large-chunk advisory retained",
+    "go_vet": "cmd/internal and both Business helpers passed; final import and SDK package checks passed",
+    "go_build": "passed; module stat-cache sandbox write warning retained",
+    "initial_failures": [
+      "Initial Core sandbox run: one existing httptest socket permission failure; same normal command under current-user execution passed 85 tests. No AppControl bypass.",
+      "Initial frontend formatter removed semicolons from an existing inline event expression, causing 16 compiler failures. Replaced it with a named function; final 154 tests and build passed.",
+      "Initial new Gemini compile found unused utf8 import; fixed before test executable policy denial. The policy-denied test program was not retried."
+    ],
+    "skipped": [
+      "browser real collection opt-in not repeated",
+      "dispatch has no test files",
+      "race requires unavailable C compiler"
+    ],
+    "independent_codex_review": "read-only review found and fixed media fragment slot counting, stale preview handling, unsaved draft loss, console-bound undo and persisted-size edges; final no blocking findings",
+    "gates": {
+      "anchors_and_root_readme": "passed",
+      "synthetic_drift_fixtures": 20,
+      "documentation_links": "passed",
+      "diff_check": "passed"
+    }
+  },
+  "live": {
+    "model": "business-gemini-4-argon",
+    "generation_attempts": 4,
+    "successful_generations": 4,
+    "failed_generations": 0,
+    "automatic_replays": 0,
+    "local_invalid_preflight_requests": 2,
+    "local_invalid_preflight_status": 400,
+    "python": {
+      "phase": "completion",
+      "sdk": "google-genai==2.32.0",
+      "model": "business-gemini-4-argon",
+      "generation_attempts": 2,
+      "status_attempts": 2,
+      "checks": {
+        "baseline_ready_idle": true,
+        "catalog_list_get": true,
+        "local_invalid_preflight": true,
+        "file_uploaded_and_get": true,
+        "file_listed": true,
+        "file_download_matches": true,
+        "file_sum_and_marker": true,
+        "stream_success": true,
+        "chat_retained_all_parts": true,
+        "sixteen_lines_and_end": true,
+        "sdk_curated_history_continuation": true,
+        "no_synthetic_usage": true,
+        "file_deleted": true,
+        "one_session_one_continuation": true,
+        "idle_resources_ready": true
+      },
+      "passed": true,
+      "before_conversations": {
+        "retained": 0,
+        "limit": 128,
+        "ttl_seconds": 900,
+        "sessions_created": 0,
+        "continuation_attempts": 0
+      },
+      "catalog_models": 1,
+      "preflight_attempts": 1,
+      "preflight_http_status": 400,
+      "files_listed": 1,
+      "stream_turn": {
+        "events": 20,
+        "text_events": 18,
+        "code_parts": 1,
+        "result_parts": 1,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "usage_present": false,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "image_parts": 0,
+        "audio_parts": 0,
+        "video_parts": 0,
+        "pdf_parts": 0,
+        "suggestions_parts": 0,
+        "binary_bytes": 0,
+        "annotated_media_parts": 0,
+        "citation_offsets_absent": true,
+        "metadata_only_at_stop": true,
+        "terminal_parts": 1,
+        "finish_reason": "STOP",
+        "first_text_seconds": 21.344,
+        "text_span_seconds": 6.703,
+        "elapsed_seconds": 28.047,
+        "text_bytes": 2185
+      },
+      "continuation_turn": {
+        "events": 1,
+        "text_events": 3,
+        "code_parts": 0,
+        "result_parts": 0,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "usage_present": false,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "image_parts": 0,
+        "audio_parts": 0,
+        "video_parts": 0,
+        "pdf_parts": 0,
+        "suggestions_parts": 0,
+        "binary_bytes": 0,
+        "annotated_media_parts": 0,
+        "citation_offsets_absent": true,
+        "metadata_only_at_stop": true,
+        "terminal_parts": 4,
+        "finish_reason": "STOP",
+        "first_text_seconds": 9.406,
+        "text_span_seconds": 0.0,
+        "elapsed_seconds": 9.406,
+        "text_bytes": 54
+      },
+      "after_conversations": {
+        "retained": 1,
+        "limit": 128,
+        "ttl_seconds": 900,
+        "sessions_created": 1,
+        "continuation_attempts": 1
+      },
+      "elapsed_seconds": 37.86,
+      "auxiliary_requests": 6,
+      "cleanup_requests": 2
+    },
+    "javascript": {
+      "sdk": "@google/genai@2.22.0",
+      "model": "business-gemini-4-argon",
+      "phase": "completion",
+      "generation_attempts": 2,
+      "status_attempts": 2,
+      "passed": true,
+      "checks": {
+        "baseline_ready_idle": true,
+        "catalog_list_get": true,
+        "local_invalid_preflight": true,
+        "file_uploaded_and_get": true,
+        "file_listed": true,
+        "file_download_matches": true,
+        "first_marker_and_sum": true,
+        "sixteen_lines_and_end": true,
+        "stream_completed": true,
+        "metadata_only_at_stop": true,
+        "citation_indices_absent": true,
+        "chat_retained_all_parts": true,
+        "recalled_marker_sum": true,
+        "continuation_completed": true,
+        "no_synthetic_usage": true,
+        "file_deleted": true,
+        "one_session_one_continuation": true,
+        "final_ready_idle": true
+      },
+      "catalog_models": 1,
+      "preflight_attempts": 1,
+      "preflight_http_status": 400,
+      "files_listed": 1,
+      "stream_turn": {
+        "events": 15,
+        "parts": 15,
+        "text_events": 14,
+        "terminal_parts": 1,
+        "code_parts": 0,
+        "execution_result_parts": 0,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "citation_indices_absent": true,
+        "metadata_only_at_stop": true,
+        "usage_present": false,
+        "finish_reason": "STOP",
+        "image_parts": 0,
+        "audio_parts": 0,
+        "video_parts": 0,
+        "pdf_parts": 0,
+        "suggestions_parts": 0,
+        "binary_bytes": 0,
+        "annotated_media_parts": 0,
+        "elapsed_seconds": 21.163,
+        "first_text_seconds": 15.993,
+        "text_span_seconds": 5.168,
+        "text_bytes": 1444,
+        "numbered_lines": 16
+      },
+      "continuation_turn": {
+        "elapsed_seconds": 19.303,
+        "text_bytes": 61,
+        "finish_reason": "STOP",
+        "usage_present": false,
+        "retrieved_context_sources": 0,
+        "web_sources": 0,
+        "citation_sources": 0,
+        "citation_indices_absent": true,
+        "metadata_only_at_stop": true,
+        "image_parts": 0,
+        "audio_parts": 0,
+        "video_parts": 0,
+        "pdf_parts": 0,
+        "suggestions_parts": 0,
+        "binary_bytes": 0,
+        "annotated_media_parts": 0
+      },
+      "sessions_created_delta": 1,
+      "continuation_attempts_delta": 1,
+      "final_active": 0,
+      "final_in_use_bytes": 0,
+      "elapsed_seconds": 40.656,
+      "auxiliary_requests": 6,
+      "cleanup_requests": 2
+    },
+    "synthetic_model_config_import": {
+      "scope": "local synthetic disabled model import and undo",
+      "model_calls": 0,
+      "checks": {
+        "preview_no_write": true,
+        "preview_disabled_unverified": true,
+        "source_hash_change_rejected": true,
+        "only_disabled_model_appended": true,
+        "other_settings_unchanged": true,
+        "stale_revision_rejected": true,
+        "undo_restored_settings": true,
+        "replayed_undo_and_account_document_rejected": true,
+        "final_settings_restored": true
+      },
+      "requests": [
+        {
+          "path": "/api/addons/business/status",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config/import/preview",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config/import",
+          "method": "POST",
+          "status": 409
+        },
+        {
+          "path": "/api/addons/business/config",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config/import",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config/import",
+          "method": "POST",
+          "status": 409
+        },
+        {
+          "path": "/api/addons/business/config/import/rollback",
+          "method": "POST",
+          "status": 409
+        },
+        {
+          "path": "/api/addons/business/config/import/rollback",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/api/addons/business/config/import/rollback",
+          "method": "POST",
+          "status": 409
+        },
+        {
+          "path": "/api/addons/business/config/import/preview",
+          "method": "POST",
+          "status": 400
+        },
+        {
+          "path": "/api/addons/business/config",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "initial_revision": 6,
+      "final_revision": 8,
+      "initial_settings_sha256": "4df6fd31b09cf037a6cd4c008ce4571252d961ccada457e76c8d1fa80ecf87cf",
+      "final_settings_sha256": "4df6fd31b09cf037a6cd4c008ce4571252d961ccada457e76c8d1fa80ecf87cf",
+      "passed": true
+    },
+    "code_and_execution_result_observed": true,
+    "native_media_observed": false,
+    "grounding_observed": false,
+    "citation_observed": false,
+    "parameter_semantics": "Invalid generationConfig shape rejected locally; unmapped advanced options still ignored. No new verified widget parameter mappings or native tool-parameter semantics claimed.",
+    "long_context": "Not repeated; prior 153363 input/6816 output counts are file-ingestion measurements, not native Argon usage/countTokens."
+  },
+  "remaining_limits": [
+    "All prior and new policy-blocked tests remain unaccepted; no full repository/release signoff.",
+    "Media decoder and MIME contracts passed in Core/contract; new Gemini media-history and dual-SDK synthetic contracts remain unexecuted, and live Argon produced no media/grounding/citation samples.",
+    "No authoritative widget support for native countTokens/usage, batch/cache/Live/embedding, arbitrary function/tool rounds, systemInstruction or advanced sampling/schema/thinking semantics; unavailable or ignored as documented.",
+    "Generated upstream file references lack a verified authorized download contract; no invented public fileData URI.",
+    "Arbitrary imported history, restart recovery, deleted historical files and automatic account switching/replay are unsupported.",
+    "M08 covers model configuration only, not account/secret migration or full database restore; C06 browser generation condition is not triggered.",
+    "Manual Google login/captcha, complete Linux collection, dual-WAA coexistence, actual upstream upgrade/rollback and overall release admission remain external acceptance work."
+  ],
+  "commit_or_push": false,
+  "remote_deployment": false,
+  "external_review": false,
+  "evidence_files": [
+    "completion-go-20261022.jsonl",
+    "completion-core-20261022.jsonl",
+    "completion-core-initial-socket-denied-20261022.jsonl",
+    "completion-config-blocked-20261022.json",
+    "completion-gemini-blocked-20261022.log",
+    "completion-argon-python-20261022.json",
+    "completion-argon-js-20261022.json",
+    "completion-import-20261022.json",
+    "completion-final-status-20261022.json",
+    "completion-restart-20261022.json",
+    "completion-web-tests-20261022.log",
+    "completion-web-initial-20261022.log",
+    "completion-web-build-20261022.log",
+    "completion-web-lint-20261022.log",
+    "completion-build-20261022.log",
+    "completion-vet-20261022.log",
+    "completion-import-vet-20261022.log",
+    "completion-sdk-vet-20261022.log",
+    "completion-anchors-20261022.json",
+    "completion-drift-20261022.json"
+  ]
+}

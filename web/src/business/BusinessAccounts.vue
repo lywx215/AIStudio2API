@@ -2,8 +2,14 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from '@/i18n'
 import { businessClient } from './client'
-import type { BusinessAccount, BusinessAccounts, BusinessCredential } from './types'
+import type {
+  BusinessAccount,
+  BusinessAccounts,
+  BusinessAccountState,
+  BusinessCredential,
+} from './types'
 
+const props = defineProps<{ states?: BusinessAccountState[] }>()
 const emit = defineEmits<{ changed: [] }>()
 const { locale } = useI18n()
 const chinese = computed(() => locale.value.startsWith('zh'))
@@ -29,10 +35,158 @@ const emptyCredential = (): BusinessCredential => ({
   user_agent: '',
 })
 const credential = ref(emptyCredential())
+const clock = ref(Date.now())
+const accountRows = computed(() => {
+  const states = new Map((props.states ?? []).map((state) => [state.id, state]))
+  return (data.value?.accounts ?? []).map((account) => ({
+    ...account,
+    health: states.get(account.id),
+  }))
+})
+let clockTimer: ReturnType<typeof setInterval> | undefined
 let controller = new AbortController()
 let collectionController: AbortController | null = null
 let sequence = 0
 let active = true
+
+function startClock(): void {
+  stopClock()
+  clock.value = Date.now()
+  clockTimer = setInterval(() => {
+    clock.value = Date.now()
+  }, 1000)
+}
+function stopClock(): void {
+  if (clockTimer !== undefined) clearInterval(clockTimer)
+  clockTimer = undefined
+}
+function stateLabel(state: string): string {
+  switch (state) {
+    case 'ready':
+      return text('可接受请求', 'Can accept requests')
+    case 'busy':
+      return text('账号忙碌', 'Account busy')
+    case 'draining':
+      return text('旧请求正在结束', 'Previous requests draining')
+    case 'cooldown':
+      return text('冷却中', 'Cooling down')
+    case 'auth_required':
+      return text('需要重新认证', 'Authentication required')
+    case 'disabled':
+      return text('已停用', 'Disabled')
+    case 'suspended':
+      return text('Business 已暂停', 'Business suspended')
+    default:
+      return state
+  }
+}
+function errorKind(kind?: string): string {
+  switch (kind) {
+    case 'local_parameter':
+      return text('参数或映射校验', 'Parameter or mapping validation')
+    case 'local_resource':
+      return text('本地资源额度', 'Local resource limit')
+    case 'client_cancelled':
+      return text('客户端取消', 'Client cancellation')
+    case 'client_write':
+      return text('响应写入失败', 'Response write failure')
+    case 'authentication':
+      return text('Google 认证失败', 'Google authentication failure')
+    case 'permission_denied':
+      return text('权限或配置拒绝', 'Permission or configuration rejection')
+    case 'quota_exhausted':
+      return text('上游限流或配额', 'Upstream rate or quota limit')
+    case 'transient':
+      return text('暂态上游或网络故障', 'Transient upstream or network failure')
+    case 'protocol':
+      return text('上游响应协议异常', 'Upstream response protocol failure')
+    case 'upstream_rejected':
+      return text('上游拒绝模型或请求', 'Upstream model or request rejection')
+    default:
+      return kind ? text('其他错误', 'Other failure') : text('无记录', 'None recorded')
+  }
+}
+function errorStage(stage?: string): string {
+  switch (stage) {
+    case 'preflight':
+      return text('请求校验', 'Request validation')
+    case 'auth':
+      return text('认证', 'Authentication')
+    case 'session':
+      return text('创建会话', 'Session creation')
+    case 'upload':
+      return text('上传附件', 'Attachment upload')
+    case 'generate':
+      return text('提交模型请求', 'Model request submission')
+    case 'stream':
+      return text('读取模型响应', 'Reading model response')
+    default:
+      return text('未提供', 'Not provided')
+  }
+}
+function errorAdvice(kind?: string): string {
+  switch (kind) {
+    case 'local_parameter':
+    case 'permission_denied':
+    case 'upstream_rejected':
+      return text(
+        '先检查模型、参数、权限和配置；这类拒绝不等同于 Google 会话过期。',
+        'Check the model, parameters, permissions and configuration first. These rejections do not imply an expired Google session.',
+      )
+    case 'local_resource':
+      return text(
+        '请减少请求数据或等待已有工作释放额度；资源不足不等同于会话过期。',
+        'Reduce request data or wait for existing work to release capacity. Resource pressure does not imply an expired session.',
+      )
+    case 'authentication':
+      return text(
+        '请结合当前账号认证状态处理 Google 会话。此错误不会让控制台登录自动失效。',
+        'Use the current account authentication state to assess the Google session. This failure does not expire the console login.',
+      )
+    case 'quota_exhausted':
+    case 'transient':
+    case 'protocol':
+      return text(
+        '按服务端冷却时间等待；到期后仅处理你发起的新请求，不会后台探测模型或自动重放。',
+        'Wait for the server cooldown. After it ends, only new requests you initiate are processed; there are no background model probes or automatic replays.',
+      )
+    case 'client_cancelled':
+    case 'client_write':
+      return text(
+        '取消或响应写入失败不判定为会话过期，也不增加连续暂态失败数。',
+        'Cancellation or a response write failure does not imply an expired session or increase the consecutive transient failure count.',
+      )
+    default:
+      return ''
+  }
+}
+function dateLabel(value: string): string {
+  return Number.isFinite(Date.parse(value))
+    ? new Date(value).toLocaleString(chinese.value ? 'zh-CN' : 'en-US')
+    : text('时间未提供', 'Timestamp unavailable')
+}
+function cooldownRemaining(until: string): string {
+  const deadline = Date.parse(until)
+  if (!Number.isFinite(deadline))
+    return text('时间不可用，请刷新确认。', 'Timestamp unavailable. Refresh to check.')
+  const seconds = Math.max(0, Math.ceil((deadline - clock.value) / 1000))
+  if (seconds === 0)
+    return text(
+      '冷却时间已到，请刷新状态确认；不会自动发送请求。',
+      'Cooldown time has elapsed. Refresh status to check; no request is sent automatically.',
+    )
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const rest = seconds % 60
+  if (hours > 0)
+    return text(
+      `约剩 ${hours} 小时 ${minutes} 分 ${rest} 秒`,
+      `About ${hours}h ${minutes}m ${rest}s remaining`,
+    )
+  if (minutes > 0)
+    return text(`约剩 ${minutes} 分 ${rest} 秒`, `About ${minutes}m ${rest}s remaining`)
+  return text(`约剩 ${seconds} 秒`, `About ${seconds} seconds remaining`)
+}
 
 function clearDraft(): void {
   credential.value = emptyCredential()
@@ -185,6 +339,7 @@ function remove(id: string): void {
 }
 function hide(): void {
   active = false
+  stopClock()
   ++sequence
   clearDraft()
   data.value = null
@@ -201,12 +356,17 @@ function show(event: PageTransitionEvent): void {
   if (!event.persisted) return
   controller = new AbortController()
   active = true
+  startClock()
   void refresh()
 }
 function visibilityChanged(): void {
-  if (document.visibilityState === 'hidden') clearDraft()
+  if (document.visibilityState === 'hidden') {
+    clearDraft()
+    stopClock()
+  } else if (active) startClock()
 }
 onMounted(() => {
+  startClock()
   void refresh()
   window.addEventListener('pagehide', hide)
   window.addEventListener('pageshow', show)
@@ -272,7 +432,7 @@ onUnmounted(() => {
       </button>
     </div>
     <div
-      v-for="account in data?.accounts"
+      v-for="account in accountRows"
       :key="account.id"
       class="flex flex-wrap items-center justify-between gap-3 border-t border-line py-3 text-sm"
     >
@@ -284,6 +444,78 @@ onUnmounted(() => {
           {{ text('凭据版本', 'Credential version') }}
           {{ account.epoch }}
         </p>
+      </div>
+      <div
+        v-if="account.health"
+        :data-business-account-health="account.id"
+        class="w-full space-y-2 text-xs"
+      >
+        <p>
+          {{ text('当前运行状态', 'Current runtime state') }}:
+          {{ stateLabel(account.health.state) }}
+        </p>
+        <dl class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt class="text-gray-400">{{ text('最近错误类别', 'Last failure category') }}</dt>
+            <dd>{{ errorKind(account.health.last_error_kind) }}</dd>
+          </div>
+          <div v-if="account.health.last_error_kind">
+            <dt class="text-gray-400">{{ text('发生阶段', 'Failure stage') }}</dt>
+            <dd>{{ errorStage(account.health.last_error_stage) }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-400">
+              {{ text('连续暂态失败数', 'Consecutive transient failures') }}
+            </dt>
+            <dd>{{ account.health.consecutive_failures ?? 0 }}</dd>
+          </div>
+          <div v-if="account.health.last_error_at">
+            <dt class="text-gray-400">{{ text('最近错误时间', 'Last failure time') }}</dt>
+            <dd>
+              <time :datetime="account.health.last_error_at">{{
+                dateLabel(account.health.last_error_at)
+              }}</time>
+            </dd>
+          </div>
+        </dl>
+        <p
+          v-if="
+            account.health.last_error_http_status ||
+            account.health.last_error_status ||
+            account.health.last_error_reason
+          "
+          class="flex flex-wrap gap-2 text-gray-400"
+        >
+          <span v-if="account.health.last_error_http_status"
+            >HTTP {{ account.health.last_error_http_status }}</span
+          >
+          <code v-if="account.health.last_error_status">{{
+            account.health.last_error_status
+          }}</code>
+          <code v-if="account.health.last_error_reason">{{
+            account.health.last_error_reason
+          }}</code>
+        </p>
+        <p v-if="account.health.last_error_kind" class="text-gray-400">
+          {{ errorAdvice(account.health.last_error_kind) }}
+        </p>
+        <div v-if="account.health.cooldown_until" class="space-y-1 text-amber-200">
+          <p>
+            {{ text('冷却截止', 'Cooldown until') }}:
+            <time :datetime="account.health.cooldown_until">{{
+              dateLabel(account.health.cooldown_until)
+            }}</time>
+          </p>
+          <p data-business-cooldown>{{ cooldownRemaining(account.health.cooldown_until) }}</p>
+          <p class="text-gray-400">
+            {{
+              text(
+                '剩余时间按本机时钟估算，以服务端截止时间为准；上游限流提示可能较长。只有限流、暂态或协议失败累积冷却，不会在后台进行认证或模型探测。',
+                'Remaining time uses the local clock and the server deadline; upstream rate-limit hints can be longer. Only quota, transient or protocol failures accumulate cooldown; no background authentication or model probes run.',
+              )
+            }}
+          </p>
+        </div>
       </div>
       <div class="flex gap-3">
         <button type="button" :disabled="busy || mustRefresh" @click="edit(account, 'details')">

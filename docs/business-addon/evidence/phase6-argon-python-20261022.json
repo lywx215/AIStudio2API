@@ -1,0 +1,71 @@
+{
+  "phase": 6,
+  "sdk": "google-genai==2.32.0",
+  "model": "business-gemini-4-argon",
+  "generation_attempts": 2,
+  "checks": {
+    "file_sum_and_marker": true,
+    "stream_success": true,
+    "sdk_curated_history_continuation": true,
+    "one_session_one_continuation": true,
+    "idle_resources_ready": true,
+    "file_deleted": true
+  },
+  "passed": true,
+  "started_at": "2026-10-22T15:07:27Z",
+  "before_conversations": {
+    "retained": 0,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 0,
+    "continuation_attempts": 0
+  },
+  "stream_turn": {
+    "events": 20,
+    "text_events": 18,
+    "code_parts": 1,
+    "result_parts": 1,
+    "grounding_chunks": 0,
+    "grounding_supports": 0,
+    "usage_present": false,
+    "retrieved_context_sources": 0,
+    "web_sources": 0,
+    "citation_sources": 0,
+    "citation_offsets_absent": true,
+    "metadata_only_at_stop": true,
+    "terminal_parts": 1,
+    "finish_reason": "STOP",
+    "first_text_seconds": 21.125,
+    "text_span_seconds": 6.704,
+    "elapsed_seconds": 27.829,
+    "text_bytes": 2035
+  },
+  "continuation_turn": {
+    "events": 1,
+    "text_events": 16,
+    "code_parts": 0,
+    "result_parts": 0,
+    "grounding_chunks": 0,
+    "grounding_supports": 0,
+    "usage_present": false,
+    "retrieved_context_sources": 0,
+    "web_sources": 0,
+    "citation_sources": 0,
+    "citation_offsets_absent": true,
+    "metadata_only_at_stop": true,
+    "terminal_parts": 17,
+    "finish_reason": "STOP",
+    "first_text_seconds": 13.765,
+    "text_span_seconds": 0.0,
+    "elapsed_seconds": 13.765,
+    "text_bytes": 1546
+  },
+  "after_conversations": {
+    "retained": 1,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 1,
+    "continuation_attempts": 1
+  },
+  "elapsed_seconds": 42.015
+}

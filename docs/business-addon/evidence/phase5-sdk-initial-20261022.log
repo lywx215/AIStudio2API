@@ -1,0 +1,80 @@
+=== RUN   TestGeminiJavaScriptSDKOfflineHarness
+    sdk_javascript_test.go:176: pinned JS SDK fixture failed: exit status 1
+        there are non-text parts inlineData in the response, returning concatenation of all text parts. Please refer to the non text parts for a full response from model.
+        node:internal/modules/run_main:107
+            triggerUncaughtException(
+            ^
+        
+        AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+        
+          assert.ok(chunks.length >= 2)
+        
+            at file:///G:/code/gemini30/AIStudio2API/scripts/business-addon/sdk-js/contract.mjs:239:10
+            at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+          generatedMessage: true,
+          code: 'ERR_ASSERTION',
+          actual: false,
+          expected: true,
+          operator: '==',
+          diff: 'simple'
+        }
+        
+        Node.js v24.19.0
+--- FAIL: TestGeminiJavaScriptSDKOfflineHarness (0.67s)
+=== RUN   TestGeminiSDKOfflineHarness
+    sdk_test.go:132: offline SDK upload rejected: method=POST path=/upload/v1beta/files header=map[Accept:[*/*] Accept-Encoding:[gzip, deflate] Connection:[keep-alive] Content-Length:[91] Content-Type:[application/json] Host:[business-sdk.invalid] User-Agent:[google-genai-sdk/2.32.0 gl-python/3.12.10] X-Aistudio-Provider:[business] X-Goog-Api-Client:[google-genai-sdk/2.32.0 gl-python/3.12.10] X-Goog-Upload-Command:[start] X-Goog-Upload-Header-Content-Length:[17] X-Goog-Upload-Header-Content-Type:[application/pdf] X-Goog-Upload-Protocol:[resumable]] body={"file": {"display_name": "fixture.pdf", "mime_type": "application/pdf", "size_bytes": 17}}
+    sdk_test.go:148: pinned SDK fixture failed: exit status 1
+        Warning: there are non-text parts in the response: ['inline_data'], returning concatenated text result from text parts. Check the full candidates.content.parts accessor to get the full model response.
+        Traceback (most recent call last):
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 301, in <module>
+            raise SystemExit(main())
+                             ^^^^^^
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 45, in main
+            return worker()
+                   ^^^^^^^^
+          File "G:\code\gemini30\AIStudio2API\scripts\business-addon\sdk_contract.py", line 171, in worker
+            uploaded = client.files.upload(file=io.BytesIO(b"fixture pdf bytes"),
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\files.py", line 622, in upload
+            response = self._create(
+                       ^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\files.py", line 293, in _create
+            response = self._api_client.request(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\_api_client.py", line 1839, in request
+            response = self._request(http_request, http_options, stream=False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\_api_client.py", line 1632, in _request
+            return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+            do = self.iter(retry_state=retry_state)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+            result = action(retry_state)
+                     ^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+            raise retry_exc.reraise()
+                  ^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+            raise self.last_attempt.result()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+          File "C:\Users\lywx2\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py", line 449, in result
+            return self.__get_result()
+                   ^^^^^^^^^^^^^^^^^^^
+          File "C:\Users\lywx2\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\_base.py", line 401, in __get_result
+            raise self._exception
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+            result = fn(*args, **kwargs)
+                     ^^^^^^^^^^^^^^^^^^^
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\_api_client.py", line 1609, in _request_once
+            errors.APIError.raise_for_response(response)
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\errors.py", line 173, in raise_for_response
+            cls.raise_error(response.status_code, response_json, response)
+          File "G:\code\gemini30\business-gemini-pool\.venv\Lib\site-packages\google\genai\errors.py", line 204, in raise_error
+            raise ServerError(status_code, response_json, response)
+        google.genai.errors.ServerError: 500 INTERNAL. {'error': {'code': 500, 'message': 'Business file storage is unavailable', 'status': 'INTERNAL'}}
+--- FAIL: TestGeminiSDKOfflineHarness (1.75s)
+FAIL
+FAIL	github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini	5.921s
+FAIL

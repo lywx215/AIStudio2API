@@ -1,0 +1,27 @@
+{
+  "sdk": "google-genai==2.32.0",
+  "model": "business-gemini-4-argon",
+  "passed": false,
+  "checks": {},
+  "preflights": {},
+  "unmapped_options_requested": {
+    "temperature": 0,
+    "maxOutputTokens": 64,
+    "thinkingConfig": {
+      "includeThoughts": false,
+      "thinkingBudget": 0
+    }
+  },
+  "advanced_parameter_semantics_claimed": false,
+  "token_estimate_produced": false,
+  "error": {
+    "type": "ConnectError"
+  },
+  "error_stage": "baseline_status",
+  "generation_attempts": 0,
+  "generation_http_statuses": [],
+  "status_attempts": 1,
+  "preflight_attempts": 0,
+  "count_tokens_attempts": 0,
+  "elapsed_seconds": 2.187
+}

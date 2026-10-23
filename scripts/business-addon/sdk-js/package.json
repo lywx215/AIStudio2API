@@ -1,0 +1,10 @@
+{
+  "name": "business-gemini-sdk-contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Socket-free contract fixture for the Business Gemini handlers",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": { "test": "node contract.mjs" },
+  "dependencies": { "@google/genai": "2.22.0" }
+}

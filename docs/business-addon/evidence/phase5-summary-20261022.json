@@ -1,0 +1,352 @@
+{
+  "phase": "phase5-native-output-and-sdk-chat",
+  "date": "2026-10-22",
+  "implementation_status": "implemented_with_scoped_live_regression_and_explicit_validation_limits",
+  "global_live_verified": false,
+  "scope_basis": "User confirmed remaining native-interface adaptation; three parallel Codex agents; Host/API deferred.",
+  "runtime": {
+    "checked_at": "2026-10-22T14:51:12.4352246Z",
+    "origin": "http://127.0.0.1:2048",
+    "pid": 56888,
+    "executable_sha256": "B72F2E6DC77E73E71FF494C03848FA4E87E6DA757270385AEF3E0590E733A140",
+    "executable_bytes": 51523072,
+    "started_at": "2026-10-22T14:48:22.7356204Z",
+    "state": "ready",
+    "generation_ready": true,
+    "config_revision": 6,
+    "account_count": 1,
+    "accounts": [
+      {
+        "state": "ready",
+        "auth_verified": true,
+        "consecutive_failures": 0,
+        "last_error_kind": null
+      }
+    ],
+    "model_states": [
+      {
+        "public_id": "business-auto",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-4-argon",
+        "state": "ready",
+        "configuration_valid": true,
+        "schedulable": true,
+        "auth_verified": true,
+        "model_verified": true
+      },
+      {
+        "public_id": "business-gemini-3.8-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.7-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.6-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.5-flash",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-3.1-pro",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      },
+      {
+        "public_id": "business-gemini-2.5-pro",
+        "state": "disabled",
+        "configuration_valid": false,
+        "schedulable": false,
+        "auth_verified": true,
+        "model_verified": false
+      }
+    ],
+    "capacity": {
+      "limit": 1,
+      "active": 0,
+      "available": 1
+    },
+    "resources": {
+      "limit_bytes": 268435456,
+      "in_use_bytes": 0,
+      "available_bytes": 268435456
+    },
+    "conversations": {
+      "retained": 2,
+      "limit": 128,
+      "ttl_seconds": 900,
+      "sessions_created": 2,
+      "continuation_attempts": 2
+    },
+    "live_verified": false,
+    "previous_binary_backup": "runtime/business-local/aistudio2api-before-phase5.exe",
+    "existing_account_preserved": true,
+    "startup_note": "Startup script returned ready=true. Outer PowerShell checked stale LASTEXITCODE and threw; independent PID/path/SHA and HTTP readiness confirmed success without another restart."
+  },
+  "implemented": [
+    "Native executableCode PYTHON and codeExecutionResult OK/FAILED/DEADLINE_EXCEEDED with strict typed union, thought/signature preservation and byte limits; no local execution.",
+    "Typed code/results participate in exact history digests; adjacent model fragments normalized for official Chat SDKs with shared text/part/turn limits.",
+    "One final real Part carried to STOP only after full upstream success; failures do not commit history or replay final Part after failed writes/flushes.",
+    "Bounded textGroundingMetadata HTTP(S) sources and exact same-reply UTF-8 segments; sources-only for delayed/cumulative/unanchored frames; final success metadata emitted once.",
+    "Shared source URI/title validation; 128 chunks, 512 supports, 512 KiB metadata; no fabricated search queries, confidence, usage or model versions."
+  ],
+  "offline": {
+    "all_requested_checks_passed": false,
+    "final_go_command_exit": 1,
+    "packages_passed": 11,
+    "top_level_tests_passed": 188,
+    "top_level_assertion_failures": 0,
+    "package_results": [
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/browser",
+        "result": "pass",
+        "top_level_tests_passed": 24
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/config",
+        "result": "pass",
+        "top_level_tests_passed": 8
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/contract",
+        "result": "pass",
+        "top_level_tests_passed": 2
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/core",
+        "result": "pass",
+        "top_level_tests_passed": 68
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/dispatch",
+        "result": "skip",
+        "top_level_tests_passed": 0
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/fileapi",
+        "result": "pass",
+        "top_level_tests_passed": 13
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/files",
+        "result": "pass",
+        "top_level_tests_passed": 14
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/gemini",
+        "result": "pass",
+        "top_level_tests_passed": 48
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/observe",
+        "result": "pass",
+        "top_level_tests_passed": 2
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/resources",
+        "result": "fail",
+        "top_level_tests_passed": 0
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/internal/addons/business/vault",
+        "result": "pass",
+        "top_level_tests_passed": 3
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/parameter-probe",
+        "result": "pass",
+        "top_level_tests_passed": 1
+      },
+      {
+        "package": "github.com/Mag1cFall/AIStudio2API/scripts/business-addon/token-count",
+        "result": "pass",
+        "top_level_tests_passed": 5
+      }
+    ],
+    "deferred_by_user": [
+      "internal/addons/business/host",
+      "internal/api"
+    ],
+    "deferred_tests_executed": false,
+    "blocked_packages": [
+      "internal/addons/business/resources"
+    ],
+    "historically_blocked_not_repeated": [
+      "internal/app"
+    ],
+    "blocked_reason": "Windows Application Control blocked standard resources.test.exe; no path relocation, executable renaming or policy bypass.",
+    "skipped": [
+      "browser TestRemoteBrowserLiveHeadless opt-in not repeated; phase3 historical evidence retained",
+      "dispatch has no test files"
+    ],
+    "initial_failures": [
+      "Initial full Gemini test binary was blocked by Windows Application Control. Final changed binary ran all 48 top-level Gemini tests successfully.",
+      "Old JS synthetic fixture expected at least two SSE chunks for a response whose final real Part is now retained for STOP; updated only chunk-count expectation, preserving content/STOP checks. Dedicated phase5 multi-part fidelity assertions remain.",
+      "Initial Python synthetic upload hit sandbox storage permissions; normal current-user run passed without system-policy changes."
+    ],
+    "sdk": {
+      "python": "google-genai==2.32.0",
+      "javascript": "@google/genai@2.22.0",
+      "new_fixture_requests_per_sdk": 13,
+      "new_fixture_synthetic_generations_per_sdk": 11,
+      "existing_python_synthetic_generations": 15,
+      "existing_javascript_synthetic_generations": 19,
+      "network_model_calls": 0
+    },
+    "vet": "cmd/internal plus both Business helpers passed",
+    "build": "passed; sandbox Go module stat-cache write warning retained",
+    "frontend": "No phase5 frontend changes; phase3 historical 152 tests/typecheck/lint/build retained without rerun",
+    "race": "not run: CGO disabled and no C compiler",
+    "boundary_gate": "passed; frozen anchors and root README preserved",
+    "drift_gate": "20 synthetic fixtures passed",
+    "diff_check": "passed"
+  },
+  "live": {
+    "model": "business-gemini-4-argon",
+    "generation_attempts": 4,
+    "successful_generations": 4,
+    "failed_generations": 0,
+    "automatic_generation_replays": 0,
+    "python_sdk": {
+      "passed": true,
+      "stream": {
+        "events": 19,
+        "text_events": 17,
+        "code_parts": 1,
+        "result_parts": 1,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "usage_present": false,
+        "metadata_only_at_stop": true,
+        "terminal_parts": 1,
+        "finish_reason": "STOP",
+        "first_text_seconds": 28.75,
+        "text_span_seconds": 6.921,
+        "elapsed_seconds": 35.671,
+        "text_bytes": 2031
+      },
+      "continuation": {
+        "events": 1,
+        "text_events": 12,
+        "code_parts": 0,
+        "result_parts": 0,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "usage_present": false,
+        "metadata_only_at_stop": true,
+        "terminal_parts": 15,
+        "finish_reason": "STOP",
+        "first_text_seconds": 16.11,
+        "text_span_seconds": 0.0,
+        "elapsed_seconds": 16.11,
+        "text_bytes": 1129
+      },
+      "checks": {
+        "file_sum_and_marker": true,
+        "stream_success": true,
+        "sdk_curated_history_continuation": true,
+        "one_session_one_continuation": true,
+        "idle_resources_ready": true,
+        "file_deleted": true
+      },
+      "evidence": "phase5-argon-python-20261022.json"
+    },
+    "javascript_sdk": {
+      "passed": true,
+      "stream": {
+        "events": 17,
+        "parts": 17,
+        "text_events": 14,
+        "terminal_parts": 1,
+        "code_parts": 0,
+        "execution_result_parts": 0,
+        "grounding_chunks": 0,
+        "grounding_supports": 0,
+        "metadata_only_at_stop": true,
+        "usage_present": false,
+        "finish_reason": "STOP",
+        "elapsed_seconds": 29.762,
+        "first_text_seconds": 23.694,
+        "text_span_seconds": 5.547,
+        "text_bytes": 1450,
+        "numbered_lines": 16
+      },
+      "continuation": {
+        "elapsed_seconds": 7.042,
+        "text_bytes": 53,
+        "finish_reason": "STOP",
+        "usage_present": false
+      },
+      "checks": {
+        "baseline_ready_idle": true,
+        "first_marker_and_sum": true,
+        "sixteen_lines_and_end": true,
+        "stream_completed": true,
+        "metadata_only_at_stop": true,
+        "chat_retained_all_parts": true,
+        "recalled_marker_sum": true,
+        "continuation_completed": true,
+        "no_synthetic_usage": true,
+        "one_session_one_continuation": true,
+        "final_ready_idle": true
+      },
+      "evidence": "phase5-argon-js-20261022.json"
+    },
+    "native_code_result_observed": true,
+    "grounding_live_verified": false,
+    "grounding_note": "No native grounding chunks/supports were returned during these real calls, including an official-source prompt; projection is offline verified only.",
+    "advanced_parameters": "Parameter forwarding/0/false/raw schema remains covered offline. Real prompt-triggered code does not establish native tools parameter semantics; unmapped optional fields remain ignored.",
+    "long_context": "Not repeated in phase5; earlier 153363/6816 values were file-ingestion counters, not native Argon usage."
+  },
+  "remaining_limits": [
+    "Host/API deferred; resources test executable blocked now, app previously blocked.",
+    "Grounding is a limited projection and has not been observed live; metadata-only frames retain sources without guessed supports.",
+    "Code-bearing cumulative terminal text is not guessed away and can repeat; retain complete ordered parts.",
+    "Native tools/functions, systemInstruction semantics, advanced sampling/schema/thinking mappings and native countTokens/usage remain unavailable or unverified.",
+    "History continuation requires the same process and exact delivered prefix; arbitrary imported history, deleted historical files and replay are not supported.",
+    "JS SDK 2.22.0 may swallow SSE errors; consumers must require STOP.",
+    "Manual Google login/Linux VPS collection, full fingerprint persistence, dual-WAA and real upstream upgrade candidate remain outside this acceptance."
+  ],
+  "deployment": false,
+  "commit_or_push": false,
+  "external_review": false,
+  "evidence_files": [
+    "phase5-go-final-20261022.jsonl",
+    "phase5-gemini-initial-blocked-20261022.jsonl",
+    "phase5-sdk-initial-20261022.log",
+    "phase5-sdk-final-20261022.log",
+    "phase5-argon-python-20261022.json",
+    "phase5-argon-js-20261022.json",
+    "phase5-final-status-20261022.json",
+    "phase5-anchors-20261022.json",
+    "phase5-drift-20261022.json"
+  ]
+}

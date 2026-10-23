@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -76,7 +77,22 @@ func attachBusiness(native http.Handler, config Config, consoleAuth *adminAuth) 
 			authMiddleware(config.APIKey, identify(next)))))
 	}
 	public = protect(public)
-	admin = consoleAuth.handler(admin)
+	adminNext := admin
+	admin = consoleAuth.handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		identity, lifetime := "local-console", context.Background()
+		if config.AdminAuthEnabled {
+			session := consoleAuth.session(r)
+			cookie, err := r.Cookie(adminCookieName)
+			if session == nil || err != nil {
+				contract.Error(w, 401, "UNAUTHENTICATED", "Sign in to the console")
+				return
+			}
+			mac := hmac.New(sha256.New, salt)
+			_, _ = mac.Write([]byte(cookie.Value))
+			identity, lifetime = hex.EncodeToString(mac.Sum(nil)), session.ctx
+		}
+		adminNext.ServeHTTP(w, r.WithContext(contract.WithConsole(r.Context(), identity, lifetime)))
+	}))
 	upload = corsMiddleware(bodyLimitMiddleware(browserOriginMiddleware(config.APIKey, upload)))
 	invalid := protect(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		contract.Error(w, http.StatusBadRequest, "INVALID_ARGUMENT", "Conflicting or unknown Business routing selector")

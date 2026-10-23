@@ -1,0 +1,4 @@
+
+> aistudio2api-web@0.1.0 lint
+> vp lint . --max-warnings=0 && eslint . --max-warnings=0
+

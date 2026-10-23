@@ -1,0 +1,48 @@
+{
+  "pid": 57340,
+  "origin": "http://127.0.0.1:2048",
+  "sha256": "512685F6E946C0E4C1CFB4D4484D59CC0605AE7B3804A2A62D42B4368F30ED31",
+  "bytes": 51593728,
+  "state": "ready",
+  "generation_ready": true,
+  "config_revision": 8,
+  "account_count": 1,
+  "account_auth_verified": [
+    true
+  ],
+  "account_failures": [
+    0
+  ],
+  "model_verified": [
+    true
+  ],
+  "capacity": {
+    "limit": 1,
+    "active": 0,
+    "available": 1
+  },
+  "resources": {
+    "limit_bytes": 268435456,
+    "in_use_bytes": 0,
+    "available_bytes": 268435456
+  },
+  "conversations": {
+    "retained": 2,
+    "limit": 128,
+    "ttl_seconds": 900,
+    "sessions_created": 2,
+    "continuation_attempts": 2
+  },
+  "capabilities": {
+    "browser_collection": "remote_manual_capability_gated",
+    "files": "implemented",
+    "generationConfig": "mapped_fields_forwarded_others_ignored",
+    "inline_media": "bounded_passthrough_not_model_capability",
+    "model_import": "preview_apply_undo_disabled_models",
+    "model_observation": "passive_pending_confirmation",
+    "multi_turn": "completed_prefix_only",
+    "streaming": "implemented",
+    "text": "implemented",
+    "tools": "unsupported_ignored"
+  }
+}

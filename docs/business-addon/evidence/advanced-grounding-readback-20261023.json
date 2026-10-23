@@ -1,0 +1,171 @@
+{
+  "model_calls": 0,
+  "raw_responses_saved": false,
+  "redirects_followed": false,
+  "calls": [
+    {
+      "method": "widgetListSessions",
+      "http_status": 200,
+      "response_bytes": 3699
+    },
+    {
+      "method": "widgetGetSession",
+      "http_status": 200,
+      "response_bytes": 18610
+    }
+  ],
+  "matched_synthetic_session": true,
+  "auth_http_status": 200,
+  "listed_count": 1,
+  "turns": [
+    {
+      "turn": 0,
+      "state": "SUCCEEDED",
+      "reply_count": 3,
+      "grounding": [
+        {
+          "metadata_keys": [
+            "references",
+            "searchEntryPoints",
+            "segments"
+          ],
+          "content_keys": [],
+          "text_bytes": 0,
+          "references": 1,
+          "document_metadata_refs": 1,
+          "segments": 4,
+          "segment_keys": [
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ],
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ],
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ],
+            [
+              "startIndex",
+              "endIndex",
+              "referenceIndices",
+              "text"
+            ]
+          ],
+          "reference_index_lengths": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "candidate_anchors": [
+            {
+              "reply_index": 0,
+              "all_segment_offsets_text_exact": true,
+              "exact_segment_count": 4,
+              "same_reply_id": true
+            }
+          ]
+        }
+      ],
+      "reply_shapes": [
+        {
+          "index": 0,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "text"
+          ],
+          "text_bytes": 666,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            1,
+            2
+          ]
+        },
+        {
+          "index": 1,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "inlineData"
+          ],
+          "text_bytes": 0,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            0,
+            2
+          ]
+        },
+        {
+          "index": 2,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "textGroundingMetadata"
+          ],
+          "content_keys": [],
+          "text_bytes": 0,
+          "reply_id_present": true,
+          "same_id_other_replies": [
+            0,
+            1
+          ]
+        }
+      ],
+      "usage_field_paths": []
+    },
+    {
+      "turn": 1,
+      "state": "SUCCEEDED",
+      "reply_count": 1,
+      "grounding": [],
+      "reply_shapes": [
+        {
+          "index": 0,
+          "keys": [
+            "groundedContent",
+            "replyId",
+            "createTime"
+          ],
+          "grounded_keys": [
+            "content"
+          ],
+          "content_keys": [
+            "role",
+            "text"
+          ],
+          "text_bytes": 61,
+          "reply_id_present": true,
+          "same_id_other_replies": []
+        }
+      ],
+      "usage_field_paths": []
+    }
+  ]
+}

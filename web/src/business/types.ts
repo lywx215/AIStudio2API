@@ -18,8 +18,22 @@ export interface BusinessConfig {
   revision: number
   enabled: boolean
   max_concurrent: number
+  max_inflight_bytes?: number
   request_timeout_seconds: number
   bindings: BusinessBinding[]
+}
+
+export interface BusinessImportPreview {
+  revision: number
+  source_hash: string
+  added: BusinessBinding[]
+  skipped: string[]
+  warnings: string[]
+}
+
+export interface BusinessImportResult {
+  config: BusinessConfig
+  rollback_id: string
 }
 
 export interface BusinessStatus {
@@ -31,9 +45,28 @@ export interface BusinessStatus {
   transport: string
   capabilities: Record<string, string>
   live_verified: boolean
-  account_states: { id: string; state: string }[]
+  account_states: BusinessAccountState[]
   model_states: BusinessModelState[]
   capacity: { limit: number; active: number; available: number }
+  resources?: { limit_bytes: number; in_use_bytes: number; available_bytes: number }
+}
+
+export interface BusinessAccountState {
+  id: string
+  state: string
+  auth_verified?: boolean
+  auth_verified_at?: string
+  verified_models?: Record<string, string>
+  last_error_kind?: string
+  last_error_stage?: string
+  last_error_status?: string
+  last_error_reason?: string
+  last_error_http_status?: number
+  last_error_submitted?: boolean
+  last_error_output_started?: boolean
+  last_error_at?: string
+  consecutive_failures?: number
+  cooldown_until?: string
 }
 
 export interface BusinessModelState {

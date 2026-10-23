@@ -1,0 +1,49 @@
+{
+  "sdk": "@google/genai@2.22.0",
+  "model": "business-gemini-4-argon",
+  "generation_attempts": 2,
+  "status_attempts": 2,
+  "passed": true,
+  "checks": {
+    "baseline_ready_idle": true,
+    "first_marker_and_sum": true,
+    "sixteen_lines_and_end": true,
+    "stream_completed": true,
+    "metadata_only_at_stop": true,
+    "chat_retained_all_parts": true,
+    "recalled_marker_sum": true,
+    "continuation_completed": true,
+    "no_synthetic_usage": true,
+    "one_session_one_continuation": true,
+    "final_ready_idle": true
+  },
+  "stream_turn": {
+    "events": 17,
+    "parts": 17,
+    "text_events": 14,
+    "terminal_parts": 1,
+    "code_parts": 0,
+    "execution_result_parts": 0,
+    "grounding_chunks": 0,
+    "grounding_supports": 0,
+    "metadata_only_at_stop": true,
+    "usage_present": false,
+    "finish_reason": "STOP",
+    "elapsed_seconds": 29.762,
+    "first_text_seconds": 23.694,
+    "text_span_seconds": 5.547,
+    "text_bytes": 1450,
+    "numbered_lines": 16
+  },
+  "continuation_turn": {
+    "elapsed_seconds": 7.042,
+    "text_bytes": 53,
+    "finish_reason": "STOP",
+    "usage_present": false
+  },
+  "sessions_created_delta": 1,
+  "continuation_attempts_delta": 1,
+  "final_active": 0,
+  "final_in_use_bytes": 0,
+  "elapsed_seconds": 36.886
+}

@@ -1,0 +1,13 @@
+{
+  "started": false,
+  "blocked_by": "Windows Application Control",
+  "failed_sha256": "D86F60D4C7631266615ED4A610043598960CAF4C5894F5F34BE6A003AAB30E2A",
+  "failed_bytes": 51619840,
+  "source_executable": "runtime/business-local/aistudio2api-advanced-release.exe",
+  "event_ids": [
+    3077
+  ],
+  "generation_attempts": 0,
+  "newest_thought_fix_live_verified": false,
+  "rollback_sha256": "93C8CE4F48476453EBBC83C297DD06029A31B87B950EDEC819BBD9FF9738DF91"
+}

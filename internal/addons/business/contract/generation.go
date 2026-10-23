@@ -13,11 +13,18 @@ type Request struct {
 	QueryParts  []map[string]string
 	Generation  map[string]json.RawMessage
 	Attachments []Attachment
+	// GoogleSearch requests only the empty Gemini Google Search tool. The core
+	// verifies the selected account's search provider before enabling it.
+	GoogleSearch bool
+	// History contains a digest for each validated content, including the last
+	// user turn. The core may only continue a previously completed exact prefix.
+	History     []string
+	OptionsHash string
 }
 
 // Attachment contains an immutable request-owned snapshot. The account lease
-// uploads it only after a fresh Business session has been selected. No upstream
-// file ID survives across requests, account epochs or session boundaries.
+// uploads new files only after a Business session has been selected. Upstream
+// file IDs remain private to that account epoch and exact continuing session.
 type Attachment struct {
 	Filename string
 	MIMEType string
@@ -28,15 +35,18 @@ type Attachment struct {
 type FileResolver func(context.Context, string, string) (Attachment, error)
 
 type Selection struct {
+	PublicID   string
 	ModelID    string
 	Auto       bool
 	AccountIDs []string
 }
 type Part struct {
-	Text             string      `json:"text"`
-	Thought          bool        `json:"thought,omitempty"`
-	ThoughtSignature string      `json:"thoughtSignature,omitempty"`
-	InlineData       *InlineData `json:"inlineData,omitempty"`
+	Text                string               `json:"text"`
+	Thought             bool                 `json:"thought,omitempty"`
+	ThoughtSignature    string               `json:"thoughtSignature,omitempty"`
+	InlineData          *InlineData          `json:"inlineData,omitempty"`
+	ExecutableCode      *ExecutableCode      `json:"executableCode,omitempty"`
+	CodeExecutionResult *CodeExecutionResult `json:"codeExecutionResult,omitempty"`
 }
 
 const SuggestionsMIMEType = "application/json+suggestions"
@@ -51,23 +61,33 @@ type InlineData struct {
 // MarshalJSON preserves the native Part union, including an explicitly empty
 // text part. An inlineData part must not acquire an invented text:"" sibling.
 func (p Part) MarshalJSON() ([]byte, error) {
-	if p.InlineData == nil {
+	values := 0
+	for _, present := range []bool{p.InlineData != nil, p.ExecutableCode != nil, p.CodeExecutionResult != nil} {
+		if present {
+			values++
+		}
+	}
+	if values == 0 {
 		type plain Part
 		return json.Marshal(plain(p))
 	}
-	if p.Text != "" {
+	if p.Text != "" || values != 1 {
 		return nil, errors.New("Business part contains multiple content values")
 	}
 	return json.Marshal(struct {
-		InlineData       *InlineData `json:"inlineData"`
-		Thought          bool        `json:"thought,omitempty"`
-		ThoughtSignature string      `json:"thoughtSignature,omitempty"`
-	}{p.InlineData, p.Thought, p.ThoughtSignature})
+		InlineData          *InlineData          `json:"inlineData,omitempty"`
+		ExecutableCode      *ExecutableCode      `json:"executableCode,omitempty"`
+		CodeExecutionResult *CodeExecutionResult `json:"codeExecutionResult,omitempty"`
+		Thought             bool                 `json:"thought,omitempty"`
+		ThoughtSignature    string               `json:"thoughtSignature,omitempty"`
+	}{p.InlineData, p.ExecutableCode, p.CodeExecutionResult, p.Thought, p.ThoughtSignature})
 }
 
 type Event struct {
-	Parts    []Part
-	Finished bool
+	Parts             []Part
+	Finished          bool
+	GroundingMetadata *GroundingMetadata
+	CitationMetadata  *CitationMetadata
 }
 
 type Generator interface {

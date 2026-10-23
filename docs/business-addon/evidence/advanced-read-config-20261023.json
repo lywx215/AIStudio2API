@@ -1,0 +1,55 @@
+{
+  "model_calls": 0,
+  "raw_responses_saved": false,
+  "redirects_followed": false,
+  "calls": [
+    {
+      "method": "lookupWidgetConfig",
+      "http_status": 200,
+      "response_bytes": 33040,
+      "top_keys": [
+        "anonymousWidgetConfig",
+        "anonymousEngineUserData",
+        "engineResourceDetails",
+        "assistantResourceDetails",
+        "anonymousUser",
+        "locationTransparencyContext",
+        "agentCreationPermissions"
+      ],
+      "capability_findings": [
+        {
+          "path": ".anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[1]",
+          "target_model_keys": [
+            "modelId",
+            "displayName",
+            "icon",
+            "description",
+            "label",
+            "promoted",
+            "iconUrl"
+          ],
+          "model_id": "gemini-4-argon",
+          "safe_fields": {}
+        },
+        {
+          "path": ".anonymousWidgetConfig.assistantSettings.webGroundingType",
+          "value": "WEB_GROUNDING_TYPE_GOOGLE_SEARCH"
+        }
+      ],
+      "target_model_literal_present": true,
+      "thinking_level_literal_present": false
+    },
+    {
+      "method": "widgetListAvailableAgentViews",
+      "http_status": 200,
+      "response_bytes": 44,
+      "top_keys": [
+        "listAvailableAgentViewsResponse"
+      ],
+      "capability_findings": [],
+      "target_model_literal_present": false,
+      "thinking_level_literal_present": false
+    }
+  ],
+  "auth_http_status": 200
+}

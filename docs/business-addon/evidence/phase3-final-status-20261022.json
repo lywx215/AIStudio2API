@@ -1,0 +1,148 @@
+{
+  "state": "ready",
+  "enabled": true,
+  "generation_ready": true,
+  "config_revision": 6,
+  "transport": "http",
+  "capabilities": {
+    "browser_collection": "remote_manual_capability_gated",
+    "files": "implemented",
+    "generationConfig": "mapped_fields_forwarded_others_ignored",
+    "model_observation": "passive_pending_confirmation",
+    "multi_turn": "unsupported",
+    "streaming": "implemented",
+    "text": "implemented",
+    "tools": "unsupported_ignored"
+  },
+  "account_states": [
+    {
+      "id": "acct-2f7208dfb9937c62f58a65afc2fde266",
+      "state": "ready",
+      "auth_verified": true,
+      "auth_verified_at": "2026-10-22T21:27:03.8575868+08:00",
+      "verified_models": {
+        "gemini-4-argon": "2026-10-22T13:27:11.964796Z"
+      },
+      "last_error_submitted": false,
+      "last_error_output_started": false,
+      "consecutive_failures": 0
+    }
+  ],
+  "model_states": [
+    {
+      "public_id": "business-auto",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-4-argon",
+      "state": "ready",
+      "configuration_valid": true,
+      "schedulable": true,
+      "auth_verified": true,
+      "model_verified": true,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "model_verified_at": "2026-10-22T13:27:11.964796Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-3.8-flash",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-3.7-flash",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-3.6-flash",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-3.5-flash",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-3.1-pro",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    },
+    {
+      "public_id": "business-gemini-2.5-pro",
+      "state": "disabled",
+      "code": "BUSINESS_MODEL_DISABLED",
+      "configuration_valid": false,
+      "schedulable": false,
+      "auth_verified": true,
+      "model_verified": false,
+      "auth_verified_at": "2026-10-22T13:27:03.8575868Z",
+      "eligible_account_ids": [
+        "acct-2f7208dfb9937c62f58a65afc2fde266"
+      ]
+    }
+  ],
+  "capacity": {
+    "limit": 1,
+    "active": 0,
+    "available": 1
+  },
+  "resources": {
+    "limit_bytes": 268435456,
+    "in_use_bytes": 0,
+    "available_bytes": 268435456
+  },
+  "live_verified": false
+}
