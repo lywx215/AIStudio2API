@@ -1,5 +1,7 @@
 # Business 原生 token 计数与生成用量证据
 
+2026-10-23 的[扩展复核](token-count-recheck.md)已加入当前 Standalone 脚本、新 revision 的三个 Discovery 版本及 biz origin 公开文档；一次真实 Argon 生成及同会话回读均成功，未发现所检查的用量字段，原生计数合同仍未核实。以下保留 2026-10-22 首次核对记录。
+
 核对日期：2026-10-22。范围为官方公开文档、公开 widget 脚本、两份公开 Discovery schema、项目固定版本 SDK 和既有脱敏报告。本次未读取账号凭据，未发起计数、文件上传或生成请求，未执行应用测试包。
 
 结论：**尚未核实可用现有 Business 会话调用的原生 `countTokens` 方法，也未找到可准确映射为 Gemini `usageMetadata` 的 Business 生成字段。** 因此本地已启用模型的 `:countTokens` 应继续明确返回 `501 UNIMPLEMENTED`，生成响应继续省略未知用量；文件接收计数、字符估算和其他模型 tokenizer 都不能填充原生用量。本结论限定于下面的证据范围，并不证明私有服务永远不存在其他方法。

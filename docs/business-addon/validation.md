@@ -1,4 +1,14 @@
-## 定向适配：2026-10-23 最新记录
+## ais03 更新账号后原生计数实测：2026-10-23
+
+[更新后账号证据](evidence/token-ais03-updated-account-20261023.json)来自线上 `0d8c00b` / 账号 epoch 2：认证与配置 HTTP 200，新建合成会话的两轮 Argon 生成及两次详情回读均 HTTP 200 / SUCCEEDED，没有发现所扫描的用量字段、未知数值或用量响应头。标准 `countTokens` 的 `contents`、`generateContentRequest` 两种输入均 501 / UNIMPLEMENTED；标准 SSE 为 200，13 帧 / 12 个文本分片 / STOP，全部帧无 usageMetadata 或估算响应头。总计 3 次短生成，不填估算值，不把文件摄取计数或 token 标识当原生用量；仍未核实可实现的原生合同，因此未新增推测性生产解析器。
+
+三个公开 Discovery 版本再次下载仍为 revision `20261022`，无计数方法。Google 首页返回 302 且未跟随，未取得新前端资产；不能将早先 bundle 复核写成本轮下载。运行后账号与 Argon ready、auth_verified/model_verified 为 true；配置、账号 epoch 不变，未部署或重启。脱敏、候选字段和来源约束的离线探测检查通过；工作区另一本地估算实现不属于本轮原生验收，也未部署。此次未重跑整个 Host/API/SDK 或大上下文验收，不替代原系统策略阻断记录。详细范围见[复核说明](token-count-recheck.md#ais03-更新账号后复核)。
+
+## 原生计数复核：2026-10-23 较早记录
+
+[本轮复核](token-count-recheck.md)新增现用 Standalone 脚本、revision `20261022` 的三个公开 Discovery 版本及 biz origin 的公开 schema，仍未找到可实现的原生 countTokens 或生成用量合同。[脱敏证据](evidence/token-recheck-20261023.json)记录本次 Core 包通过、固定 Python SDK 的 10 项无网络检查通过；contract 测试被系统策略阻止执行，其他原阻断包继续未验收。旧 Cookie 认证 HTTP 401 后，使用用户明确授权的临时 Bearer 完成[一次真实上游检查](evidence/token-upstream-live-20261023.json)：配置、创建会话、Argon 生成及同会话回读均 HTTP 200，原始流 3 帧并 SUCCEEDED，生成与回读均没有所检查的 usage/count 字段。新增生成仅 1 次，本机结果回传中断单独记录，不重发模型。生产计数/用量行为不变，不填零或估算值；未部署、重启或修改生产账号 Cookie，项目级 live_verified 仍为 false。
+
+## 定向适配：2026-10-23 较早记录
 
 本轮重点核实高级参数、工具调用和原生计数，三个子代理并行研究/开发，主窗口集成及真实验收。机器记录见 [本轮汇总](evidence/advanced-summary-20261023.json)，协议与代码范围见 [定向说明](advanced-tools-count.md)。**最新源码的真实验收尚未完成**：thought引用修复构建被Windows Application Control事件3077阻止启动，当前本地服务已恢复上一允许版本，不把离线通过写成完整运行通过。
 

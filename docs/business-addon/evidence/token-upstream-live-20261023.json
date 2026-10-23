@@ -1,0 +1,91 @@
+{
+  "kind": "business_upstream_native_token_field_probe",
+  "date": "2026-10-23",
+  "model_requested": "gemini-4-argon",
+  "selection_field": "streamAssistRequest.assistGenerationConfig.modelId",
+  "source": "one user-authorized temporary Bearer; no account Cookie replacement",
+  "scope": "One new synthetic session, one short generation, and readback of that session. Original user conversation was not replayed.",
+  "generation_requests": 1,
+  "upstream_passed": true,
+  "calls": [
+    {
+      "operation": "lookupWidgetConfig",
+      "http_status": 200,
+      "response_bytes": 5561
+    },
+    {
+      "operation": "widgetCreateSession",
+      "http_status": 200,
+      "response_bytes": 389
+    },
+    {
+      "operation": "widgetStreamAssist",
+      "http_status": 200,
+      "response_bytes": 4029
+    },
+    {
+      "operation": "widgetGetSession",
+      "http_status": 200,
+      "response_bytes": 2599
+    }
+  ],
+  "stream": {
+    "frames": 3,
+    "states": [
+      "IN_PROGRESS",
+      "IN_PROGRESS",
+      "SUCCEEDED"
+    ],
+    "replies": 4,
+    "top_keys": [
+      "streamAssistResponse",
+      "uToken"
+    ],
+    "response_keys": [
+      "agentInfo",
+      "answer",
+      "assistToken",
+      "dataSourceInfo",
+      "modelInfo",
+      "sessionInfo"
+    ]
+  },
+  "readback_top_keys": [
+    "session"
+  ],
+  "scanned_field_names": [
+    "usageMetadata",
+    "tokenCount",
+    "promptTokenCount",
+    "candidatesTokenCount",
+    "totalTokenCount",
+    "inputTokenCount",
+    "outputTokenCount",
+    "totalTokens",
+    "inputTokens",
+    "outputTokens",
+    "tokenUsage",
+    "usage",
+    "usageStats",
+    "usageStatistics"
+  ],
+  "field_matching": "Recursive dictionary keys normalized to lowercase without underscores; only field paths/types and bounded integers would be recorded.",
+  "usage_candidate_fields": [],
+  "native_usage_contract_verified": false,
+  "count_endpoint_verified": false,
+  "credentials_written_to_disk": false,
+  "raw_responses_saved": false,
+  "authorization_sent_only_to": "https://biz-discoveryengine.googleapis.com",
+  "redirects_followed": false,
+  "local_result_delivery": {
+    "status": "connection_aborted",
+    "error_type": "ConnectionAbortedError",
+    "upstream_result_unaffected": true
+  },
+  "limitations": [
+    "No native count endpoint was called because no authoritative Business method was found.",
+    "Absence is limited to the field names scanned in this successful request/readback and the public source versions recorded separately.",
+    "This is direct-upstream evidence, not a new full local/deployed adapter regression.",
+    "Temporary Bearer use does not refresh ais03 account Cookies."
+  ]
+}

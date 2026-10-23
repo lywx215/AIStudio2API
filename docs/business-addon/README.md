@@ -1,6 +1,10 @@
 # Business R3 附加融合开发记录
 
-**最新为高级参数、搜索工具及原生计数定向核实**：[当前实现说明](advanced-tools-count.md)、[验证记录](validation.md)、[当前能力](capabilities.md)。空Google Search新增真实请求映射及同账号供应商门禁；高级参数和计数继续依实际协议证据标明边界。Host/API及系统策略阻断测试继续未验收，完整发布准入未完成。
+2026-10-23 ais03 更新账号后：[最新原生计数实测](token-count-recheck.md#ais03-更新账号后复核)直接检查两轮 Argon 原始生成及两次会话回读，均成功但无用量字段；标准 `countTokens` 两种请求均 501，标准 SSE 为 200 / 12 个文本分片 / STOP，未知用量继续省略，不使用估算值。[脱敏证据](evidence/token-ais03-updated-account-20261023.json)对应线上 `0d8c00b`。
+
+2026-10-23 最新：[原生计数扩展复核](token-count-recheck.md)新增现用 Standalone 与新 revision Discovery 证据；一次真实 Argon 生成及同会话回读均成功，仍未找到可适配的原生计数或用量合同。Core 与 10 项 SDK 无网络检查通过，contract 新增系统策略阻断，继续未验收。
+
+此前高级参数与搜索工具的实现见[定向说明](advanced-tools-count.md)、[验证记录](validation.md)、[当前能力](capabilities.md)。空Google Search新增真实请求映射及同账号供应商门禁；高级参数和计数继续依实际协议证据标明边界。Host/API及系统策略阻断测试继续未验收，完整发布准入未完成。
 
 最新thought引用修复已通过离线回归，但应用构建被Windows Application Control阻止启动，真实验收继续保留未通过；本地服务已恢复上一允许版本，原账号及配置保留。
 

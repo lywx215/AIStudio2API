@@ -1,0 +1,379 @@
+{
+  "kind": "business_native_token_protocol_recheck",
+  "checked_at": "2026-10-23T06:44:43.582924+00:00",
+  "scope": "Fresh public schemas, public loader, and exact standalone bundle URL observed in the logged-in Business page DOM; no page bootstrap data.",
+  "fresh_public_sources": [
+    {
+      "url": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1alpha",
+      "http_status": 200,
+      "bytes": 2346244,
+      "sha256": "e22284bfc2894dcc79375f40e35364519e79e20de1fc06de49f64c33aafa88cd",
+      "facts": {
+        "revision": "20261022",
+        "root_url": "https://discoveryengine.googleapis.com/",
+        "method_count": 386,
+        "count_methods": [],
+        "assist_schema_fields": {
+          "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+            "assistSkippedReasons",
+            "connectorDisplayNames",
+            "customerPolicyEnforcementResult",
+            "name",
+            "replies",
+            "state"
+          ],
+          "GoogleCloudDiscoveryengineV1alphaStreamAssistResponse": [
+            "answer",
+            "assistToken",
+            "connectorAuthErrors",
+            "invocationTools",
+            "invokedSkills",
+            "sessionInfo"
+          ]
+        },
+        "token_fields": [
+          {
+            "schema": "GoogleCloudNotebooklmV1alphaSourceMetadata",
+            "field": "tokenCount",
+            "type": "integer"
+          },
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "inputTokenCount",
+            "type": "string"
+          },
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "outputTokenCount",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta",
+      "http_status": 200,
+      "bytes": 1944802,
+      "sha256": "99b6b7a1053bf097a0c3a82d2a11a2eeb48b729e33170267041403a111156ed0",
+      "facts": {
+        "revision": "20261022",
+        "root_url": "https://discoveryengine.googleapis.com/",
+        "method_count": 276,
+        "count_methods": [],
+        "assist_schema_fields": {
+          "GoogleCloudDiscoveryengineV1betaStreamAssistResponse": [
+            "answer",
+            "assistToken",
+            "connectorAuthErrors",
+            "invocationTools",
+            "invokedSkills",
+            "sessionInfo"
+          ],
+          "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+            "assistSkippedReasons",
+            "connectorDisplayNames",
+            "customerPolicyEnforcementResult",
+            "name",
+            "replies",
+            "state"
+          ],
+          "GoogleCloudDiscoveryengineV1betaAssistAnswer": [
+            "assistSkippedReasons",
+            "connectorDisplayNames",
+            "customerPolicyEnforcementResult",
+            "name",
+            "replies",
+            "state"
+          ]
+        },
+        "token_fields": [
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "inputTokenCount",
+            "type": "string"
+          },
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "outputTokenCount",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1",
+      "http_status": 200,
+      "bytes": 2062032,
+      "sha256": "0e417990b79a4eb783b74290dd88b1dd421aa10ec194a86a2d130fab4192c1a9",
+      "facts": {
+        "revision": "20261022",
+        "root_url": "https://discoveryengine.googleapis.com/",
+        "method_count": 278,
+        "count_methods": [],
+        "assist_schema_fields": {
+          "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+            "assistSkippedReasons",
+            "connectorDisplayNames",
+            "customerPolicyEnforcementResult",
+            "name",
+            "replies",
+            "state"
+          ],
+          "GoogleCloudDiscoveryengineV1StreamAssistResponse": [
+            "answer",
+            "assistToken",
+            "connectorAuthErrors",
+            "invocationTools",
+            "invokedSkills",
+            "sessionInfo"
+          ],
+          "GoogleCloudDiscoveryengineV1AssistAnswer": [
+            "assistSkippedReasons",
+            "connectorDisplayNames",
+            "customerPolicyEnforcementResult",
+            "name",
+            "replies",
+            "state"
+          ]
+        },
+        "token_fields": [
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "inputTokenCount",
+            "type": "string"
+          },
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "outputTokenCount",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://biz-discoveryengine.googleapis.com/$discovery/rest?version=v1alpha",
+      "http_status": 200,
+      "bytes": 2346244,
+      "sha256": "c87203f15fa55a1656be42662d8af49922531b0dfec11701fd107e8908df6eac",
+      "facts": {
+        "revision": "20261022",
+        "root_url": "https://discoveryengine.googleapis.com/",
+        "method_count": 386,
+        "count_methods": [],
+        "assist_schema_fields": {
+          "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+            "assistSkippedReasons",
+            "connectorDisplayNames",
+            "customerPolicyEnforcementResult",
+            "name",
+            "replies",
+            "state"
+          ],
+          "GoogleCloudDiscoveryengineV1alphaStreamAssistResponse": [
+            "answer",
+            "assistToken",
+            "connectorAuthErrors",
+            "invocationTools",
+            "invokedSkills",
+            "sessionInfo"
+          ]
+        },
+        "token_fields": [
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "outputTokenCount",
+            "type": "string"
+          },
+          {
+            "schema": "GoogleCloudDiscoveryengineV1alphaAlphaEvolveExperimentStats",
+            "field": "inputTokenCount",
+            "type": "string"
+          },
+          {
+            "schema": "GoogleCloudNotebooklmV1alphaSourceMetadata",
+            "field": "tokenCount",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    {
+      "url": "https://cloud.google.com/ai/gen-app-builder/client",
+      "http_status": 200,
+      "bytes": 81412,
+      "sha256": "10a1d0bf69ee43c58a9c546dd34a1d55ac3e3c9693b0217e9efe1955cb4710ac",
+      "bundle_urls": [
+        "https://www.gstatic.com/_/mss/boq-cloud-ai-ucs/_/js/k=boq-cloud-ai-ucs.UcsWidgetUi.en_US.pveFsgaw8rQ.2021.O/am=AACAERg/d=1/rs=AAj4Nmy6tdJplhe-n3Ngu_SbpIesx-rN-Q/m=bootstrap_module,ucs_widget_module,xlite_module"
+      ]
+    },
+    {
+      "url": "https://www.gstatic.com/_/mss/boq-cloud-ai-ucs/_/js/k=boq-cloud-ai-ucs.UcsStandaloneUi.zh_CN.eao-RarR-QU.2021.O/am=AAAAEBgAAw/d=1/excm=base,ucs_standalone_module/ed=1/dg=0/wt=2/ujg=1/rs=AAj4NmwKHfP_BUZop0C23ktNfx-r1GsMng/dti=1/m=base,ucs_standalone_module",
+      "http_status": 200,
+      "bytes": 23646039,
+      "sha256": "c43305acaa3c2e9ab5cea6b8e7b11525d23722933c8f75c95923ba4cfa9c81bc",
+      "literal_counts": {
+        "countTokens": 0,
+        "CountTokens": 0,
+        "count_tokens": 0,
+        "computeTokens": 0,
+        "compute_tokens": 0,
+        "usageMetadata": 0,
+        "usage_metadata": 0,
+        "promptTokenCount": 0,
+        "candidatesTokenCount": 0,
+        "totalTokenCount": 0,
+        "inputTokenCount": 0,
+        "outputTokenCount": 0,
+        "totalTokens": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "tokenUsage": 0,
+        "tokenCount": 2
+      },
+      "widget_operation_literal_count": 150,
+      "count_usage_quota_operation_literals": [],
+      "extra_case_insensitive_counts": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "token_count": 0,
+        "tokensUsed": 0,
+        "tokens_used": 0,
+        "tokenUsageMetadata": 0,
+        "usageStats": 0,
+        "usageStatistics": 0,
+        "countToken": 0,
+        "count_token": 0
+      },
+      "token_count_context": "File metadata mapping beside fileId, byteSize, quotaPercentage and usedInConversation; not model-bound generation usage.",
+      "other_token_contexts": {
+        "maxTokens": "File size error detail; not a counting response.",
+        "browser_time_to_first_response_token": "Browser latency telemetry; not a number of generated tokens."
+      }
+    },
+    {
+      "url": "https://www.gstatic.com/_/mss/boq-cloud-ai-ucs/_/js/k=boq-cloud-ai-ucs.UcsWidgetUi.en_US.pveFsgaw8rQ.2021.O/am=AACAERg/d=1/rs=AAj4Nmy6tdJplhe-n3Ngu_SbpIesx-rN-Q/m=bootstrap_module,ucs_widget_module,xlite_module",
+      "http_status": 200,
+      "bytes": 13333329,
+      "sha256": "4939333d6a81876631d6acb65573884f5f750897b9a94295f5766aaf36892a73",
+      "literal_counts": {
+        "countTokens": 0,
+        "CountTokens": 0,
+        "count_tokens": 0,
+        "computeTokens": 0,
+        "compute_tokens": 0,
+        "usageMetadata": 0,
+        "usage_metadata": 0,
+        "promptTokenCount": 0,
+        "candidatesTokenCount": 0,
+        "totalTokenCount": 0,
+        "inputTokenCount": 0,
+        "outputTokenCount": 0,
+        "totalTokens": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "tokenUsage": 0,
+        "tokenCount": 2
+      },
+      "widget_operation_literal_count": 112,
+      "count_usage_quota_operation_literals": [],
+      "extra_case_insensitive_counts": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "token_count": 0,
+        "tokensUsed": 0,
+        "tokens_used": 0,
+        "tokenUsageMetadata": 0,
+        "usageStats": 0,
+        "usageStatistics": 0,
+        "countToken": 0,
+        "count_token": 0
+      },
+      "token_count_context": "File metadata mapping beside fileId, byteSize, quotaPercentage and usedInConversation; not model-bound generation usage.",
+      "other_token_contexts": {
+        "maxTokens": "File size error detail; not a counting response.",
+        "browser_time_to_first_response_token": "Browser latency telemetry; not a number of generated tokens."
+      }
+    }
+  ],
+  "public_requests_with_google_credentials": 0,
+  "redirects_followed": false,
+  "auth_probe": {
+    "operation": "getoxsrf",
+    "credentials_sent_only_to": "https://business.gemini.google",
+    "redirects_followed": false,
+    "model_calls": 0,
+    "http_status": 401
+  },
+  "generation_requests": 1,
+  "private_count_endpoint_probes": 0,
+  "tests": {
+    "core": {
+      "command": "go test ./internal/addons/business/core ./internal/addons/business/contract",
+      "result": "passed",
+      "reported_seconds": 3.311
+    },
+    "contract": {
+      "result": "blocked_not_executed",
+      "reason": "Windows Application Control blocked contract.test.exe"
+    },
+    "python_mock_sdk": {
+      "sdk": "google-genai==2.32.0",
+      "network": "httpx.MockTransport only",
+      "tests_run": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": true
+    },
+    "host_api_and_other_previously_blocked_packages": "not_rerun_unaccepted",
+    "fresh_live_generation_usage": "one successful upstream request/readback; no audited usage fields observed",
+    "local_input_guard_checks": {
+      "loopback_form": 200,
+      "foreign_origin_rejected": 403,
+      "wrong_csrf_rejected": 403,
+      "valid_csrf_opaque_origin_reaches_validation": 400,
+      "valid_csrf_missing_origin_reaches_validation": 400,
+      "google_requests": 0
+    }
+  },
+  "decision": {
+    "native_count_endpoint_verified": false,
+    "generation_usage_mapping_verified": false,
+    "countTokens": "501 UNIMPLEMENTED for enabled Business models",
+    "usageMetadata": "omitted_unknown_not_zero_or_estimated",
+    "production_code_changed": false,
+    "deployed_or_restarted": false
+  },
+  "limitations": [
+    "Public schemas do not enumerate every private widget method.",
+    "A known field name in another Google model API does not establish Business widget compatibility.",
+    "No file-ingestion counts, text estimates or other model tokenizers were substituted.",
+    "Legacy Cookie auth failed 401, then one explicitly authorized temporary Bearer probe succeeded; this does not renew the legacy account or prove private API completeness."
+  ],
+  "temporary_bearer_followup": {
+    "input_kind": "user-provided Business widgetStreamAssist cURL",
+    "contains_account_cookies": false,
+    "declared_lifetime_seconds": 300,
+    "declared_expiry_utc": "2026-10-23T08:48:33Z",
+    "claims_not_signature_verified": true,
+    "request_model_id_present": false,
+    "authenticated_probe_result": "network_access_denied",
+    "authenticated_calls_succeeded": 4,
+    "generation_requests_sent": 1,
+    "temporary_bearer_removed_from_runtime_memory": true,
+    "credential_values_saved": false,
+    "initial_escalated_probe_result": "automatic_approval_rejected",
+    "explicit_once_only_generation_authorization_granted": true,
+    "old_bearer_expired_without_replay": true,
+    "browser_auth_navigation": "blocked_by_client",
+    "local_input_helper": "completed_and_stopped",
+    "input_origin_csrf_compatibility_fixed": true
+  },
+  "live_upstream_evidence": "token-upstream-live-20261023.json"
+}

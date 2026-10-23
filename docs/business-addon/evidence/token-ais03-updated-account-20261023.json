@@ -1,0 +1,987 @@
+{
+  "kind": "ais03_updated_account_native_token_audit",
+  "started_at": "2026-10-23T09:58:44Z",
+  "target": "https://ais03.zeabur.app",
+  "model": "business-gemini-4-argon",
+  "account_mutations": 0,
+  "configuration_mutations": 0,
+  "deployments_or_restarts": 0,
+  "upstream_generation_requests": 2,
+  "adapter_generation_requests": 1,
+  "upstream_calls": [
+    {
+      "operation": "lookupWidgetConfig",
+      "http_status": 200,
+      "response_bytes": 5561,
+      "elapsed_seconds": 1.203,
+      "usage_related_headers": [],
+      "field_shapes": {
+        "$.agentCreationPermissions": [
+          "object"
+        ],
+        "$.agentCreationPermissions.personalCreationAllowed": [
+          "bool"
+        ],
+        "$.anonymousEngineUserData": [
+          "object"
+        ],
+        "$.anonymousEngineUserData.acceptedBizTos": [
+          "bool"
+        ],
+        "$.anonymousEngineUserData.agentspacePersonalizationConfig": [
+          "object"
+        ],
+        "$.anonymousEngineUserData.agentspacePersonalizationConfig.customizationConfig": [
+          "object"
+        ],
+        "$.anonymousEngineUserData.agentspacePersonalizationConfig.customizationConfig.fullName": [
+          "str"
+        ],
+        "$.anonymousEngineUserData.agentspacePersonalizationConfig.memoryConfig": [
+          "object"
+        ],
+        "$.anonymousEngineUserData.agentspacePersonalizationConfig.memoryConfig.enableReferenceConnectedData": [
+          "bool"
+        ],
+        "$.anonymousEngineUserData.userPseudoId": [
+          "str"
+        ],
+        "$.anonymousUser": [
+          "object"
+        ],
+        "$.anonymousUser.userPrincipal": [
+          "str"
+        ],
+        "$.anonymousUser.userPseudoId": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.accessSettings": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.assistantSettings": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.assistantSettings.assistantDetails": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.assistantSettings.googleSearchGroundingEnabled": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.assistantSettings.webGroundingType": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.configId": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.createTime": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.dataStoreType": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.enableAutocomplete": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.enablePrivateKnowledgeGraph": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.enableQualityFeedback": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.enableSnippetResultSummary": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.enableSummarization": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.industryVertical": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.resultDisplayType": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.subscriptionTier": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.enableAutocomplete": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.enableQualityFeedback": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.features": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.features.feedback": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.features.skills": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.googleDrivePickerEnabled": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.interactionType": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo": [
+          "object"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels": [
+          "array"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].description": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].displayName": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].icon": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].iconUrl": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].label": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].modelId": [
+          "str"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.modelConfigInfo.resolvedModels[].promoted": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.onedrivePickerEnabled": [
+          "bool"
+        ],
+        "$.anonymousWidgetConfig.uiSettings.resultDescriptionType": [
+          "str"
+        ],
+        "$.assistantResourceDetails": [
+          "object"
+        ],
+        "$.engineResourceDetails": [
+          "object"
+        ],
+        "$.engineResourceDetails.agentSpaceKind": [
+          "str"
+        ],
+        "$.engineResourceDetails.collectionId": [
+          "str"
+        ],
+        "$.engineResourceDetails.engineDisplayName": [
+          "str"
+        ],
+        "$.engineResourceDetails.engineId": [
+          "str"
+        ],
+        "$.engineResourceDetails.location": [
+          "str"
+        ],
+        "$.engineResourceDetails.projectNumber": [
+          "str"
+        ],
+        "$.locationTransparencyContext": [
+          "object"
+        ],
+        "$.locationTransparencyContext.sourceType": [
+          "str"
+        ],
+        "$.locationTransparencyContext.userLocation": [
+          "str"
+        ]
+      },
+      "usage_candidates": [],
+      "opaque_token_paths": [],
+      "numeric_fields": []
+    },
+    {
+      "operation": "widgetCreateSession",
+      "http_status": 200,
+      "response_bytes": 394,
+      "elapsed_seconds": 0.297,
+      "usage_related_headers": [],
+      "field_shapes": {
+        "$.session": [
+          "object"
+        ],
+        "$.session.displayName": [
+          "str"
+        ],
+        "$.session.endTime": [
+          "str"
+        ],
+        "$.session.expireTime": [
+          "str"
+        ],
+        "$.session.name": [
+          "str"
+        ],
+        "$.session.startTime": [
+          "str"
+        ],
+        "$.session.state": [
+          "str"
+        ],
+        "$.session.userPseudoId": [
+          "str"
+        ]
+      },
+      "usage_candidates": [],
+      "opaque_token_paths": [],
+      "numeric_fields": []
+    },
+    {
+      "operation": "widgetStreamAssist",
+      "http_status": 200,
+      "response_bytes": 4086,
+      "elapsed_seconds": 6.125,
+      "usage_related_headers": [],
+      "field_shapes": {
+        "$[].streamAssistResponse": [
+          "object"
+        ],
+        "$[].streamAssistResponse.agentInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.agentInfo.coreAssistant": [
+          "bool"
+        ],
+        "$[].streamAssistResponse.answer": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.adkAuthor": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.name": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies": [
+          "array"
+        ],
+        "$[].streamAssistResponse.answer.replies[].createTime": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.inlineData": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.inlineData.data": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.inlineData.mimeType": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.role": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.text": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].replyId": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.state": [
+          "str"
+        ],
+        "$[].streamAssistResponse.assistToken": [
+          "str"
+        ],
+        "$[].streamAssistResponse.dataSourceInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.dataSourceInfo.selectionMode": [
+          "str"
+        ],
+        "$[].streamAssistResponse.modelInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.modelInfo.model": [
+          "str"
+        ],
+        "$[].streamAssistResponse.modelInfo.modelSelectionMode": [
+          "str"
+        ],
+        "$[].streamAssistResponse.modelInfo.requestedModel": [
+          "str"
+        ],
+        "$[].streamAssistResponse.sessionInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.sessionInfo.queryId": [
+          "str"
+        ],
+        "$[].streamAssistResponse.sessionInfo.session": [
+          "str"
+        ],
+        "$[].streamAssistResponse.sessionInfo.turnId": [
+          "str"
+        ],
+        "$[].uToken": [
+          "str"
+        ]
+      },
+      "usage_candidates": [],
+      "opaque_token_paths": [
+        "$[].streamAssistResponse.assistToken",
+        "$[].uToken"
+      ],
+      "numeric_fields": [],
+      "frames": 3,
+      "states": [
+        "IN_PROGRESS",
+        "IN_PROGRESS",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "operation": "widgetGetSession",
+      "http_status": 200,
+      "response_bytes": 2665,
+      "elapsed_seconds": 0.281,
+      "usage_related_headers": [],
+      "field_shapes": {
+        "$.session": [
+          "object"
+        ],
+        "$.session.displayName": [
+          "str"
+        ],
+        "$.session.endTime": [
+          "str"
+        ],
+        "$.session.expireTime": [
+          "str"
+        ],
+        "$.session.lastMessageTime": [
+          "str"
+        ],
+        "$.session.name": [
+          "str"
+        ],
+        "$.session.startTime": [
+          "str"
+        ],
+        "$.session.state": [
+          "str"
+        ],
+        "$.session.turns": [
+          "array"
+        ],
+        "$.session.turns[].assistAnswer": [
+          "str"
+        ],
+        "$.session.turns[].assistToken": [
+          "str"
+        ],
+        "$.session.turns[].createdAt": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.name": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies": [
+          "array"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].createTime": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.inlineData": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.inlineData.data": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.inlineData.mimeType": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.role": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.text": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].replyId": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.state": [
+          "str"
+        ],
+        "$.session.turns[].query": [
+          "object"
+        ],
+        "$.session.turns[].query.parts": [
+          "array"
+        ],
+        "$.session.turns[].query.parts[].text": [
+          "str"
+        ],
+        "$.session.turns[].query.queryId": [
+          "str"
+        ],
+        "$.session.turns[].query.text": [
+          "str"
+        ],
+        "$.session.turns[].queryConfig": [
+          "object"
+        ],
+        "$.session.turns[].turnId": [
+          "str"
+        ],
+        "$.session.userPseudoId": [
+          "str"
+        ]
+      },
+      "usage_candidates": [],
+      "opaque_token_paths": [
+        "$.session.turns[].assistToken"
+      ],
+      "numeric_fields": []
+    },
+    {
+      "operation": "widgetStreamAssist",
+      "http_status": 200,
+      "response_bytes": 2526,
+      "elapsed_seconds": 5.563,
+      "usage_related_headers": [],
+      "field_shapes": {
+        "$[].streamAssistResponse": [
+          "object"
+        ],
+        "$[].streamAssistResponse.agentInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.agentInfo.coreAssistant": [
+          "bool"
+        ],
+        "$[].streamAssistResponse.answer": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.adkAuthor": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.name": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies": [
+          "array"
+        ],
+        "$[].streamAssistResponse.answer.replies[].createTime": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content": [
+          "object"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.role": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].groundedContent.content.text": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.replies[].replyId": [
+          "str"
+        ],
+        "$[].streamAssistResponse.answer.state": [
+          "str"
+        ],
+        "$[].streamAssistResponse.assistToken": [
+          "str"
+        ],
+        "$[].streamAssistResponse.dataSourceInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.dataSourceInfo.selectionMode": [
+          "str"
+        ],
+        "$[].streamAssistResponse.modelInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.modelInfo.model": [
+          "str"
+        ],
+        "$[].streamAssistResponse.modelInfo.modelSelectionMode": [
+          "str"
+        ],
+        "$[].streamAssistResponse.modelInfo.requestedModel": [
+          "str"
+        ],
+        "$[].streamAssistResponse.sessionInfo": [
+          "object"
+        ],
+        "$[].streamAssistResponse.sessionInfo.queryId": [
+          "str"
+        ],
+        "$[].streamAssistResponse.sessionInfo.session": [
+          "str"
+        ],
+        "$[].streamAssistResponse.sessionInfo.turnId": [
+          "str"
+        ],
+        "$[].uToken": [
+          "str"
+        ]
+      },
+      "usage_candidates": [],
+      "opaque_token_paths": [
+        "$[].streamAssistResponse.assistToken",
+        "$[].uToken"
+      ],
+      "numeric_fields": [],
+      "frames": 2,
+      "states": [
+        "IN_PROGRESS",
+        "SUCCEEDED"
+      ]
+    },
+    {
+      "operation": "widgetGetSession",
+      "http_status": 200,
+      "response_bytes": 4223,
+      "elapsed_seconds": 0.265,
+      "usage_related_headers": [],
+      "field_shapes": {
+        "$.session": [
+          "object"
+        ],
+        "$.session.displayName": [
+          "str"
+        ],
+        "$.session.endTime": [
+          "str"
+        ],
+        "$.session.expireTime": [
+          "str"
+        ],
+        "$.session.lastMessageTime": [
+          "str"
+        ],
+        "$.session.name": [
+          "str"
+        ],
+        "$.session.startTime": [
+          "str"
+        ],
+        "$.session.state": [
+          "str"
+        ],
+        "$.session.turns": [
+          "array"
+        ],
+        "$.session.turns[].assistAnswer": [
+          "str"
+        ],
+        "$.session.turns[].assistToken": [
+          "str"
+        ],
+        "$.session.turns[].createdAt": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.name": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies": [
+          "array"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].createTime": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.inlineData": [
+          "object"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.inlineData.data": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.inlineData.mimeType": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.role": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].groundedContent.content.text": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.replies[].replyId": [
+          "str"
+        ],
+        "$.session.turns[].detailedAssistAnswer.state": [
+          "str"
+        ],
+        "$.session.turns[].query": [
+          "object"
+        ],
+        "$.session.turns[].query.parts": [
+          "array"
+        ],
+        "$.session.turns[].query.parts[].text": [
+          "str"
+        ],
+        "$.session.turns[].query.queryId": [
+          "str"
+        ],
+        "$.session.turns[].query.text": [
+          "str"
+        ],
+        "$.session.turns[].queryConfig": [
+          "object"
+        ],
+        "$.session.turns[].turnId": [
+          "str"
+        ],
+        "$.session.userPseudoId": [
+          "str"
+        ]
+      },
+      "usage_candidates": [],
+      "opaque_token_paths": [
+        "$.session.turns[].assistToken"
+      ],
+      "numeric_fields": []
+    }
+  ],
+  "adapter_checks": [
+    {
+      "kind": "countTokens",
+      "request_form": "contents",
+      "http_status": 501,
+      "error_status": "UNIMPLEMENTED",
+      "total_tokens_present": false
+    },
+    {
+      "kind": "countTokens",
+      "request_form": "generateContentRequest",
+      "http_status": 501,
+      "error_status": "UNIMPLEMENTED",
+      "total_tokens_present": false
+    },
+    {
+      "kind": "streamGenerateContent",
+      "http_status": 200,
+      "frames": 13,
+      "text_chunks": 12,
+      "first_text_seconds": 6.313,
+      "arrival_span_seconds": 2.609,
+      "finish_reason": "STOP",
+      "usage_metadata_frames": 0,
+      "estimated_header_present": false,
+      "field_audit": {
+        "field_shapes": {
+          "$[].candidates": [
+            "array"
+          ],
+          "$[].candidates[].content": [
+            "object"
+          ],
+          "$[].candidates[].content.parts": [
+            "array"
+          ],
+          "$[].candidates[].content.parts[].inlineData": [
+            "object"
+          ],
+          "$[].candidates[].content.parts[].inlineData.data": [
+            "str"
+          ],
+          "$[].candidates[].content.parts[].inlineData.mimeType": [
+            "str"
+          ],
+          "$[].candidates[].content.parts[].text": [
+            "str"
+          ],
+          "$[].candidates[].content.role": [
+            "str"
+          ],
+          "$[].candidates[].finishReason": [
+            "str"
+          ],
+          "$[].candidates[].index": [
+            "int"
+          ]
+        },
+        "usage_candidates": [],
+        "opaque_token_paths": [],
+        "numeric_fields": [
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          },
+          {
+            "path": "$[].candidates[].index",
+            "type": "int",
+            "value": 0
+          }
+        ]
+      },
+      "passed": true
+    }
+  ],
+  "credentials_written_to_disk": false,
+  "raw_private_responses_saved": false,
+  "estimates_used": false,
+  "tls_verification": true,
+  "redirects_followed": false,
+  "deployment": [
+    {
+      "status": "RUNNING",
+      "commitSHA": "0d8c00bda52a4367a040cb94db00be904d82744e",
+      "ref": "refs/heads/dev-2"
+    }
+  ],
+  "account_epoch": 2,
+  "vault_revision": 2,
+  "status_before": {
+    "state": "ready",
+    "generation_ready": true,
+    "code": null,
+    "account": [
+      {
+        "state": "ready",
+        "auth_verified": false,
+        "last_error_http_status": null
+      }
+    ],
+    "argon": [
+      {
+        "state": "ready",
+        "auth_verified": false,
+        "model_verified": true,
+        "schedulable": true
+      }
+    ]
+  },
+  "public_discovery": [
+    {
+      "url": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1alpha",
+      "http_status": 200,
+      "bytes": 2346244,
+      "sha256": "0ec2e8acc65deff4f2d824f03fe652348b80a4f3b210af7fb7b70c16912957cb",
+      "revision": "20261022",
+      "method_count": 386,
+      "count_methods": [],
+      "assist_schema_fields": {
+        "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+          "assistSkippedReasons",
+          "connectorDisplayNames",
+          "customerPolicyEnforcementResult",
+          "name",
+          "replies",
+          "state"
+        ],
+        "GoogleCloudDiscoveryengineV1alphaStreamAssistResponse": [
+          "answer",
+          "assistToken",
+          "connectorAuthErrors",
+          "invocationTools",
+          "invokedSkills",
+          "sessionInfo"
+        ]
+      }
+    },
+    {
+      "url": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta",
+      "http_status": 200,
+      "bytes": 1944802,
+      "sha256": "21ee521aad4d622c3b267b5007fd364757c4522f49d4c4aea02dc231f647e2f1",
+      "revision": "20261022",
+      "method_count": 276,
+      "count_methods": [],
+      "assist_schema_fields": {
+        "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+          "assistSkippedReasons",
+          "connectorDisplayNames",
+          "customerPolicyEnforcementResult",
+          "name",
+          "replies",
+          "state"
+        ],
+        "GoogleCloudDiscoveryengineV1betaStreamAssistResponse": [
+          "answer",
+          "assistToken",
+          "connectorAuthErrors",
+          "invocationTools",
+          "invokedSkills",
+          "sessionInfo"
+        ],
+        "GoogleCloudDiscoveryengineV1betaAssistAnswer": [
+          "assistSkippedReasons",
+          "connectorDisplayNames",
+          "customerPolicyEnforcementResult",
+          "name",
+          "replies",
+          "state"
+        ]
+      }
+    },
+    {
+      "url": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1",
+      "http_status": 200,
+      "bytes": 2062032,
+      "sha256": "a47732b0957292e17bf5ab27aac82a446f5e6c7b329f68b1b64faff1a2bea220",
+      "revision": "20261022",
+      "method_count": 278,
+      "count_methods": [],
+      "assist_schema_fields": {
+        "GoogleCloudDiscoveryengineV1StreamAssistResponse": [
+          "answer",
+          "assistToken",
+          "connectorAuthErrors",
+          "invocationTools",
+          "invokedSkills",
+          "sessionInfo"
+        ],
+        "GoogleCloudDiscoveryengineV1alphaAssistAnswer": [
+          "assistSkippedReasons",
+          "connectorDisplayNames",
+          "customerPolicyEnforcementResult",
+          "name",
+          "replies",
+          "state"
+        ],
+        "GoogleCloudDiscoveryengineV1AssistAnswer": [
+          "assistSkippedReasons",
+          "connectorDisplayNames",
+          "customerPolicyEnforcementResult",
+          "name",
+          "replies",
+          "state"
+        ]
+      }
+    }
+  ],
+  "business_homepage_http_status": 302,
+  "google_auth_http_status": 200,
+  "advertised_count_tokens": false,
+  "status_after": {
+    "state": "ready",
+    "generation_ready": true,
+    "code": null,
+    "account": [
+      {
+        "state": "ready",
+        "auth_verified": true,
+        "last_error_http_status": null
+      }
+    ],
+    "argon": [
+      {
+        "state": "ready",
+        "auth_verified": true,
+        "model_verified": true,
+        "schedulable": true
+      }
+    ]
+  },
+  "config_unchanged": true,
+  "account_epoch_after": 2,
+  "native_usage_candidate_observed": false,
+  "native_count_method_observed": false,
+  "audit_completed": true,
+  "no_estimates_verified": true,
+  "finished_at": "2026-10-23T09:59:21Z",
+  "native_count_contract_verified": false,
+  "native_usage_contract_verified": false,
+  "implementation_decision": "No speculative native adapter added; ais03 keeps explicit countTokens 501 and omits unknown usageMetadata. No estimates, file-ingestion counts, or opaque tokens were substituted.",
+  "limitations": [
+    "No verified Business native count method was identified, so no guessed private count endpoint was called.",
+    "Negative field observations are limited to the recorded two short generations, their readbacks, headers, schema revisions, and deployed adapter stream.",
+    "Google homepage GET returned 302; redirects were not followed. No fresh authenticated frontend asset was obtained in this run. Earlier pinned public-bundle evidence remains separately dated.",
+    "This verifies the running ais03 deployment and updated account; separate uncommitted local estimate changes were neither used nor deployed.",
+    "No complete source/Host/API/SDK suite or large-context benchmark is claimed by this targeted audit."
+  ],
+  "offline_probe_checks": {
+    "privacy_and_redaction": "passed",
+    "opaque_identifiers_excluded": "passed",
+    "numeric_and_decimal_candidates": "passed",
+    "exact_https_origin_guards": "passed",
+    "public_schema_method_detection": "passed",
+    "asset_allowlist": "passed",
+    "model_calls": 0
+  },
+  "scan_matching": "Recursive identifier-shaped dictionary keys, normalized lowercase without underscores; explicit common usage fields, *TokenCount/*Tokens/*TokensDetails suffixes, usage/billable names. Unknown numeric paths recorded separately. Opaque token values excluded."
+}
