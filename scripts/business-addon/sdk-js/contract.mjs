@@ -88,12 +88,26 @@ const { GoogleGenAI, createPartFromUri } = await import('@google/genai');
 const client = new GoogleGenAI({ apiKey: 'offline-inert-fixture', vertexai: false,
   httpOptions: { baseUrl: origin, apiVersion: 'v1beta', headers: provider, retryOptions: { attempts: 1 } } });
 
+function checkLocalUsage(response) {
+  const usage = response.usageMetadata;
+  assert.ok(usage && usage.promptTokenCount > 0);
+  assert.ok(usage.candidatesTokenCount >= 0);
+  assert.equal(usage.totalTokenCount, usage.promptTokenCount + usage.candidatesTokenCount + (usage.thoughtsTokenCount ?? 0));
+  assert.equal(usage.cachedContentTokenCount, undefined);
+}
+
+function checkLocalStreamUsage(chunks) {
+  assert.ok(chunks.length);
+  checkLocalUsage(chunks.at(-1));
+  assert.ok(chunks.slice(0, -1).every(chunk => chunk.usageMetadata === undefined));
+}
+
 async function generate(contents = 'hello', config) {
   const response = await client.models.generateContent({ model, contents, config });
   assert.equal(response.text, 'fixture-输出');
   assert.equal(response.candidates[0].finishReason, 'STOP');
   assert.equal(response.modelVersion, undefined);
-  assert.equal(response.usageMetadata, undefined);
+  checkLocalUsage(response);
   return response;
 }
 async function rejected(contents, status = 400, config) {
@@ -124,10 +138,11 @@ async function phase5Worker() {
     assert.deepEqual(candidate.content.parts, expectedParts(outcome));
     assert.deepEqual(candidate.groundingMetadata, metadata);
     assert.equal(candidate.finishReason, 'STOP');
-    assert.equal(response.usageMetadata, undefined);
+    checkLocalUsage(response);
     assert.equal(response.modelVersion, undefined);
   };
   const checkChunks = chunks => {
+    checkLocalStreamUsage(chunks);
     assert.equal(chunks.length, 4, 'Each real part must occur once; no invented empty terminal');
     assert.deepEqual(chunks.flatMap(chunk => chunk.candidates?.[0].content?.parts ?? []), expectedParts('OUTCOME_OK'));
     assert.equal(chunks.at(-1).candidates[0].finishReason, 'STOP');
@@ -229,6 +244,7 @@ async function phase6Worker() {
     }
   };
   const checkChunks = chunks => {
+    checkLocalStreamUsage(chunks);
     assert.equal(chunks.length, expectedParts.length);
     assert.deepEqual(chunks.flatMap(chunk => chunk.candidates[0].content.parts), expectedParts);
     assert.equal(chunks.at(-1).candidates[0].finishReason, 'STOP');
@@ -246,7 +262,7 @@ async function phase6Worker() {
   const response = await client.models.generateContent({ model, contents: 'phase6-unary' });
   assert.deepEqual(response.candidates[0].content.parts, expectedParts);
   assert.equal(response.candidates[0].finishReason, 'STOP');
-  assert.equal(response.usageMetadata, undefined);
+  checkLocalUsage(response);
   checkMetadata(response.candidates[0]);
   await followup([user('phase6-unary'), response.candidates[0].content, user('phase6-followup')]);
   const altered = structuredClone(response.candidates[0].content);
@@ -342,6 +358,7 @@ async function completionWorker() {
   await rejected([user('completion-media'), altered, user('completion-followup')], 409);
   coverage.add('binary-media-mime-annotation-and-history-integrity');
   const checkChunks = chunks => {
+    checkLocalStreamUsage(chunks);
     assert.deepEqual(chunks.flatMap(chunk => chunk.candidates[0].content.parts), expected);
     assert.equal(chunks.at(-1).candidates[0].finishReason, 'STOP');
     assert.deepEqual(chunks.at(-1).candidates[0].content.parts, [{ text: 'media-end' }]);
@@ -414,6 +431,7 @@ try {
   }
   coverage.add('thought-signature-suggestions');
   const chunks = await stream('stream');
+  checkLocalStreamUsage(chunks);
   assert.equal(chunks.map(chunk => chunk.text ?? '').join(''), 'fixture-输出');
   assert.equal(chunks.at(-1).candidates[0].finishReason, 'STOP');
   // Keeping the last real part for STOP may coalesce this two-part fixture

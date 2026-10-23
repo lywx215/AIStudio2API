@@ -24,7 +24,7 @@ type AdminService interface {
 	ImportAccountState(context.Context, AccountStateInput) (AdminAccount, error)
 	UpdateAccount(context.Context, string, AccountInput) (AdminAccount, error)
 	DeleteAccount(context.Context, string) error
-	LoginAccount(context.Context, string, *camoufoxnative.LiveView) (AdminAccount, error)
+	LoginAccount(context.Context, string, AccountLoginInput, *camoufoxnative.LiveView) (AdminAccount, error)
 	RefreshAccount(context.Context, string) (AdminAccountRefresh, error)
 	StartService(context.Context) (AdminStatus, error)
 	StopService(context.Context) (AdminStatus, error)
@@ -88,6 +88,8 @@ type RequestLog struct {
 
 // RequestLogUsage 区分输入、缓存命中、思考、回复与端到端输出速率
 type RequestLogUsage struct {
+	Source                 string  `json:"source,omitempty"`
+	Incomplete             bool    `json:"incomplete,omitempty"`
 	InputTokens            int64   `json:"input_tokens"`
 	CachedTokens           int64   `json:"cached_tokens"`
 	ReasoningTokens        int64   `json:"reasoning_tokens"`
@@ -186,9 +188,15 @@ type AccountInput struct {
 
 // AccountCreateInput 表示浏览器登录的账户环境
 type AccountCreateInput struct {
-	Proxy    string `json:"proxy"`
-	Locale   string `json:"locale"`
-	Timezone string `json:"timezone"`
+	AcceptTerms bool   `json:"accept_terms"`
+	Proxy       string `json:"proxy"`
+	Locale      string `json:"locale"`
+	Timezone    string `json:"timezone"`
+}
+
+// AccountLoginInput carries permission for this login only; it is not saved.
+type AccountLoginInput struct {
+	AcceptTerms bool `json:"accept_terms"`
 }
 
 // CookieImportInput 表示 Cookie 导入的账户邮箱、Cookie 文本或浏览器调试地址与账户环境
@@ -470,6 +478,7 @@ func (s *server) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleLoginAccount(w http.ResponseWriter, r *http.Request) {
 	var input struct {
+		AccountLoginInput
 		View string `json:"view"`
 	}
 	if r.ContentLength != 0 {
@@ -480,7 +489,7 @@ func (s *server) handleLoginAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	view, release := s.loginView(r, input.View)
 	defer release()
-	account, err := s.config.Admin.LoginAccount(r.Context(), r.PathValue("id"), view)
+	account, err := s.config.Admin.LoginAccount(r.Context(), r.PathValue("id"), input.AccountLoginInput, view)
 	if err != nil {
 		writeAdminUpstreamError(w, err)
 		return

@@ -95,3 +95,24 @@ test('login preference and browser-view cancellation are sent by the updated API
   assert.equal(calls[2].path, '/api/accounts/synthetic/login')
   assert.equal(expired, 0)
 })
+
+test('agreement permission is explicit per login and never reused by the next request', async () => {
+  const bodies = []
+  const signal = new AbortController().signal
+  globalThis.fetch = async (_path, init) => {
+    bodies.push(JSON.parse(init.body))
+    return Response.json({ account: {} })
+  }
+  await api.loginAccount('synthetic', 'view-1', signal)
+  await api.loginAccount('synthetic', 'view-2', signal, true)
+  await api.loginAccount('synthetic', 'view-3', signal)
+  assert.deepEqual(bodies, [
+    { view: 'view-1', accept_terms: false },
+    { view: 'view-2', accept_terms: true },
+    { view: 'view-3', accept_terms: false },
+  ])
+  const environment = { proxy: '', locale: 'en-US', timezone: 'America/Los_Angeles' }
+  await api.createAccount({ ...environment, accept_terms: true }, 'view-new', signal)
+  assert.deepEqual(bodies[3], { ...environment, accept_terms: true, view: 'view-new' })
+  assert.equal(expired, 0)
+})

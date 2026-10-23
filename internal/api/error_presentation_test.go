@@ -97,7 +97,7 @@ func TestStreamingErrorPresentation(t *testing.T) {
 
 type presentationAdmin struct{ AdminService }
 
-func (presentationAdmin) LoginAccount(context.Context, string, *camoufoxnative.LiveView) (AdminAccount, error) {
+func (presentationAdmin) LoginAccount(context.Context, string, AccountLoginInput, *camoufoxnative.LiveView) (AdminAccount, error) {
 	return AdminAccount{}, &aistudio.RPCError{StatusCode: 401, Message: privateErrorDetail}
 }
 func (presentationAdmin) RefreshAccount(context.Context, string) (AdminAccountRefresh, error) {

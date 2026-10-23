@@ -223,10 +223,10 @@ export const api = {
     }),
   deleteAccount: (id: string, keepalive = false) =>
     requestCommand(`/api/accounts/${encodeURIComponent(id)}`, { method: 'DELETE', keepalive }),
-  loginAccount: (id: string, view: string, signal: AbortSignal) =>
+  loginAccount: (id: string, view: string, signal: AbortSignal, acceptTerms = false) =>
     requestCommand(`/api/accounts/${encodeURIComponent(id)}/login`, {
       method: 'POST',
-      body: JSON.stringify({ view }),
+      body: JSON.stringify({ view, accept_terms: acceptTerms }),
       signal,
     }),
   loginViewURL: (view: string) =>

@@ -1,6 +1,8 @@
 # Business R3 附加融合开发记录
 
-2026-10-23 ais03 更新账号后：[最新原生计数实测](token-count-recheck.md#ais03-更新账号后复核)直接检查两轮 Argon 原始生成及两次会话回读，均成功但无用量字段；标准 `countTokens` 两种请求均 501，标准 SSE 为 200 / 12 个文本分片 / STOP，未知用量继续省略，不使用估算值。[脱敏证据](evidence/token-ais03-updated-account-20261023.json)对应线上 `0d8c00b`。
+2026-10-23 ais03 更新账号后：[最新原生计数实测](token-count-recheck.md#ais03-更新账号后复核)直接检查两轮 Argon 原始生成及两次会话回读，均成功但无用量字段；标准 `countTokens` 两种请求均 501，标准 SSE 为 200 / 12 个文本分片 / STOP，未知用量继续省略，不使用估算值。[脱敏证据](evidence/token-ais03-updated-account-20261023.json)对应线上 `0d8c00b`，与下方未部署的本地估算功能记录分别标明范围。
+
+2026-10-23 新增：[Business 本地 token 用量](local-token-usage.md)按当前要求复用主项目 SentencePiece 计数回退，返回并记录明确标注来源的估算用量。它不改变下文关于原生计数尚未核实的结论；部署状态、测试范围和两项图片校验失败见该记录。
 
 2026-10-23 最新：[原生计数扩展复核](token-count-recheck.md)新增现用 Standalone 与新 revision Discovery 证据；一次真实 Argon 生成及同会话回读均成功，仍未找到可适配的原生计数或用量合同。Core 与 10 项 SDK 无网络检查通过，contract 新增系统策略阻断，继续未验收。
 

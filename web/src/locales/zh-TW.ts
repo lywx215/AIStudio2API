@@ -5,6 +5,16 @@ export const label = '繁體中文'
 
 // messages 是界面文案与管理接口错误码文案
 export const messages: Record<TranslationKey, string> = {
+  'accounts.allowTerms': '允許本次登入確認 AI Studio 必要條款（不訂閱郵件）',
+  'accounts.liveConsentRequired': '請在登入視窗確認首次使用條款',
+  'accounts.liveOnboardingLoading': '正在載入首次使用導引',
+  'accounts.liveOnboardingTerms': '正在確認必要條款',
+  'accounts.liveOnboardingPreferences': '正在略過選填用途調查',
+  'accounts.liveOnboardingPending': '等待首次使用導引跳轉',
+  'accounts.liveVerifyingIdentity': '正在驗證登入信箱',
+  'error.onboarding_timeout': '首次使用導引逾時，請在登入視窗檢查目前步驟',
+  'error.email_detection_failed': '無法讀取實際登入信箱，未儲存憑證',
+  'error.login_identity_mismatch': '實際登入信箱與目標帳戶不符，未儲存憑證',
   'auth.username': '使用者名稱',
   'auth.password': '密碼',
   'auth.login': '登入',

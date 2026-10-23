@@ -5,6 +5,21 @@ export const label = 'Français'
 
 // messages 是界面文案与管理接口错误码文案
 export const messages: Record<TranslationKey, string> = {
+  'accounts.allowTerms':
+    'Autoriser cette connexion à accepter les conditions AI Studio requises (sans abonnement aux e-mails)',
+  'accounts.liveConsentRequired':
+    'Confirmez les conditions de première utilisation dans la fenêtre de connexion',
+  'accounts.liveOnboardingLoading': 'Chargement de la configuration initiale',
+  'accounts.liveOnboardingTerms': 'Confirmation des conditions requises',
+  'accounts.liveOnboardingPreferences': 'Enquête facultative sur les usages ignorée',
+  'accounts.liveOnboardingPending': 'En attente de la configuration initiale',
+  'accounts.liveVerifyingIdentity': 'Vérification de l’adresse e-mail connectée',
+  'error.onboarding_timeout':
+    'Délai de configuration initiale dépassé ; vérifiez la fenêtre de connexion',
+  'error.email_detection_failed':
+    'Adresse e-mail connectée illisible ; identifiants non enregistrés',
+  'error.login_identity_mismatch':
+    'L’adresse e-mail connectée ne correspond pas au compte cible ; identifiants non enregistrés',
   'auth.username': 'Nom d’utilisateur',
   'auth.password': 'Mot de passe',
   'auth.login': 'Se connecter',

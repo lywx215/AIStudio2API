@@ -181,7 +181,7 @@ func (admin *runtimeAdmin) CreateAccount(ctx context.Context, input api.AccountC
 	admin.requests.log("auth", "INFO", "账户添加 | 1/2 | 等待隔离登录")
 	result, err := admin.login.Login(ctx, aistudio.IsolatedLoginRequest{
 		AccountID: "new", Directory: directory, Proxy: admin.effectiveProxy(accountConfig.Proxy),
-		Locale: accountConfig.Locale, Timezone: accountConfig.Timezone, View: view,
+		Locale: accountConfig.Locale, Timezone: accountConfig.Timezone, View: view, AcceptTerms: input.AcceptTerms,
 	})
 	if err != nil {
 		admin.requests.log("auth", "ERROR", fmt.Sprintf(
@@ -571,7 +571,7 @@ func (admin *runtimeAdmin) DeleteAccount(_ context.Context, accountID string) er
 	return nil
 }
 
-func (admin *runtimeAdmin) LoginAccount(ctx context.Context, accountID string, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
+func (admin *runtimeAdmin) LoginAccount(ctx context.Context, accountID string, input api.AccountLoginInput, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
 	lease, err := admin.pool.AcquireAccount(ctx, accountID)
 	if err != nil {
 		return api.AdminAccount{}, accountOperationError(err)
@@ -591,6 +591,7 @@ func (admin *runtimeAdmin) LoginAccount(ctx context.Context, accountID string, v
 	startedAt := time.Now()
 	admin.requests.log(account.Config.Label, "INFO", "账户登录 | 1/2 | 等待隔离登录")
 	request := admin.loginRequest(account, directory)
+	request.AcceptTerms = input.AcceptTerms
 	if credentials, readErr := admin.store.LoadLoginCredentials(ctx, account); readErr == nil {
 		request.Password = credentials.Password
 	} else {

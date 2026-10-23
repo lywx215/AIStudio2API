@@ -76,6 +76,7 @@ func (driver *NativeLoginDriver) options(request IsolatedLoginRequest) camoufoxn
 		Email:          request.AccountID,
 		Password:       request.Password,
 		TotpSecret:     request.TotpSecret,
+		AcceptTerms:    request.AcceptTerms,
 		ExecutablePath: driver.camoufox,
 		Directory:      request.Directory,
 		Locale:         request.Locale,

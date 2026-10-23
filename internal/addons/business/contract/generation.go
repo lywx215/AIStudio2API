@@ -20,6 +20,8 @@ type Request struct {
 	// user turn. The core may only continue a previously completed exact prefix.
 	History     []string
 	OptionsHash string
+	// InputUsage contains only locally counted validated input, never credentials.
+	InputUsage Usage
 }
 
 // Attachment contains an immutable request-owned snapshot. The account lease

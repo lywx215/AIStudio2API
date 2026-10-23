@@ -183,6 +183,8 @@ func decodeUsageCursor(value string) (*UsageCursor, error) {
 
 // UsageRecord 是一条已完成请求的账本记录
 type UsageRecord struct {
+	UsageSource     string           `json:"usage_source,omitempty"`
+	UsageIncomplete bool             `json:"usage_incomplete,omitempty"`
 	ID              string           `json:"id"`
 	Time            time.Time        `json:"time"`
 	Protocol        string           `json:"protocol"`

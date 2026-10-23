@@ -62,6 +62,7 @@ export interface AccountDraft {
 }
 
 export interface AccountLoginInput {
+  accept_terms?: boolean
   proxy: string
   locale: string
   timezone: string

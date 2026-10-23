@@ -1,0 +1,46 @@
+{
+  "origin": "http://127.0.0.1:2049",
+  "model": "business-gemini-4-argon",
+  "started_at_utc": "2026-10-23T10:05:53.825962+00:00",
+  "client_generation_attempts": 0,
+  "successful_generations": 0,
+  "scope": "isolated local application; existing encrypted account; at most one unary and one SSE model request",
+  "checks": [],
+  "production_mutations": false,
+  "prior_attempt": {
+    "client_http_status": 503,
+    "auth_http_status": 401,
+    "successful_generations": 0
+  },
+  "binary_sha256": "d25a83bcb91e661cbc6ecf7326a3606df035811e58fd29f0875423b7d3926277",
+  "status_before": {
+    "state": "ready",
+    "generation_ready": true,
+    "usage_capability": "local_gemma3_sentencepiece_estimate_media_incomplete",
+    "accounts": [
+      {
+        "state": "ready",
+        "auth_verified": false,
+        "last_error_kind": null,
+        "last_error_stage": null,
+        "last_error_http_status": null,
+        "last_generation_submitted": null
+      }
+    ]
+  },
+  "state": "deferred_by_user",
+  "credentials_entry_url": "http://127.0.0.1:2049/?tab=business",
+  "passed": false,
+  "failed_stage": "awaiting_credentials",
+  "failure_type": "RuntimeError",
+  "failure": "User chose to retain real-call verification as unaccepted after the existing session returned Google HTTP 401",
+  "finished_at_utc": "2026-10-23T10:07:48.796374+00:00",
+  "user_requested_defer": true,
+  "test_application_stopped": true,
+  "remaining_checks": [
+    "real unary output with local usage metadata",
+    "real SSE output and terminal-only usage",
+    "real successful request counts match persisted ledger"
+  ],
+  "test_port_closed": true
+}

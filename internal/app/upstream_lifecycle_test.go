@@ -15,6 +15,7 @@ type accountDelegateAdmin struct {
 	api.AdminService
 	assertUnlocked func()
 	view           *camoufoxnative.LiveView
+	acceptTerms    bool
 }
 
 func (admin *accountDelegateAdmin) CreateAccount(_ context.Context, _ api.AccountCreateInput, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
@@ -22,9 +23,10 @@ func (admin *accountDelegateAdmin) CreateAccount(_ context.Context, _ api.Accoun
 	admin.view = view
 	return api.AdminAccount{ID: "created"}, nil
 }
-func (admin *accountDelegateAdmin) LoginAccount(_ context.Context, id string, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
+func (admin *accountDelegateAdmin) LoginAccount(_ context.Context, id string, input api.AccountLoginInput, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
 	admin.assertUnlocked()
 	admin.view = view
+	admin.acceptTerms = input.AcceptTerms
 	return api.AdminAccount{ID: id}, nil
 }
 func (admin *accountDelegateAdmin) CookieBrowsers(context.Context) ([]api.CookieBrowser, error) {
@@ -47,9 +49,12 @@ func TestRuntimeManagerAccountDelegatesReleaseManagerLock(t *testing.T) {
 	if err != nil || created.ID != "created" || admin.view != view {
 		t.Fatal("CreateAccount lost its login view or result")
 	}
-	loggedIn, err := manager.LoginAccount(context.Background(), "synthetic@example.invalid", view)
-	if err != nil || loggedIn.ID != "synthetic@example.invalid" || admin.view != view {
-		t.Fatal("LoginAccount lost its login view or result")
+	loggedIn, err := manager.LoginAccount(context.Background(), "synthetic@example.invalid", api.AccountLoginInput{AcceptTerms: true}, view)
+	if err != nil || loggedIn.ID != "synthetic@example.invalid" || admin.view != view || !admin.acceptTerms {
+		t.Fatal("LoginAccount lost its login view, permission or result")
+	}
+	if _, err := manager.LoginAccount(context.Background(), "synthetic@example.invalid", api.AccountLoginInput{}, view); err != nil || admin.acceptTerms {
+		t.Fatal("LoginAccount retained a previous permission")
 	}
 	browsers, err := manager.CookieBrowsers(context.Background())
 	if err != nil || len(browsers) != 1 {

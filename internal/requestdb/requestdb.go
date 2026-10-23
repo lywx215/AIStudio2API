@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS requests (
  duration_ms INTEGER NOT NULL, first_event_ms INTEGER NOT NULL, queue_ms INTEGER NOT NULL,
  input_tokens INTEGER NOT NULL, reasoning_tokens INTEGER NOT NULL, reply_tokens INTEGER NOT NULL,
  total_tokens INTEGER NOT NULL, tool_calls INTEGER NOT NULL, error TEXT NOT NULL, attempts TEXT NOT NULL,
- cached_tokens INTEGER NOT NULL);
+ cached_tokens INTEGER NOT NULL, usage_source TEXT NOT NULL DEFAULT '', usage_incomplete INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS requests_time ON requests(time);
 CREATE INDEX IF NOT EXISTS requests_model_time ON requests(model, time);
 CREATE INDEX IF NOT EXISTS requests_account_time ON requests(account, time);
@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS bodies (
 
 // Row 是一次完成请求的用量记录
 type Row struct {
+	UsageSource     string
+	UsageIncomplete bool
 	ID              string
 	Time            time.Time
 	Protocol        string
@@ -121,6 +123,9 @@ func Open(path string, log Logger) (*Store, error) {
 		return nil, errors.Join(fmt.Errorf("初始化请求账本: %w", err), db.Close())
 	}
 	if err := addCachedTokens(db); err != nil {
+		return nil, errors.Join(fmt.Errorf("初始化请求账本: %w", err), db.Close())
+	}
+	if err := addUsageSource(db); err != nil {
 		return nil, errors.Join(fmt.Errorf("初始化请求账本: %w", err), db.Close())
 	}
 	store := &Store{db: db, writes: make(chan write, queueLimit), done: make(chan struct{}), log: log}
@@ -301,11 +306,14 @@ func (store *Store) write(batch []write) (err error) {
 			if err != nil {
 				return err
 			}
-			result, err := tx.Exec(`INSERT OR IGNORE INTO requests VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+			result, err := tx.Exec(`INSERT OR IGNORE INTO requests
+				(id,time,protocol,path,model,account,channel,status,state,duration_ms,first_event_ms,queue_ms,
+				 input_tokens,reasoning_tokens,reply_tokens,total_tokens,tool_calls,error,attempts,cached_tokens,usage_source,usage_incomplete)
+				 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 				row.ID, row.Time.UnixMilli(), row.Protocol, row.Path, row.Model, row.Account, row.Channel, row.Status, row.State,
 				row.Duration.Milliseconds(), row.FirstEvent.Milliseconds(), row.Queue.Milliseconds(),
 				row.InputTokens, row.ReasoningTokens, row.ReplyTokens, row.TotalTokens, row.ToolCalls, row.Error, string(encoded),
-				row.CachedTokens)
+				row.CachedTokens, row.UsageSource, row.UsageIncomplete)
 			if err != nil {
 				return err
 			}

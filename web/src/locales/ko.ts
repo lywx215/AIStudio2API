@@ -5,6 +5,17 @@ export const label = '한국어'
 
 // messages 是界面文案与管理接口错误码文案
 export const messages: Record<TranslationKey, string> = {
+  'accounts.allowTerms': '이번 로그인에서 AI Studio 필수 약관 동의 허용(이메일 구독 제외)',
+  'accounts.liveConsentRequired': '로그인 창에서 최초 사용 약관을 확인하세요',
+  'accounts.liveOnboardingLoading': '최초 사용 설정을 불러오는 중',
+  'accounts.liveOnboardingTerms': '필수 약관 확인 중',
+  'accounts.liveOnboardingPreferences': '선택 사항인 사용 목적 설문을 건너뛰는 중',
+  'accounts.liveOnboardingPending': '최초 사용 설정의 다음 화면을 기다리는 중',
+  'accounts.liveVerifyingIdentity': '로그인한 이메일 확인 중',
+  'error.onboarding_timeout': '최초 사용 설정 시간이 초과되었습니다. 로그인 창을 확인하세요',
+  'error.email_detection_failed': '로그인한 이메일을 읽지 못해 인증 정보를 저장하지 않았습니다',
+  'error.login_identity_mismatch':
+    '로그인한 이메일이 대상 계정과 달라 인증 정보를 저장하지 않았습니다',
   'auth.username': '사용자 이름',
   'auth.password': '비밀번호',
   'auth.login': '로그인',

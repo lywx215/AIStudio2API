@@ -395,13 +395,15 @@ type ModelPrice struct {
 
 // Usage 表示一次生成的 token 用量，CachedTokens 是 InputTokens 中命中上游缓存的部分
 type Usage struct {
-	InputTokens         int64 `json:"input_tokens"`
-	CachedTokens        int64 `json:"cached_tokens,omitempty"`
-	OutputTokens        int64 `json:"output_tokens"`
-	ReasoningTokens     int64 `json:"reasoning_tokens,omitempty"`
-	ToolTokens          int64 `json:"tool_tokens,omitempty"`
-	TotalTokens         int64 `json:"total_tokens"`
-	OutputTokensMissing bool  `json:"-"`
+	Source              string `json:"source,omitempty"`
+	Incomplete          bool   `json:"incomplete,omitempty"`
+	InputTokens         int64  `json:"input_tokens"`
+	CachedTokens        int64  `json:"cached_tokens,omitempty"`
+	OutputTokens        int64  `json:"output_tokens"`
+	ReasoningTokens     int64  `json:"reasoning_tokens,omitempty"`
+	ToolTokens          int64  `json:"tool_tokens,omitempty"`
+	TotalTokens         int64  `json:"total_tokens"`
+	OutputTokensMissing bool   `json:"-"`
 }
 
 // Citation 表示模型返回的来源

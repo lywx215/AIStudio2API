@@ -471,9 +471,9 @@ func (manager *runtimeManager) DeleteAccount(ctx context.Context, id string) err
 }
 
 // LoginAccount 在当前生成服务登录账户
-func (manager *runtimeManager) LoginAccount(ctx context.Context, id string, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
+func (manager *runtimeManager) LoginAccount(ctx context.Context, id string, input api.AccountLoginInput, view *camoufoxnative.LiveView) (api.AdminAccount, error) {
 	generation := manager.generationSnapshot()
-	return generation.admin.LoginAccount(ctx, id, view)
+	return generation.admin.LoginAccount(ctx, id, input, view)
 }
 
 // RefreshAccount 在当前生成服务立即刷新账户状态

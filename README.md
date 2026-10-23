@@ -167,6 +167,8 @@ Linux 与 macOS 首次运行同样会自动准备对应平台的 Camoufox。
 
 ### 方式四：Docker
 
+独立 VPS 的固定版本构建、持久化、HTTPS、验收与备份流程见 [VPS 部署与维护方案](docs/deployment/vps.md)。
+
 ```bash
 mkdir aistudio2api && cd aistudio2api
 curl -fsSLO https://raw.githubusercontent.com/Mag1cFall/AIStudio2API/main/docker-compose.yml

@@ -77,6 +77,7 @@ func (e *Engine) Generate(ctx context.Context, selection contract.Selection, inp
 		e.release(a, result)
 	}()
 	ctx = a.ctx
+	contract.ReportTarget(ctx, selection.PublicID, a.account.ID)
 	a.client = e.client
 	if proxy := a.account.Credential.ProxyURL; proxy != "" {
 		if vault.ValidateProxy(proxy) != nil {
@@ -275,6 +276,7 @@ func (e *Engine) postEncoded(ctx context.Context, action string, a *lease, body 
 		client, closeIdle = generationClient(client)
 		defer closeIdle()
 	}
+	contract.ReportUpstream(ctx)
 	response, err := client.Do(r)
 	if err != nil {
 		return nil, &transportError{err}
@@ -309,6 +311,7 @@ func (e *Engine) ensureToken(ctx context.Context, a *lease) error {
 		r.AddCookie(&http.Cookie{Name: "__Host-C_OSES", Value: a.account.Credential.HostCOSES})
 	}
 	r.Header.Set("User-Agent", userAgent(a.account.Credential))
+	contract.ReportUpstream(ctx)
 	response, err := e.leaseClient(a).Do(r)
 	if err != nil {
 		return &transportError{err}

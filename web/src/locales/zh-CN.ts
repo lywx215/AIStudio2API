@@ -3,6 +3,16 @@ export const label = '简体中文'
 
 // messages 是界面文案与管理接口错误码文案，键集合由本表定义
 export const messages = {
+  'accounts.allowTerms': '允许本次登录确认 AI Studio 必选协议（不订阅邮件）',
+  'accounts.liveConsentRequired': '请在登录窗口确认首次使用协议',
+  'accounts.liveOnboardingLoading': '正在加载首次使用引导',
+  'accounts.liveOnboardingTerms': '正在确认必选协议',
+  'accounts.liveOnboardingPreferences': '正在跳过可选用途调查',
+  'accounts.liveOnboardingPending': '等待首次使用引导跳转',
+  'accounts.liveVerifyingIdentity': '正在验证登录邮箱',
+  'error.onboarding_timeout': '首次使用引导超时，请在登录窗口检查当前步骤',
+  'error.email_detection_failed': '未能读取实际登录邮箱，凭证未保存',
+  'error.login_identity_mismatch': '实际登录邮箱与目标账户不一致，凭证未保存',
   'auth.username': '管理员账号',
   'auth.password': '密码',
   'auth.login': '登录',

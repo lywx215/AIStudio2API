@@ -47,6 +47,20 @@ def main() -> int:
     return worker()
 
 
+def check_local_usage(response):
+    usage = response.usage_metadata
+    assert usage is not None and usage.prompt_token_count > 0
+    assert usage.candidates_token_count >= 0
+    assert usage.total_token_count == usage.prompt_token_count + usage.candidates_token_count + (usage.thoughts_token_count or 0)
+    assert usage.cached_content_token_count is None
+
+
+def check_local_stream_usage(chunks):
+    assert chunks
+    check_local_usage(chunks[-1])
+    assert all(chunk.usage_metadata is None for chunk in chunks[:-1])
+
+
 def worker() -> int:
     import httpx
     from google import genai
@@ -119,7 +133,8 @@ def worker() -> int:
         response = client.models.generate_content(model=MODEL, contents=contents, config=config)
         assert response.text == "fixture-output", response
         assert response.candidates[0].finish_reason == types.FinishReason.STOP
-        assert response.model_version is None and response.usage_metadata is None
+        assert response.model_version is None
+        check_local_usage(response)
         return response
 
     def rejected(contents="hello", config=None, status=400):
@@ -158,6 +173,7 @@ def worker() -> int:
         sideband = sideband_chunks[0].candidates[0].content.parts[0]
         assert sideband.text is None and sideband.inline_data.data == b'{"suggestions":["synthetic"],"enabled":false}'
         chunks = list(client.models.generate_content_stream(model=MODEL, contents="stream"))
+        check_local_stream_usage(chunks)
         assert "".join(chunk.text or "" for chunk in chunks) == "fixture-output"
         assert chunks[-1].candidates[0].finish_reason == types.FinishReason.STOP
         response = http.post(ORIGIN + "/v1beta/models/" + MODEL + ":streamGenerateContent", json={
@@ -230,9 +246,11 @@ def phase5_worker(client, types, errors, generation_count, wire_stream):
         assert candidate.content.parts == expected_parts(outcome), candidate.content.parts
         assert candidate.grounding_metadata == metadata, candidate.grounding_metadata
         assert candidate.finish_reason == types.FinishReason.STOP
-        assert response.usage_metadata is None and response.model_version is None
+        assert response.model_version is None
+        check_local_usage(response)
 
     def check_chunks(chunks):
+        check_local_stream_usage(chunks)
         assert len(chunks) == 4, "Real parts must occur exactly once with no invented empty terminal"
         assert [part for chunk in chunks for part in chunk.candidates[0].content.parts] == expected_parts()
         assert chunks[-1].candidates[0].finish_reason == types.FinishReason.STOP
@@ -330,6 +348,7 @@ def phase6_worker(client, types, errors, generation_count, wire_stream):
                    and source.publication_date is None for source in candidate.citation_metadata.citations)
 
     def check_chunks(chunks):
+        check_local_stream_usage(chunks)
         assert len(chunks) == len(expected_parts)
         assert [part for chunk in chunks for part in chunk.candidates[0].content.parts] == expected_parts
         assert chunks[-1].candidates[0].finish_reason == types.FinishReason.STOP
@@ -347,7 +366,7 @@ def phase6_worker(client, types, errors, generation_count, wire_stream):
     response = client.models.generate_content(model=MODEL, contents="phase6-unary")
     assert response.candidates[0].content.parts == expected_parts
     assert response.candidates[0].finish_reason == types.FinishReason.STOP
-    assert response.usage_metadata is None
+    check_local_usage(response)
     check_metadata(response.candidates[0])
     followup([user("phase6-unary"), response.candidates[0].content, user("phase6-followup")])
     altered = response.candidates[0].content.model_copy(deep=True)
@@ -448,6 +467,7 @@ def completion_worker(client, types, errors, generation_count, wire_stream):
         raise AssertionError("Mutated media history was accepted")
     assert generation_count() == before
     def check_chunks(chunks):
+        check_local_stream_usage(chunks)
         assert [part for chunk in chunks for part in chunk.candidates[0].content.parts] == expected
         assert chunks[-1].candidates[0].finish_reason == types.FinishReason.STOP
         assert chunks[-1].candidates[0].content.parts == [types.Part(text="media-end")]

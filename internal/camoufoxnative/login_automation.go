@@ -119,11 +119,15 @@ type loginAutomation struct {
 	blocked         bool
 	lastPhase       string
 	phaseSince      time.Time
+	acceptTerms     bool
+	onboardingSince time.Time
+	err             error
 }
 
 func newLoginAutomation(email, password string, view *LiveView, totpSecret ...string) *loginAutomation {
-	if strings.TrimSpace(email) == "" {
-		return nil
+	email = strings.TrimSpace(email)
+	if !strings.Contains(email, "@") {
+		email = ""
 	}
 	secret := ""
 	if len(totpSecret) != 0 {
@@ -148,6 +152,9 @@ func (automation *loginAutomation) step(ctx context.Context, session *loginSessi
 		if manual {
 			return
 		}
+	}
+	if automation.stepOnboarding(ctx, session) {
+		return
 	}
 	phase := session.loginAction(ctx, "inspect", "", automation.email)
 	if phase != automation.lastPhase {

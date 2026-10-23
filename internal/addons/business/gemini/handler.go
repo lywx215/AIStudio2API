@@ -27,13 +27,15 @@ type content struct {
 	Parts []contract.Part `json:"parts"`
 }
 type response struct {
-	Candidates   []candidate `json:"candidates"`
-	ModelVersion string      `json:"modelVersion,omitempty"`
+	Candidates    []candidate     `json:"candidates"`
+	ModelVersion  string          `json:"modelVersion,omitempty"`
+	UsageMetadata *contract.Usage `json:"usageMetadata,omitempty"`
 }
 
 type responseMetadata struct {
 	grounding *contract.GroundingMetadata
 	citation  *contract.CitationMetadata
+	usage     *contract.Usage
 }
 
 func responseFor(parts []contract.Part, finished bool, metadata ...responseMetadata) response {
@@ -48,7 +50,11 @@ func responseFor(parts []contract.Part, finished bool, metadata ...responseMetad
 			c.CitationMetadata = metadata[0].citation
 		}
 	}
-	return response{Candidates: []candidate{c}}
+	result := response{Candidates: []candidate{c}}
+	if finished && len(metadata) > 0 {
+		result.UsageMetadata = metadata[0].usage
+	}
+	return result
 }
 func Error(w http.ResponseWriter, err error) {
 	var f *contract.Failure
@@ -165,6 +171,9 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			Error(w, invalid("stream alt must be sse or json"))
 			return
 		}
+		w.Header().Set("X-AIStudio-Usage-Source", contract.LocalUsageSource)
+		w.Header().Set("X-AIStudio-Usage-Estimated", "true")
+		var usage *contract.Usage
 		started := false
 		finished := false
 		first := true
@@ -182,7 +191,7 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 		delivered := false
 		defer func() { completeDelivery(delivered) }()
 		writeEvent := func(eventParts []contract.Part, done bool) error {
-			data, release, marshalErr := marshalResponse(r.Context(), eventParts, done, responseMetadata{grounding, citation})
+			data, release, marshalErr := marshalResponse(r.Context(), eventParts, done, responseMetadata{grounding: grounding, citation: citation, usage: usage})
 			if marshalErr != nil {
 				return marshalErr
 			}
@@ -307,6 +316,12 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 		if err == nil && !finished {
 			err = contract.Fail(502, "DATA_LOSS", "Business stream ended without completion")
 		}
+		if err == nil {
+			usage, err = localOutputUsage(r.Context(), input.InputUsage, parts)
+			if err == nil {
+				contract.ReportUsage(r.Context(), *usage)
+			}
+		}
 		if err == nil && stream {
 			terminalWriteAttempted = true
 			err = writeEvent(terminal, true)
@@ -323,6 +338,7 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 					}
 				}
 			}
+			contract.ReportError(r.Context(), err)
 			if !started {
 				Error(w, err)
 				return
@@ -344,8 +360,9 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			return
 		}
 		if !stream {
-			data, release, encodeErr := marshalResponse(r.Context(), parts, true, responseMetadata{grounding, citation})
+			data, release, encodeErr := marshalResponse(r.Context(), parts, true, responseMetadata{grounding: grounding, citation: citation, usage: usage})
 			if encodeErr != nil {
+				contract.ReportError(r.Context(), encodeErr)
 				Error(w, encodeErr)
 				return
 			}
@@ -358,6 +375,7 @@ func HandlerWithFiles(bindings []config.Binding, generator contract.Generator, r
 			_, err = w.Write([]byte("]"))
 		}
 		delivered = err == nil
+		contract.ReportError(r.Context(), err)
 	})
 }
 

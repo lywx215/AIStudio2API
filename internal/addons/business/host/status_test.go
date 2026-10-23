@@ -43,7 +43,7 @@ func TestStatusReadinessDoesNotInventAuthOrModelEvidence(t *testing.T) {
 	}
 	for key, want := range map[string]string{
 		"countTokens":      "unsupported_no_native_upstream_contract",
-		"usageMetadata":    "unavailable_not_estimated",
+		"usageMetadata":    "local_gemma3_sentencepiece_estimate_media_incomplete",
 		"google_search":    "provider_checked_empty_config_only",
 		"function_calling": "unsupported_ignored",
 		"code_execution":   "request_control_unverified_output_passthrough",

@@ -5,6 +5,19 @@ export const label = '日本語'
 
 // messages 是界面文案与管理接口错误码文案
 export const messages: Record<TranslationKey, string> = {
+  'accounts.allowTerms':
+    '今回のログインで AI Studio の必須規約への同意を許可する（メール購読なし）',
+  'accounts.liveConsentRequired': 'ログイン画面で初回利用規約を確認してください',
+  'accounts.liveOnboardingLoading': '初回設定を読み込み中',
+  'accounts.liveOnboardingTerms': '必須規約を確認中',
+  'accounts.liveOnboardingPreferences': '任意の利用目的アンケートをスキップ中',
+  'accounts.liveOnboardingPending': '初回設定の画面遷移を待機中',
+  'accounts.liveVerifyingIdentity': 'ログイン中のメールアドレスを確認中',
+  'error.onboarding_timeout': '初回設定がタイムアウトしました。ログイン画面を確認してください',
+  'error.email_detection_failed':
+    'ログイン中のメールアドレスを取得できないため、認証情報は保存されませんでした',
+  'error.login_identity_mismatch':
+    'ログイン中のメールアドレスが対象アカウントと一致しないため、認証情報は保存されませんでした',
   'auth.username': 'ユーザー名',
   'auth.password': 'パスワード',
   'auth.login': 'ログイン',

@@ -5,6 +5,19 @@ export const label = 'English'
 
 // messages 是界面文案与管理接口错误码文案
 export const messages: Record<TranslationKey, string> = {
+  'accounts.allowTerms':
+    'Allow this sign-in to accept required AI Studio terms (no email subscription)',
+  'accounts.liveConsentRequired': 'Confirm the first-use terms in the sign-in window',
+  'accounts.liveOnboardingLoading': 'Loading first-use setup',
+  'accounts.liveOnboardingTerms': 'Confirming required terms',
+  'accounts.liveOnboardingPreferences': 'Skipping the optional usage survey',
+  'accounts.liveOnboardingPending': 'Waiting for first-use setup to continue',
+  'accounts.liveVerifyingIdentity': 'Verifying the signed-in email',
+  'error.onboarding_timeout':
+    'First-use setup timed out; check the current step in the sign-in window',
+  'error.email_detection_failed': 'Could not read the signed-in email; credentials were not saved',
+  'error.login_identity_mismatch':
+    'The signed-in email differs from the target account; credentials were not saved',
   'auth.username': 'Username',
   'auth.password': 'Password',
   'auth.login': 'Sign in',

@@ -76,7 +76,7 @@ func attachBusiness(native http.Handler, config Config, consoleAuth *adminAuth) 
 		return corsMiddleware(bodyLimitMiddleware(browserOriginMiddleware(config.APIKey,
 			authMiddleware(config.APIKey, identify(next)))))
 	}
-	public = protect(public)
+	public = businessUsageLogging(config.Admin, protect(public))
 	adminNext := admin
 	admin = consoleAuth.handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		identity, lifetime := "local-console", context.Background()

@@ -82,7 +82,7 @@ func computeStatus(input statusInput) status {
 	s.Capabilities["inline_media"] = "bounded_passthrough_not_model_capability"
 	s.Capabilities["model_import"] = "preview_apply_undo_disabled_models"
 	s.Capabilities["countTokens"] = "unsupported_no_native_upstream_contract"
-	s.Capabilities["usageMetadata"] = "unavailable_not_estimated"
+	s.Capabilities["usageMetadata"] = "local_gemma3_sentencepiece_estimate_media_incomplete"
 	s.Capabilities["google_search"] = "provider_checked_empty_config_only"
 	s.Capabilities["function_calling"] = "unsupported_ignored"
 	s.Capabilities["code_execution"] = "request_control_unverified_output_passthrough"

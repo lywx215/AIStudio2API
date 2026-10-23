@@ -65,7 +65,7 @@ func TestNativeGenerateAndStreaming(t *testing.T) {
 	for _, action := range []string{"generateContent", "streamGenerateContent?alt=sse", "streamGenerateContent"} {
 		w := httptest.NewRecorder()
 		Handler([]config.Binding{binding()}, g).ServeHTTP(w, httptest.NewRequest("POST", "/v1beta/models/business-test:"+action, strings.NewReader(prompt)))
-		if w.Code != 200 || !strings.Contains(w.Body.String(), `"finishReason":"STOP"`) || strings.Contains(w.Body.String(), "choices") || strings.Contains(w.Body.String(), "usageMetadata") {
+		if w.Code != 200 || !strings.Contains(w.Body.String(), `"finishReason":"STOP"`) || strings.Contains(w.Body.String(), "choices") || !strings.Contains(w.Body.String(), "usageMetadata") {
 			t.Fatal(w.Code, w.Body.String())
 		}
 		if strings.Contains(action, "sse") {

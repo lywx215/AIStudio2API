@@ -60,6 +60,8 @@ const defaultAccountLocale = 'en-US'
 const defaultAccountTimezone = 'America/Los_Angeles'
 const showEditor = ref(false)
 const showBrowserLogin = ref(false)
+const browserLoginAccount = ref<Account | null>(null)
+const acceptTerms = ref(false)
 const showChromeImport = ref(false)
 const showCookieImport = ref(false)
 const cookieText = ref('')
@@ -152,12 +154,16 @@ function closeEditor(): void {
 }
 
 function openBrowserLogin(): void {
+  browserLoginAccount.value = null
+  acceptTerms.value = false
   showBrowserLogin.value = true
 }
 
 function closeBrowserLogin(): void {
-  if (pendingAction.value === 'browser-login') return
+  if (pendingAction.value !== '') return
   showBrowserLogin.value = false
+  browserLoginAccount.value = null
+  acceptTerms.value = false
 }
 
 // LiveLogin 是进行中的浏览器登录：view 为登录窗口 ID，active 表示服务端把登录画面显示在页内登录窗口，error 为窗口中显示的失败原因
@@ -221,9 +227,16 @@ function liveLoginUnavailable(): void {
 
 // beginBrowserLogin 启动浏览器登录并使用返回身份创建账户
 async function beginBrowserLogin(): Promise<void> {
-  pendingAction.value = 'browser-login'
-  const environment = { ...accountEnvironment }
-  const done = await runBrowserLogin((view, signal) => api.createAccount(environment, view, signal))
+  const account = browserLoginAccount.value
+  const authorized = acceptTerms.value
+  acceptTerms.value = false
+  pendingAction.value = account ? `login:${account.id}` : 'browser-login'
+  const environment = { ...accountEnvironment, accept_terms: authorized }
+  const done = await runBrowserLogin((view, signal) =>
+    account
+      ? api.loginAccount(account.id, view, signal, authorized)
+      : api.createAccount(environment, view, signal),
+  )
   pendingAction.value = ''
   if (!done) return
   showBrowserLogin.value = false
@@ -486,13 +499,10 @@ async function toggleAccount(account: Account): Promise<void> {
 }
 
 // loginAccount 打开浏览器重新登录账户
-async function loginAccount(account: Account): Promise<void> {
-  pendingAction.value = `login:${account.id}`
-  const done = await runBrowserLogin((view, signal) => api.loginAccount(account.id, view, signal))
-  pendingAction.value = ''
-  if (!done) return
-  emit('refresh')
-  emit('notice', t('accounts.loginComplete'), 'success')
+function loginAccount(account: Account): void {
+  browserLoginAccount.value = account
+  acceptTerms.value = false
+  showBrowserLogin.value = true
 }
 
 // refreshNotice 返回刷新结果提示，写出权益与模型数的变化
@@ -884,11 +894,13 @@ async function refreshAllAccounts(): Promise<void> {
             @submit.prevent="beginBrowserLogin"
           >
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-bold text-white">{{ t('accounts.browserLogin') }}</h3>
+              <h3 class="text-lg font-bold text-white">
+                {{ t(browserLoginAccount ? 'common.relogin' : 'accounts.browserLogin') }}
+              </h3>
               <button
                 class="rounded p-1 text-gray-500 hover:bg-line hover:text-white disabled:opacity-50"
                 type="button"
-                :disabled="pendingAction === 'browser-login'"
+                :disabled="pendingAction !== ''"
                 :aria-label="t('common.close')"
                 @click="closeBrowserLogin"
               >
@@ -896,44 +908,58 @@ async function refreshAllAccounts(): Promise<void> {
               </button>
             </div>
             <div class="space-y-4">
-              <label class="block">
-                <span class="mb-1 block text-sm font-medium text-gray-400">{{
-                  t('accounts.proxy')
-                }}</span>
+              <p v-if="browserLoginAccount" class="text-sm text-gray-300">
+                {{ browserLoginAccount.label }}
+              </p>
+              <template v-else>
+                <label class="block">
+                  <span class="mb-1 block text-sm font-medium text-gray-400">{{
+                    t('accounts.proxy')
+                  }}</span>
+                  <input
+                    v-model.trim="accountEnvironment.proxy"
+                    class="w-full rounded border border-line bg-canvas px-3 py-2 text-white transition focus:border-blue-500 focus:outline-none"
+                    placeholder="socks5://127.0.0.1:1080"
+                  />
+                </label>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-400">{{
+                      t('accounts.locale')
+                    }}</span>
+                    <input
+                      v-model.trim="accountEnvironment.locale"
+                      class="w-full rounded border border-line bg-canvas px-3 py-2 text-white transition focus:border-blue-500 focus:outline-none"
+                      required
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="mb-1 block text-sm font-medium text-gray-400">{{
+                      t('accounts.timezone')
+                    }}</span>
+                    <input
+                      v-model.trim="accountEnvironment.timezone"
+                      class="w-full rounded border border-line bg-canvas px-3 py-2 text-white transition focus:border-blue-500 focus:outline-none"
+                      required
+                    />
+                  </label>
+                </div>
+              </template>
+              <label class="flex items-start gap-2 text-sm text-gray-300">
                 <input
-                  v-model.trim="accountEnvironment.proxy"
-                  class="w-full rounded border border-line bg-canvas px-3 py-2 text-white transition focus:border-blue-500 focus:outline-none"
-                  placeholder="socks5://127.0.0.1:1080"
+                  v-model="acceptTerms"
+                  type="checkbox"
+                  class="mt-1"
+                  :disabled="pendingAction !== ''"
                 />
+                <span>{{ t('accounts.allowTerms') }}</span>
               </label>
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <label class="block">
-                  <span class="mb-1 block text-sm font-medium text-gray-400">{{
-                    t('accounts.locale')
-                  }}</span>
-                  <input
-                    v-model.trim="accountEnvironment.locale"
-                    class="w-full rounded border border-line bg-canvas px-3 py-2 text-white transition focus:border-blue-500 focus:outline-none"
-                    required
-                  />
-                </label>
-                <label class="block">
-                  <span class="mb-1 block text-sm font-medium text-gray-400">{{
-                    t('accounts.timezone')
-                  }}</span>
-                  <input
-                    v-model.trim="accountEnvironment.timezone"
-                    class="w-full rounded border border-line bg-canvas px-3 py-2 text-white transition focus:border-blue-500 focus:outline-none"
-                    required
-                  />
-                </label>
-              </div>
             </div>
             <div class="mt-6 flex gap-2">
               <button
                 class="flex-1 rounded bg-raised py-2 text-sm text-gray-300 transition hover:bg-line disabled:opacity-50"
                 type="button"
-                :disabled="pendingAction === 'browser-login'"
+                :disabled="pendingAction !== ''"
                 @click="closeBrowserLogin"
               >
                 {{ t('common.cancel') }}
@@ -942,9 +968,9 @@ async function refreshAllAccounts(): Promise<void> {
                 class="flex-1 rounded bg-blue-600 py-2 text-sm text-white transition hover:bg-blue-500 disabled:opacity-50"
                 type="submit"
                 :disabled="pendingAction !== ''"
-                :aria-busy="pendingAction === 'browser-login'"
+                :aria-busy="pendingAction !== ''"
               >
-                {{ t('accounts.browserLogin') }}
+                {{ t(browserLoginAccount ? 'common.relogin' : 'accounts.browserLogin') }}
               </button>
             </div>
           </form>

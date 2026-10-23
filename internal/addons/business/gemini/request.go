@@ -134,6 +134,12 @@ func ParseWithFiles(ctx context.Context, r io.Reader, binding config.Binding, re
 	if err = plan.resolve(ctx, resolver, &request); err != nil {
 		return request, err
 	}
+	request.InputUsage, err = plan.localInputUsage(ctx)
+	if err != nil {
+		return request, err
+	}
+	// Search results and internal tool prompts are not visible to this counter.
+	request.InputUsage.Incomplete = request.InputUsage.Incomplete || request.GoogleSearch
 	return request, nil
 }
 

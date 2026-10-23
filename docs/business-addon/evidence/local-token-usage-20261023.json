@@ -1,0 +1,161 @@
+{
+  "verified_at_utc": "2026-10-23T09:45:48.152578+00:00",
+  "scope": "offline synthetic tests only; no deployment, credentials, upstream model calls or production database access",
+  "command": [
+    "go",
+    "test",
+    "-json",
+    "./internal/api",
+    "./internal/app",
+    "./internal/requestdb",
+    "./internal/aistudio",
+    "-run",
+    "(Addon|BusinessUsage|UsageSource|Ledger|Usage|Token)",
+    "-count=1"
+  ],
+  "exit_code": 0,
+  "packages": {
+    "github.com/Mag1cFall/AIStudio2API/internal/api": {
+      "passed": [
+        "TestAddonConsoleBindingSurvivesRequestButEndsAtLogout",
+        "TestAddonNativeFilesUseDurableAuthenticatedOwners",
+        "TestAddonPassThroughPreservesRequestAndWriter//v1/chat/completions",
+        "TestAddonPassThroughPreservesRequestAndWriter//v1beta/models/legacy:generateContent",
+        "TestAddonPassThroughPreservesRequestAndWriter//upload/v1beta/files",
+        "TestAddonPassThroughPreservesRequestAndWriter//upload/v1beta/files?upload_id=legacy-id",
+        "TestAddonPassThroughPreservesRequestAndWriter//v1beta/files/abc123",
+        "TestAddonPassThroughPreservesRequestAndWriter//api/status",
+        "TestAddonPassThroughPreservesRequestAndWriter//health",
+        "TestAddonPassThroughPreservesRequestAndWriter//api/manage/v1/accounts",
+        "TestAddonPassThroughPreservesRequestAndWriter//api/management-keys",
+        "TestAddonPassThroughPreservesRequestAndWriter",
+        "TestAddonBridgeSharedModelAuthentication",
+        "TestAddonBridgeSharesConsoleSessionAndCancellation",
+        "TestAddonBridgeDisabledConsoleRemainsLoopbackOnly",
+        "TestAddonUploadPrecedesNativeUploadInterceptor",
+        "TestAddonBridgeLegacyAliasesAndManagementHavePriority",
+        "TestBusinessUsageRecordedOnceAndAuthenticationPreserved",
+        "TestPairingTokenAccount",
+        "TestPairingTokenExpiry",
+        "TestUsageViewHTTPValidationAndShapes"
+      ],
+      "failed": [],
+      "skipped": [],
+      "status": "pass"
+    },
+    "github.com/Mag1cFall/AIStudio2API/internal/app": {
+      "passed": [
+        "TestAddonBridgeDoesNotInitializeAIStudioOrCreateStorage",
+        "TestBusinessUsageLogAndLedgerKeepLocalSource",
+        "TestUpstreamOnlyLoggingAndLedger/false",
+        "TestUpstreamOnlyLoggingAndLedger/true",
+        "TestUpstreamOnlyLoggingAndLedger"
+      ],
+      "failed": [],
+      "skipped": [],
+      "status": "pass"
+    },
+    "github.com/Mag1cFall/AIStudio2API/internal/requestdb": {
+      "passed": [
+        "TestManagementUsageSQLPageAndRedaction",
+        "TestLedgerUsageAndBodies",
+        "TestUsageSourceMigrationPreservesCountsAndExportsProvenance",
+        "TestUsageViewsMatchFrozenReport",
+        "TestUsageEmptyViewsAndDSTBuckets",
+        "TestUsageRecordMetadataMatchesCursorPages"
+      ],
+      "failed": [],
+      "skipped": [
+        "TestUsageBrowserServer",
+        "TestUsagePerformance"
+      ],
+      "status": "pass"
+    },
+    "github.com/Mag1cFall/AIStudio2API/internal/aistudio": {
+      "passed": [],
+      "failed": [],
+      "skipped": [],
+      "status": "pass"
+    }
+  },
+  "additional_executed_checks": [
+    {
+      "record_source": "observed command output in this task",
+      "command": [
+        "go",
+        "test",
+        "./internal/addons/business/gemini",
+        "./internal/addons/business/core",
+        "./internal/addons/business/host",
+        "-count=1"
+      ],
+      "exit_code": 1,
+      "package_results": {
+        "core": "pass",
+        "host": "pass",
+        "gemini": "fail"
+      },
+      "gemini_failures": [
+        "TestGeminiHistoryValidatesRolesAndUnsupportedPartsBeforeFiles",
+        "TestGeminiOutputSuggestionsNativeUnionAndBudget"
+      ],
+      "failure_scope": "image/png containing JSON bytes; media validation implementation unchanged by this task"
+    },
+    {
+      "record_source": "observed command output in this task",
+      "command": [
+        "go",
+        "test",
+        "./internal/addons/business/gemini",
+        "-run",
+        "TestGemini(SDK|JavaScriptSDK)|TestLocalUsage",
+        "-v",
+        "-count=1"
+      ],
+      "exit_code": 0,
+      "python_sdk": "google-genai==2.32.0",
+      "javascript_sdk": "@google/genai==2.22.0",
+      "sdk_environment_configured": true,
+      "scope": "socket-free SDK pipe fixtures against real handlers; no real model calls"
+    }
+  ],
+  "release_preflight_20261023": {
+    "go_tests": {
+      "command": "go test -mod=readonly ./internal/addons/business/... ./internal/aistudio ./internal/api ./internal/app ./internal/camoufoxnative ./internal/requestdb",
+      "passed": [
+        "business/browser",
+        "business/config",
+        "business/contract",
+        "business/core",
+        "business/fileapi",
+        "business/files",
+        "business/gemini with both SDKs",
+        "business/observe",
+        "business/resources",
+        "business/vault",
+        "aistudio",
+        "api",
+        "app",
+        "camoufoxnative",
+        "requestdb"
+      ],
+      "not_executed": {
+        "business/host": "Windows Application Control blocked host.test.exe"
+      },
+      "overall_exit_code": 1
+    },
+    "frontend": {
+      "lint": "passed",
+      "node_tests_passed": 167,
+      "node_tests_failed": 0,
+      "production_build": "passed"
+    },
+    "go_vet": "passed for changed backend packages",
+    "linux_amd64_build": "passed with CGO_ENABLED=0 and -mod=readonly",
+    "vps_helper_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "known_media_fixture_conflict": "Resolved by using an unsupported MIME in rejection fixtures; media contract unchanged"
+  }
+}

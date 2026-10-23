@@ -46,7 +46,7 @@ func TestGeminiOutputThoughtSignatureAndModelClaims(t *testing.T) {
 	})
 	w := httptest.NewRecorder()
 	Handler([]config.Binding{binding()}, g).ServeHTTP(w, httptest.NewRequest("POST", "/v1beta/models/business-test:generateContent", strings.NewReader(prompt)))
-	if !strings.Contains(w.Body.String(), `"thoughtSignature":"opaque-exact-signature"`) || !strings.Contains(w.Body.String(), `"thought":true`) || strings.Contains(w.Body.String(), "modelVersion") || strings.Contains(w.Body.String(), "usageMetadata") {
+	if !strings.Contains(w.Body.String(), `"thoughtSignature":"opaque-exact-signature"`) || !strings.Contains(w.Body.String(), `"thought":true`) || strings.Contains(w.Body.String(), "modelVersion") || !strings.Contains(w.Body.String(), "usageMetadata") {
 		t.Fatal(w.Body.String())
 	}
 	w = httptest.NewRecorder()
@@ -84,7 +84,7 @@ func TestGeminiOutputSuggestionsNativeUnionAndBudget(t *testing.T) {
 		}
 	}
 	for _, inline := range []*contract.InlineData{
-		{MIMEType: "image/png", Data: []byte(`{}`)},
+		{MIMEType: "application/x-unsupported", Data: []byte(`{}`)},
 		{MIMEType: contract.SuggestionsMIMEType, Data: []byte(`not JSON`)},
 		{MIMEType: contract.SuggestionsMIMEType, Data: []byte(`"` + strings.Repeat("x", 2<<20) + `"`)},
 	} {

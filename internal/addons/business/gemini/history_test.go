@@ -126,7 +126,7 @@ func TestGeminiHistoryValidatesRolesAndUnsupportedPartsBeforeFiles(t *testing.T)
 		historyBody(file, `{"role":"model","parts":[{"text":"x","thoughtSignature":null}]}`, textTurn("user", "two")),
 		historyBody(file, `{"role":"model","parts":[{"text":"x","thoughtSignature":"a","thought_signature":"b"}]}`, textTurn("user", "two")),
 		historyBody(file, `{"role":"model","parts":[{"text":"x","inlineData":{"mimeType":"application/json+suggestions","data":"e30="}}]}`, textTurn("user", "two")),
-		historyBody(file, `{"role":"model","parts":[{"inlineData":{"mimeType":"image/png","data":"e30="}}]}`, textTurn("user", "two")),
+		historyBody(file, `{"role":"model","parts":[{"inlineData":{"mimeType":"application/x-unsupported","data":"e30="}}]}`, textTurn("user", "two")),
 	}
 	for _, body := range bad {
 		if _, err := ParseWithFiles(context.Background(), strings.NewReader(body), binding(), resolver); err == nil {

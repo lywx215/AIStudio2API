@@ -18,11 +18,20 @@ import (
 )
 
 const loginEmailExpression = `(() => {
-  const values = [document.body?.innerText || ''];
-  for (const element of document.querySelectorAll('[aria-label]')) {
-    values.push(element.getAttribute('aria-label') || '');
+  if (location.origin !== 'https://aistudio.google.com' || location.pathname.startsWith('/onboarding')) return '';
+  const accountLabels = [], explicit = [], metadata = [];
+  for (const element of document.querySelectorAll('[aria-label],[title],[data-email]')) {
+    const email = element.getAttribute('data-email') || '';
+    const labels = [element.getAttribute('aria-label') || '', element.getAttribute('title') || ''];
+    explicit.push(email);
+    accountLabels.push(...labels.filter(value => /Google/i.test(value)));
+    metadata.push(...labels);
   }
-  return values.join('\n').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || '';
+  for (const values of [accountLabels, explicit, metadata, [document.body?.innerText || '']]) {
+    const emails = [...new Set((values.join('\n').match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || []).map(value => value.toLowerCase()))];
+    if (emails.length) return emails.length === 1 ? emails[0] : '';
+  }
+  return '';
 })()`
 
 // LoginOptions 定义纯 Go 隔离登录环境，View 不为空时浏览器以无头方式运行，画面与输入经管理页登录窗口传递
@@ -30,6 +39,7 @@ type LoginOptions struct {
 	Email          string `json:"-"`
 	Password       string `json:"-"`
 	TotpSecret     string `json:"-"`
+	AcceptTerms    bool
 	ExecutablePath string
 	Directory      string
 	Locale         string
@@ -98,20 +108,13 @@ func Login(ctx context.Context, options LoginOptions) (result LoginResult, err e
 	}()
 	options.View.setStatus(liveViewWaiting)
 	session.automation = newLoginAutomation(options.Email, options.Password, options.View, options.TotpSecret)
+	session.automation.acceptTerms = options.AcceptTerms
 	origins := make(map[string]storageOrigin)
-	pageURL, err := session.waitLogin(loginCtx, origins)
+	pageURL, email, err := session.waitLogin(loginCtx, origins)
 	if err != nil {
 		return LoginResult{}, err
 	}
 	options.View.setStatus(liveViewSaving)
-	email, err := session.client.evaluateString(loginCtx, session.contextID, loginEmailExpression)
-	if err != nil {
-		return LoginResult{}, fmt.Errorf("读取 AI Studio 登录邮箱: %w", err)
-	}
-	email = strings.ToLower(strings.TrimSpace(email))
-	if email == "" {
-		return LoginResult{}, errors.New("AI Studio 页面没有登录邮箱")
-	}
 	driveErr := session.authorizeDrive(loginCtx, email)
 	if err := loginCtx.Err(); err != nil {
 		return LoginResult{}, err
@@ -254,34 +257,69 @@ func startLoginSession(ctx context.Context, options LoginOptions, state storageS
 	return session, nil
 }
 
-func (session *loginSession) waitLogin(ctx context.Context, origins map[string]storageOrigin) (string, error) {
+type loginFlowError struct{ code, message string }
+
+func (err *loginFlowError) Error() string     { return err.message }
+func (err *loginFlowError) ErrorCode() string { return err.code }
+
+func loginPageAllowsSave(address string) bool {
+	parsed, err := url.Parse(address)
+	return err == nil && parsed.Scheme == "https" && parsed.Host == "aistudio.google.com" && parsed.User == nil && !strings.HasPrefix(parsed.Path, "/onboarding")
+}
+
+func (session *loginSession) waitLogin(ctx context.Context, origins map[string]storageOrigin) (string, string, error) {
+	var identitySince time.Time
 	for {
 		if err := ctx.Err(); err != nil {
-			return "", err
+			return "", "", err
 		}
 		pageURL, err := session.client.evaluateString(ctx, session.contextID, "location.href")
 		if err != nil {
 			if !retryablePageEvaluation(err) {
-				return "", fmt.Errorf("读取隔离登录页面: %w", err)
+				return "", "", fmt.Errorf("读取隔离登录页面: %w", err)
 			}
 			if err := waitContext(ctx, 300*time.Millisecond); err != nil {
-				return "", err
+				return "", "", err
 			}
 			continue
 		}
 		session.captureCurrentOrigin(ctx, pageURL, origins)
 		if session.automation != nil {
 			session.automation.step(ctx, session)
+			if session.automation.err != nil {
+				return "", "", session.automation.err
+			}
 		}
 		ready, readyErr := session.client.evaluateBool(ctx, session.contextID, promptReadyExpression)
 		if readyErr != nil && !retryablePageEvaluation(readyErr) {
-			return "", fmt.Errorf("检查隔离登录页面: %w", readyErr)
+			return "", "", fmt.Errorf("检查隔离登录页面: %w", readyErr)
 		}
-		if readyErr == nil && ready && strings.HasPrefix(pageURL, aiStudioOrigin+"/") {
-			return pageURL, nil
+		if readyErr == nil && ready && loginPageAllowsSave(pageURL) {
+			if identitySince.IsZero() {
+				identitySince = time.Now()
+			}
+			if session.automation != nil {
+				session.automation.view.setStatus("verifying_identity")
+			}
+			email, readErr := session.client.evaluateString(ctx, session.contextID, loginEmailExpression)
+			if readErr != nil && !retryablePageEvaluation(readErr) {
+				return "", "", fmt.Errorf("读取 AI Studio 登录邮箱: %w", readErr)
+			}
+			email = strings.ToLower(strings.TrimSpace(email))
+			if readErr == nil && email != "" {
+				if session.automation != nil && session.automation.email != "" && email != strings.ToLower(session.automation.email) {
+					return "", "", &loginFlowError{code: "login_identity_mismatch", message: "实际登录邮箱与目标账户不一致，未保存凭证"}
+				}
+				return pageURL, email, nil
+			}
+			if time.Since(identitySince) > 15*time.Second {
+				return "", "", &loginFlowError{code: "email_detection_failed", message: "AI Studio 页面已就绪，但未读取到登录邮箱"}
+			}
+		} else {
+			identitySince = time.Time{}
 		}
 		if err := waitContext(ctx, 300*time.Millisecond); err != nil {
-			return "", err
+			return "", "", err
 		}
 	}
 }
