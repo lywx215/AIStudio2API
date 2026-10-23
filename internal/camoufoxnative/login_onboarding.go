@@ -16,7 +16,7 @@ const loginOnboardingFunction = `function(action, authorized, email) {
     if (!window.__aistudioOnboardingObserved && typeof document.addEventListener === 'function') {
       window.__aistudioOnboardingObserved = true;
       for (const name of ['input', 'keydown', 'pointerdown']) document.addEventListener(name, event => {
-        if (event.isTrusted) window.__aistudioOnboardingManual = true;
+        if (event.isTrusted && !window.__aistudioOnboardingActing) window.__aistudioOnboardingManual = true;
       }, true);
     }
     if (window.__aistudioOnboardingManual) return result('manual', 'user_input');
@@ -25,6 +25,12 @@ const loginOnboardingFunction = `function(action, authorized, email) {
     const text = e => (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim();
     // Material icons contribute their ligature name to innerText in Firefox.
     const buttonText = e => text(e).replace(/\s+(?:arrow_forward|arrow_back|chevron_right|chevron_left)$/, '').trim();
+    const click = e => {
+      // Firefox dispatches trusted input/change events for checkbox.click().
+      // Only suppress those synchronous events caused by our own activation.
+      window.__aistudioOnboardingActing = true;
+      try { e.click(); } finally { window.__aistudioOnboardingActing = false; }
+    };
     const label = e => [e.getAttribute('aria-label') || '',
       ...[...(e.labels || [])].map(text),
       ...(e.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean).map(id => text(document.getElementById(id) || {})),
@@ -54,17 +60,17 @@ const loginOnboardingFunction = `function(action, authorized, email) {
       if (action !== 'onboarding_terms') return result('manual', 'action');
       if (marketing.some(checked)) {
         state.marketingChanged = true;
-        marketing[0].click();
+        click(marketing[0]);
         return 'onboarding_loading';
       }
       if (!checked(required[0])) {
         state.requiredChanged = true;
-        required[0].click();
+        click(required[0]);
         return 'onboarding_loading';
       }
       if (!enabled(next[0])) return 'onboarding_loading';
       state.termsSubmitted = true;
-      next[0].click();
+      click(next[0]);
       return 'submitted';
     }
     if (preferences) {
@@ -75,7 +81,7 @@ const loginOnboardingFunction = `function(action, authorized, email) {
       if (inspecting) return result('onboarding_preferences', 'preferences_ready');
       if (action !== 'onboarding_preferences') return result('manual', 'action');
       state.preferencesSubmitted = true;
-      skip[0].click();
+      click(skip[0]);
       return 'submitted';
     }
     return result('onboarding_loading', 'page_loading');

@@ -164,6 +164,21 @@ test('decorative icon handling does not accept other buttons with additional wor
   assert.deepEqual(p.clicks, [])
 })
 
+test('trusted checkbox activation events from our click do not impersonate manual takeover', () => {
+  const p = page()
+  const click = p.required.click.bind(p.required)
+  p.required.click = () => {
+    click()
+    p.listeners.input({ isTrusted: true })
+  }
+  assert.equal(p.action('onboarding_terms'), 'onboarding_loading')
+  assert.equal(p.action('inspect'), 'onboarding_terms')
+  assert.equal(p.action('onboarding_terms'), 'submitted')
+  assert.deepEqual(p.clicks, ['required', 'continue'])
+  p.listeners.input({ isTrusted: true })
+  assert.equal(p.action('inspect'), 'manual')
+})
+
 test('delayed checkbox updates and disabled Continue do not toggle or submit twice', () => {
   const p = page({ delayed: true })
   p.marketing.checked = true
